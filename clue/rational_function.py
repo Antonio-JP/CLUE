@@ -1154,7 +1154,7 @@ class SparsePolynomial(object):
             data = {((i,1),) : vector[i] for i in vector.nonzero}
         else:
             if len(vector) != len(varnames): raise TypeError(f"The list must have as many elements ({len(vector)}) as variables ({len(varnames)})")
-            data = {((i,1),) : el for i,el in enumerate(list) if el != 0}
+            data = {((i,1),) : el for i,el in enumerate(vector) if el != 0}
         return SparsePolynomial(varnames, domain, data)
 
     #--------------------------------------------------------------------------
