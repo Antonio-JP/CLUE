@@ -3,3 +3,4 @@ pyparsing
 natsort
 scipy
 numpy
+'qiskit[visualization]'
