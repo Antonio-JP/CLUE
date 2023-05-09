@@ -18,7 +18,7 @@ from collections import deque
 
 from itertools import combinations, product
 
-from sympy import GF, QQ, RR, gcd, nextprime, symbols
+from sympy import GF, CC, QQ, QQ_I, RR, gcd, nextprime, symbols
 from sympy.ntheory.modular import isprime
 from sympy.polys.domains.domain import Domain
 from sympy.polys.fields import FracElement
@@ -105,12 +105,26 @@ class SparseVector(object):
 
         TODO: add examples of vectors, how they are created and some operations with them
     '''
+    #--------------------------------------------------------------------------
+    # __init__ and other builders
     def __init__(self, dim : int, field : Domain = QQ):
         self.dim : int = dim
         self.__data : dict[int]= dict()
         self.nonzero : set[int] = set()
         self.field : Domain = field
 
+    @classmethod
+    def from_list(cls, entries_list : list | tuple, field : Domain = QQ):
+        r'''Method to build a new :class:`SparseVector` from a dense representation (i.e., a list or tuple)'''
+        result = cls(len(entries_list), field)
+        for i, num in enumerate(entries_list):
+            to_insert = field.convert(num)
+            if to_insert:
+                result[i] = to_insert # __setitem__ updates the nonzero attribute
+        return result
+
+    #--------------------------------------------------------------------------
+    # size methods
     def digits(self):
         r'''
             Method to compute the maximal number of digits of a sparse vector.
@@ -145,7 +159,7 @@ class SparseVector(object):
         return len(self.nonzero) / self.dim
 
     #--------------------------------------------------------------------------
-
+    # In-place arithmetics
     def reduce(self, coef, vect : SparseVector):
         r'''
             Inplace operation of ``self + coef*vect``.
@@ -184,8 +198,6 @@ class SparseVector(object):
             # version 2 : only making sum when it is in
             self[index] = (self.__data[index] + coef*vect.__data[index]) if index in self.nonzero else (coef*vect.__data[index])
 
-    #--------------------------------------------------------------------------
-
     def scale(self, coef):
         r'''
             Method to scale in-place a vector
@@ -213,7 +225,7 @@ class SparseVector(object):
                 self.__data[i] = self.__data[i] * coef
 
     #--------------------------------------------------------------------------
-
+    # Getters and setters
     def __getitem__(self, i : int):
         if(i < 0 or i >= self.dim):
             raise IndexError(f"Element {i} out of dimension")
@@ -229,6 +241,8 @@ class SparseVector(object):
             self.nonzero.discard(i)
             self.__data.pop(i,None)
 
+    #--------------------------------------------------------------------------
+    # Structure manipulation
     def copy(self):
         r'''
             Returns a shallow copy of the vector.
@@ -295,94 +309,12 @@ class SparseVector(object):
 
         return output
 
-    #--------------------------------------------------------------------------
-
-    def inner_product(self, rhs : SparseVector):
-        r'''
-            Scalar product of two vectors
-
-            This method computes the scalar product of ``self`` with another vector given in ``rhs``.
-
-            [Optimized] This method is optimized to exploit the sparseness of the vectors.
-
-            Input: 
-
-            * ``rhs``: vector that will be used for the scalar product with ``self``.
-
-            Output:
-
-            The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
-
-            TODO: add examples
-        '''
-        if self.is_zero() or rhs.is_zero():
-            return self.field.zero
-        # computing the intersection 
-        common_indices = self.nonzero.intersection(rhs.nonzero)
-        result = self.field.zero
-        for index in common_indices:
-            result += self.__data[index] * rhs.__data[index]
-
-        return result
-
-    #--------------------------------------------------------------------------
-
-    def apply_matrix(self, matr : SparseRowMatrix):
-        r'''
-            Method to compute the application of a matrix to self to the left (`M\cdot v`)
-
-            This method applies to a :class:`SparseRowMatrix` `M` given by ``matr`` the :class:`SparseVector`.
-
-            [Optimized] This method is optimized to exploit the sparseness of the vector and the matrix.
-
-            Input: 
-
-            * ``matr``: matrix `M` to which we will apply ``self``.
-
-            Output:
-
-            The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
-
-            TODO: add examples
-        '''
-        if(self.dim != matr.ncols):
-            raise TypeError(f"Impossible to multiply matrix with {matr.ncols} with vector of size {self.dim}")
-        result = SparseVector(matr.nrows, self.field)
-        
-        for i in matr.nonzero:
-            result[i] = self.inner_product(matr.row(i)) # __setitem__ checks if the value is zero or not
-        return result
-
-    #--------------------------------------------------------------------------
-
-    def is_zero(self):
-        r'''Method to check whether a vector is zero or not'''
-        return len(self.nonzero) == 0
-
-    #--------------------------------------------------------------------------
-
-    def first_nonzero(self):
-        r'''Method to obtain the first index that is not zero'''
-        if self.nonzero:
-            return next(iter(self.nonzero))
-        return -1
-
-    #--------------------------------------------------------------------------
-
     def to_list(self):
         r'''Method to transform a :class:`SparseVector` into a list'''
         result = [0] * self.dim
         for i in self.nonzero:
             result[i] = self.__data[i]
         return result
-
-    #--------------------------------------------------------------------------
-
-    def nonzero_count(self):
-        r'''Method to compute the number of non-zero entries of a vector'''
-        return len(self.nonzero)
-
-    #--------------------------------------------------------------------------
 
     def reduce_mod(self, mod : int):
         r'''
@@ -418,19 +350,151 @@ class SparseVector(object):
         return result
 
     #--------------------------------------------------------------------------
+    # linear algebra methods
+    def conjugate(self):
+        r'''
+            Returns a copy of self where all elements have been conjugated.
 
-    @classmethod
-    def from_list(cls, entries_list : list | tuple, field : Domain = QQ):
-        r'''Method to build a new :class:`SparseVector` from a dense representation (i.e., a list or tuple)'''
-        result = cls(len(entries_list), field)
-        for i, num in enumerate(entries_list):
-            to_insert = field.convert(num)
-            if to_insert:
-                result[i] = to_insert # __setitem__ updates the nonzero attribute
+            If the :func:`field` is inside the reals, (i.e., the conjugation leaves everything fixed)
+            this method simply returns a copy of ``self``.
+        '''
+        result = self.copy()
+        if self.field == CC:
+            for i in self.nonzero:
+                result[i] = result[i].conjugate()
+        elif self.field == QQ_I:
+            for i in self.nonzero:
+                result[i] = result[i] - QQ_I(0,2)*result[i].y # hand-made conjugation
+
+        return result
+
+    def inner_product(self, rhs : SparseVector):
+        r'''
+            Scalar product of two vectors
+
+            This method computes the scalar product of ``self`` with another vector given in ``rhs``.
+
+            [Optimized] This method is optimized to exploit the sparseness of the vectors.
+
+            Remark:
+
+            * This method takes into account whether the :func:`field` is the complex numbers or not.
+              If that is the case, the inner product is defined by `\langle u, v \rangle = \sum u_i \bar{v_i}`,
+              where `\bar{v_i}` is the complex conjugate. 
+            * This method **does not** work for :class:`sympy.Quaternion`.
+
+            Input: 
+
+            * ``rhs``: vector that will be used for the scalar product with ``self``.
+
+            Output:
+
+            The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
+
+            Examples:
+
+                >>> from sympy import I, QQ_I, RR, CC
+                >>> from clue.linalg import SparseVector
+                >>> u = SparseVector.from_list([0,1,1,0]) # the domain is QQ
+                >>> v = SparseVector.from_list([1,0,2,0])
+                >>> u.inner_product(v)
+                MPQ(2,1)
+                >>> v = SparseVector.from_list([1,1,1,1])
+                >>> u.inner_product(v)
+                MPQ(2,1)
+
+            This method is also called when computing the product of two vectors::
+
+                >>> u*v
+                MPQ(2,1)
+
+            This can also work for real numbers::
+
+                >>> u = SparseVector.from_list([0,1.1,3.5,2.0], RR)
+                >>> v = SparseVector.from_list([0,1,0,0], RR)
+                >>> u*v
+                1.1
+                >>> v = SparseVector.from_list([1,1,1,1], RR)
+                >>> u*v
+                6.6
+                >>> v*u # scalar product is symmetric for reals
+                6.6
+
+            And, finally, this also works for complex numbers and the gaussian rationals::
+
+                >>> u = SparseVector.from_list([QQ_I(1,1), QQ_I(2,-2)], QQ_I) # (1+i, 2-2*i)
+                >>> v = SparseVector.from_list([QQ_I(3,-1), QQ_I(5,1)], QQ_I) # (3-i, 5+i)
+                >>> u*v
+                QQ_I(10, -8)
+                >>> v*u # scalar product is anti-symmetric for complex
+                QQ_I(10, 8)
+                >>> v*v # square of the 2-norm of v
+                QQ_I(36, 0)
+                >>> i = CC(I) # imaginary unit
+                >>> u = SparseVector.from_list([1+i, 2-2*i], CC)
+                >>> v = SparseVector.from_list([3-i, 5+i], CC)
+                >>> u*v
+                (10.0 - 8.0j)
+                >>> v*u
+                (10.0 + 8.0j)
+                >>> v*v
+                (36.0 + 0.0j)
+        '''
+        rhs = rhs.conjugate() # we conjugate the vector (in case the field is CC)
+        if self.is_zero() or rhs.is_zero():
+            return self.field.zero
+        # computing the intersection 
+        common_indices = self.nonzero.intersection(rhs.nonzero)
+        result = self.field.zero
+        for index in common_indices:
+            result += self.__data[index] * rhs.__data[index]
+
+        return result
+
+    def apply_matrix(self, matr : SparseRowMatrix):
+        r'''
+            Method to compute the application of a matrix to self to the left (`M\cdot v`)
+
+            This method applies to a :class:`SparseRowMatrix` `M` given by ``matr`` the :class:`SparseVector`.
+
+            [Optimized] This method is optimized to exploit the sparseness of the vector and the matrix.
+
+            Input: 
+
+            * ``matr``: matrix `M` to which we will apply ``self``.
+
+            Output:
+
+            The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
+
+            TODO: add examples
+        '''
+        if(self.dim != matr.ncols):
+            raise TypeError(f"Impossible to multiply matrix with {matr.ncols} with vector of size {self.dim}")
+        result = SparseVector(matr.nrows, self.field)
+        
+        for i in matr.nonzero:
+            result[i] = self.inner_product(matr.row(i)) # __setitem__ checks if the value is zero or not
         return result
 
     #--------------------------------------------------------------------------
+    # Zero methods
+    def is_zero(self):
+        r'''Method to check whether a vector is zero or not'''
+        return len(self.nonzero) == 0
 
+    def first_nonzero(self):
+        r'''Method to obtain the first index that is not zero'''
+        if self.nonzero:
+            return next(iter(self.nonzero))
+        return -1
+
+    def nonzero_count(self):
+        r'''Method to compute the number of non-zero entries of a vector'''
+        return len(self.nonzero)
+
+    #--------------------------------------------------------------------------
+    # Method for rational reconstruction
     def rational_reconstruction(self):
         r'''
             Method to make a rational reconstruction from a modular expression.
@@ -459,6 +523,59 @@ class SparseVector(object):
                 logger.debug("[rational_reconstruction] Rational reconstruction problems: %d, %d", self[ind], self.field.characteristic())
         return result
 
+    #--------------------------------------------------------------------------
+    # Python arithmetic
+    def __add__(self, other):
+        if not isinstance(other, SparseVector):
+            return NotImplemented
+        elif other.dim != self.dim:
+            return NotImplemented
+        elif self.field != other.field:
+            return NotImplemented
+        
+        common = self.nonzero.intersection(other.nonzero)
+        self_only = self.nonzero.difference(common)
+        other_only = other.nonzero.difference(common)
+
+        result = SparseVector(self.dim, self.field)
+        for i in common: result[i] = self[i] + other[i]
+        for i in self_only: result[i] = self[i]
+        for i in other_only: result[i] = other[i]
+
+        return result
+    
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __neg__(self):
+        result = self.copy(); result.scale(-1)
+        return result
+
+    def __mul__(self, other):
+        if isinstance(other, SparseVector):
+            if other.dim != self.dim:
+                return NotImplemented
+            elif self.field != other.field:
+                return NotImplemented
+            
+            return self.inner_product(other)
+        elif isinstance(other, SparseRowMatrix):
+            self.apply_matrix(other.transpose())
+        else:
+            return NotImplemented
+            
+    def __rmul__(self, other):
+        if isinstance(other, SparseVector):
+            if other.dim != self.dim:
+                return NotImplemented
+            elif self.field != other.field:
+                return NotImplemented
+            
+            return other.inner_product(self)
+        elif isinstance(other, SparseRowMatrix):
+            return self.apply_matrix(other)
+        else:
+            return NotImplemented
     #--------------------------------------------------------------------------
     # Equality methods
     def __hash__(self) -> int:
