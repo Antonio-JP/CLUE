@@ -27,7 +27,7 @@ def run_example(circuit: str, **kwds):
     with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.example.txt"), "w") as out_file:
 
         all_obs = 2**len(system.variables) - 1; generator = powerset(system.variables)
-        if all_obs > 10000: all_obs = len(system.variables); generator = [tuple([el]) for el in system.variables]
+        if all_obs > 10000: all_obs = len(system.variables); generator = (tuple([el]) for el in system.variables)
         
         for i,obs in enumerate(generator):
             out_file.write("################################################################\n")
