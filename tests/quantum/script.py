@@ -24,7 +24,7 @@ def list_circuits():
 def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
 
-    with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.txt"), "w") as out_file:
+    with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.example.txt"), "w") as out_file:
 
         all_obs = 2**len(system.variables) - 1; generator = powerset(system.variables)
         if all_obs > 10000: all_obs = len(system.variables); generator = [tuple([el]) for el in system.variables]
@@ -49,7 +49,7 @@ def compile_results():
     for file_name in listdir(os.path.join(SCRIPT_DIR, "results")):
         if file_name.startswith("[output]"):
             with open(os.path.join(SCRIPT_DIR, "results", file_name), "r") as file:
-                circuit = file_name.removeprefix("[output]").removesuffix(".txt")
+                circuit = file_name.removeprefix("[output]").removesuffix(".example.txt")
                 logger.log(60, f"[compile] Starting reading result for {circuit}")
                 line = file.readline().strip() # first line of file
                 while line != "":
