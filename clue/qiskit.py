@@ -25,7 +25,7 @@ class DS_QuantumCircuit(FODESystem):
         unitary = job.result().get_unitary(circuit)
 
         nbits = len(unitary.input_dims())
-        variables = [f"Q_{f'{i:b}'.ljust(nbits, '0')}" for i in range(2**nbits)]
+        variables = [f"Q_{f'{i:b}'.rjust(nbits, '0')}" for i in range(2**nbits)]
         nvariables = 2**nbits
         matr = asarray(unitary)
         equations = [SparsePolynomial.from_vector(matr[i], variables, CC) for i in range(nvariables)]
@@ -33,6 +33,6 @@ class DS_QuantumCircuit(FODESystem):
         super().__init__(
             equations, variables=variables, 
             name=circuit.name, 
-            lumping_subspace=NumericalSubspace, 
+            lumping_subspace=kwds.pop("lumping_subspace", NumericalSubspace), 
             lumping_subspace_kwds=kwds
         )
