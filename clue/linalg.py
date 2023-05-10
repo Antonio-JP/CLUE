@@ -560,7 +560,7 @@ class SparseVector(object):
             
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
-            self.apply_matrix(other.transpose())
+            self.apply_matrix(other.transpose()).conjugate()
         else:
             return NotImplemented
             
@@ -1405,8 +1405,8 @@ class OrthogonalSubspace(Subspace):
         # we scale the new vector depending on the ground field
         if self.field == QQ:
             new_vector.scale(self.field.one / math.gcd(*[new_vector[i].numerator for i in new_vector.nonzero]))
-        if self.field == RR:
-            new_vector.scale(self.field.one / math.sqrt(new_vector.inner_product(new_vector)))
+        if self.field == RR or self.field == CC:
+            new_vector.scale(self.field.one / math.sqrt(float(abs(new_vector.inner_product(new_vector)))))
 
         # Now new_vector ir orthogonal to ``self``. We can simply add it to the Subspace
         self.echelon_form[self.dim()] = new_vector
@@ -1508,11 +1508,11 @@ class NumericalSubspace(OrthogonalSubspace):
     def __init__(self, field: Domain, delta : float = 1e-4):
         super().__init__(field)
 
-        self.__delta = max(abs(delta), 1e-10) # minimal threshold to be like zero
+        self.__delta = delta #max(abs(delta), 1e-10) # minimal threshold to be like zero
         self.__delta2 = self.__delta**2
 
     def _should_absorb(self, vector : SparseVector):
-        norm_squared = float(vector.inner_product(vector))
+        norm_squared = float(abs(vector.inner_product(vector)))
         logger.log(5,f"[_should_absorb - Numerical] {norm_squared}) >? {self.__delta2}")
         return norm_squared > float(self.__delta2)
   
