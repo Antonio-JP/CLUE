@@ -10,7 +10,7 @@ def readfile(filename):
 def requirements():
     with open("./requirements.txt", "r", encoding='utf-8') as f:
         return f.readlines()
-    
+
 setup(
     name = "CLUE",
     version = "1.5.3+quiskit", # the VERSION file is shared with the documentation  ## readfile("VERSION").strip(),
@@ -19,8 +19,8 @@ setup(
     # For a Markdown README replace the above line by the following two lines:
     long_description = readfile("README.md"),
     long_description_content_type="text/markdown",
-    url='https://github.com/pogudingleb/CLUE',
-    author = "Gleb Pogudin",
+    url='https://github.com/clue-developers/CLUE',
+    author = "Gleb Pogudin + Antonio Jiménez-Pastor",
     author_email = "gleb.pogudin@polytechnique.edu",
     license = "GPLv3+", # See LICENSE file
     classifiers=[
