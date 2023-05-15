@@ -1,9 +1,23 @@
 # Quantum circuits
 
-1. Fix the Numerical Subspace to handle successfully complex numbers.
-2. Get several examples from the [benchmarks](https://www.cda.cit.tum.de/mqtbench/).
+## Things TO DO
 
-## Meeting
+1. Write some theory on lumpings on Quantum circuit
+2. Develop the case for Grover's algorithm
+   * See that the godd/bad observables provide the good lumping.
+   * Recover the bad/good observables from the other.
+   * See why any observable behave so nicely.
+   * Can we recover the good/bad observables from any observable as input to CLUE?
+3. Develop the case for Shor's algorithm
+   * Generate the unitary matrix without measuring
+   * See that we get a simple lumping from the good observable
+   * What does happen in other observables?
+4. Develop the case for Quantum Furier Transform
+   * Is there a reason the $0$ and $2^{n-1}$ observables behave so nice?
+5. Develop the case for Quantum Phase ...
+6. Get and run the examples from meeting on 2023/05/12
+
+## Meeting on 2023/05/12
 
 * Run for Deutsch-Jozsa + HHL + Shor + Phase Estimation
 * Try to interpret the output of some observables
