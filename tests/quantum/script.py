@@ -12,6 +12,10 @@ from time import time
 
 logger = logging.getLogger("clue")
 
+def add_first(first, gen):
+    yield first
+    yield from gen
+
 def powerset(iterable):
     "powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
@@ -19,8 +23,14 @@ def powerset(iterable):
 
 def list_circuits(*argv):
     r'''List examples in the folder. It allows several arguments.'''
+    def get_size(example):
+        try:
+            return int(example.removesuffix(".qasm").split("_")[-1])
+        except:
+            return -1
+
     examples = [file.removesuffix(".qasm") for file in listdir(os.path.join(SCRIPT_DIR, "circuits")) if file.endswith(".qasm")]
-    examples.sort()
+    examples.sort(); examples.sort(key=get_size)
     executed_examples = [file.removeprefix("[output]").removesuffix(".example.txt") for file in listdir(os.path.join(SCRIPT_DIR, "results")) if file.endswith(".example.txt")]
 
     full = False
@@ -46,11 +56,6 @@ def list_circuits(*argv):
         else:
             raise TypeError(f"Option {argv[i]} not recognized. Check 'help' command for further information")
 
-    def get_size(example):
-        try:
-            return int(example.removesuffix(".qasm").split("_")[-1])
-        except:
-            return None
 
     ## Creating the filtering function
     filter = lambda example: (
@@ -62,11 +67,11 @@ def list_circuits(*argv):
 
     ## Creating the string to be printed
     if full:
-        lines = [["Example name", "Executed"]]
-        get_str = lambda example : (example, "Yes" if example in executed_examples else "No")
+        lines = [["Example name", "# q-bits", "Executed"]]
+        get_str = lambda example : (example, str(get_size(example)), "Yes" if example in executed_examples else "No")
 
         lines.extend([get_str(name) for name in examples if filter(name)])
-        lines.append(["N.models", f"{len(lines)-1}"])
+        lines.append(["N.models", f"{len(lines)-1}", ""])
         n_elem = len(lines[0])
         max_length = [max(len(line[i]) if line[i] != None else 4 for line in lines) for i in range(n_elem)]
 
@@ -82,9 +87,12 @@ def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
 
     with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.example.txt"), "w") as out_file:
-
-        all_obs = 2**len(system.variables) - 1; generator = powerset(system.variables)
-        if all_obs > 10000: all_obs = len(system.variables); generator = (tuple([el]) for el in system.variables)
+        first_obs = ("+".join(system.variables),)
+        all_obs = 2**len(system.variables); generator = powerset(system.variables)
+        if all_obs > 10000: 
+            all_obs = len(system.variables)+1
+            generator = (tuple([el]) for el in system.variables)
+        generator = add_first(first_obs, generator)
         
         try:
             for i,obs in enumerate(generator):
