@@ -17,9 +17,66 @@ def powerset(iterable):
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(1,len(s)+1))
 
-def list_circuits():
-    files = [file.removesuffix(".qasm") for file in listdir(os.path.join(SCRIPT_DIR, "circuits")) if file.endswith(".qasm")]
-    print(" ".join(files))
+def list_circuits(*argv):
+    r'''List examples in the folder. It allows several arguments.'''
+    examples = [file.removesuffix(".qasm") for file in listdir(os.path.join(SCRIPT_DIR, "circuits")) if file.endswith(".qasm")]
+    examples.sort()
+    executed_examples = [file.removeprefix("[output]").removesuffix(".example.txt") for file in listdir(os.path.join(SCRIPT_DIR, "results")) if file.endswith(".example.txt")]
+
+    full = False
+    allowed_names = []; forbidden_names = []; executed = None; sizes = None
+    i = 0
+    ## Reading the arguments
+    while i < len(argv): 
+        if argv[i] == "-n":
+            allowed_names.append(argv[i+1]); i += 2
+        elif argv[i] == "-wn":
+            forbidden_names.append(argv[i+1]); i += 2
+        elif argv[i] == "-e":
+            if executed != None and executed != True: raise TypeError("The command for executed tests were already given.")
+            executed = True; i+= 1
+        elif argv[i] == "-ne":
+            if executed != None and executed != False: raise TypeError("The command for executed tests were already given.")
+            executed = False; i+= 1
+        elif argv[i] == "-a":
+            full = True; i+= 1
+        elif argv[i] == "-s":
+            if sizes is None: sizes = []
+            sizes.append(int(argv[i+1])); i+= 2
+        else:
+            raise TypeError(f"Option {argv[i]} not recognized. Check 'help' command for further information")
+
+    def get_size(example):
+        try:
+            return int(example.removesuffix(".qasm").split("_")[-1])
+        except:
+            return None
+
+    ## Creating the filtering function
+    filter = lambda example: (
+                                (len(allowed_names) == 0 or any(name in example for name in allowed_names)) and 
+                                (len(forbidden_names) == 0 or all(not (name in example) for name in forbidden_names)) and
+                                (executed == None or ((example in executed_examples) == executed)) and
+                                (sizes == None or (get_size(example) in sizes))
+                             )
+
+    ## Creating the string to be printed
+    if full:
+        lines = [["Example name", "Executed"]]
+        get_str = lambda example : (example, "Yes" if example in executed_examples else "No")
+
+        lines.extend([get_str(name) for name in examples if filter(name)])
+        lines.append(["N.models", f"{len(lines)-1}"])
+        n_elem = len(lines[0])
+        max_length = [max(len(line[i]) if line[i] != None else 4 for line in lines) for i in range(n_elem)]
+
+        lines.insert(1, [max_length[i]*"-" for i in range(n_elem)])
+        lines.insert(len(lines)-1, [max_length[i]*"-" for i in range(n_elem)])
+
+        for line in lines:
+            print(" | ".join([(line[i] if line[i] != None else "None").ljust(max_length[i]) for i in range(n_elem)]))
+    else:
+        print(" ".join([name for name in examples if filter(name)]))
 
 def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
@@ -29,18 +86,21 @@ def run_example(circuit: str, **kwds):
         all_obs = 2**len(system.variables) - 1; generator = powerset(system.variables)
         if all_obs > 10000: all_obs = len(system.variables); generator = (tuple([el]) for el in system.variables)
         
-        for i,obs in enumerate(generator):
-            out_file.write("################################################################\n")
-            out_file.write(f"### Observable: {obs}\n")
-            out_file.write("################################################################\n")
-            logger.info(f"[circuit_example ({i+1}/{all_obs})] Lumping {circuit} with observable {obs} ")
-            start = time()
-            lumped = system.lumping(obs,print_reduction=True,file=out_file)
-            total = time()-start
-            out_file.write(f"**  Reduction found: {system.size} --> {lumped.size}\n")
-            out_file.write(f"**  Time spent: {total} s.\n")
-            out_file.write("################################################################\n")
-            out_file.flush()
+        try:
+            for i,obs in enumerate(generator):
+                out_file.write("################################################################\n")
+                out_file.write(f"### Observable: {obs}\n")
+                out_file.write("################################################################\n")
+                logger.info(f"[circuit_example ({i+1}/{all_obs})] Lumping {circuit} with observable {obs} ")
+                start = time()
+                lumped = system.lumping(obs,print_reduction=True,file=out_file)
+                total = time()-start
+                out_file.write(f"**  Reduction found: {system.size} --> {lumped.size}\n")
+                out_file.write(f"**  Time spent: {total} s.\n")
+                out_file.write("################################################################\n")
+                out_file.flush()
+        except KeyboardInterrupt:
+            logger.info(f"[circuit_example] Interrupted {circuit} with Ctr-C ")
 
     return
 
@@ -92,7 +152,7 @@ def compile_results():
 if __name__ == "__main__":
     ## Reading the arguments
     if sys.argv[1] == "list":
-        list_circuits()
+        list_circuits(*sys.argv[2:])
     elif sys.argv[1] == "compile":
         compile_results()
     else:
