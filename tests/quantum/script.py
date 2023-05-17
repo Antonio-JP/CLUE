@@ -97,7 +97,7 @@ def run_example(circuit: str, **kwds):
         try:
             for i,obs in enumerate(generator):
                 out_file.write("################################################################\n")
-                out_file.write(f"### Observable: {obs}\n")
+                out_file.write(f"### Observable: {('H-State',) if obs == first_obs else obs}\n")
                 out_file.write("################################################################\n")
                 logger.info(f"[circuit_example ({i+1}/{all_obs})] Lumping {circuit} with observable {obs} ")
                 start = time()
