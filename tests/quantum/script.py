@@ -138,7 +138,7 @@ def compile_results():
 
                             line = file.readline().strip() # next line
                         else:
-                            data.append([circuit, observable, or_size, red_size, red_size/or_size, time_used])
+                            data.append([circuit, observable.replace("', '", " & "), or_size, red_size, red_size/or_size, time_used])
                             line = file.readline().strip() # next line of file
                             continue
                         break
