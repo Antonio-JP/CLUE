@@ -150,7 +150,7 @@ def compile_results():
     
     logger.log(60, f"[compile] Dumping to CSV file")
     with open(os.path.join(SCRIPT_DIR, "compilation.csv"), "w") as file:
-        writer = csv.writer(file, delimiter=";")
+        writer = csv.writer(file, delimiter=",")
         writer.writerow(["circuit", "observable", "size", "reduced", "ratio", "time"]) # Header
         for result in data:
             writer.writerow(result)
