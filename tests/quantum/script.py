@@ -84,7 +84,7 @@ def list_circuits(*argv):
         print(" ".join([name for name in examples if filter(name)]))
 
 def run_example(circuit: str, **kwds):
-    system = DS_QuantumCircuit(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
+    system = DS_QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
 
     with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.example.txt"), "w") as out_file:
         first_obs = ("+".join(system.variables),)
