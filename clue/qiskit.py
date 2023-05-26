@@ -177,7 +177,7 @@ def ControlledGate(U, n: int=1):
                    [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
     '''
     size = U.shape
-    identity_block = eye(2**n * (size[0]-1))
+    identity_block = eye((2**n - 1)* size[0])
     return block([[identity_block, zeros((identity_block.shape[0], size[1]))], [zeros((size[0], identity_block.shape[1])), U]])
 
 def G(f, n):
