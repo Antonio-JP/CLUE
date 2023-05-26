@@ -9,10 +9,12 @@ r'''
 
 from __future__ import annotations
 
-from itertools import product
-from functools import lru_cache
+from collections.abc import Sequence
+from itertools import chain, product
+from functools import lru_cache, reduce
 from math import ceil, log2
-from numpy import array, matmul, block, cdouble, asarray, sqrt, kron, eye, outer, ones, zeros, cos, sin, pi 
+from numpy import array, matmul, block, cdouble, asarray, sqrt, kron, eye, outer, ones, zeros, exp, pi, arange
+from numpy.linalg import inv, matrix_power
 from numpy.random import rand
 from qiskit import execute, QuantumCircuit, Aer
 from sympy import CC
@@ -55,33 +57,15 @@ class DS_QuantumCircuit(FODESystem):
 ### numpy matrices that describes part of a quantum circuit and recombines
 ### them to get a final quantum circuit described with its unitary matrix.
 ###########################################################################
-# Gates for 1 q-bit
-Hadamard = (1/sqrt(2))*array([[1,1],[1,-1]], dtype=cdouble)
-PauliX = array([[0,1],[1,0]], dtype=cdouble); qbit_plus = PauliX
-PauliY = array([[0,-1j],[1j,0]], dtype=cdouble)
-PauliZ = array([[1,0],[0,-1]], dtype=cdouble)
-Phase = array([[1,0],[0,1j]], dtype=cdouble)
-
-@lru_cache(maxsize=10)
-def R(k: int):
-    r'''Rotation map'''
-    return array([[1, 0], [0, cos(2*pi / 2**k) + sin(2*pi / 2**k)*1j]], dtype=cdouble)
-
-@lru_cache(maxsize=10)
-def S(n: int):
-    r'''Swap q-bits'''
-    result = eye(2**n, dtype=cdouble)
-    for i,t in enumerate(product([0], *((n-1)*[[0,1]]))):
-        v = sum(2**j * e for (j,e) in enumerate(t))
-        if v != i: # non-symmetric number
-            result[[i,v]] = result[[v,i]] # swapping rows i <-> v
-
-    return result.transpose()
-
-BitPlus = PauliX
-
 # Numerical threshold for checking equality
 numerical_threshold = 1e-10
+
+def compare(a, b, precision=10):
+    r'''Method to compare up to a precision. If the difference or the "all" return an error, we return "False"'''
+    try:
+        return ((a-b).round(precision) == 0).all()
+    except:
+        return False
 
 # Methods to manipulate state and to measure a quantum state
 def inner_product(v, w):
@@ -113,31 +97,144 @@ def is_unitary(U):
     r'''Method that checks if a matrix is unitary or not'''
     return ((matmul(U, U.transpose().conjugate()) - eye(U.shape[0])) < numerical_threshold).all()
 
+
+# Gates for 1 q-bit
+Hadamard = (1/sqrt(2))*array([[1,1],[1,-1]], dtype=cdouble)
+PauliX = array([[0,1],[1,0]], dtype=cdouble); qbit_plus = PauliX
+PauliY = array([[0,-1j],[1j,0]], dtype=cdouble)
+PauliZ = array([[1,0],[0,-1]], dtype=cdouble)
+Phase = array([[1,0],[0,1j]], dtype=cdouble)
+
+@lru_cache(maxsize=10)
+def Rot(k: int):
+    r'''
+        Rotation map
+        
+        Examples::
+
+            >>> compare(Rot(1), PauliZ)
+            True
+            >>> Rot(2).round(15)
+            array([[1.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+1.j]])
+
+
+    '''
+    return array([[1, 0], [0, exp(2j*pi / (2**k))]], dtype=cdouble)
+
+@lru_cache(maxsize=10)
+def Sw(n: int):
+    r'''
+        Swap q-bits
+    
+        Examples::
+
+            >>> compare(Sw(1), eye(2))
+            True
+            >>> Sw(2)
+            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
+                   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]])
+    '''
+    result = eye(2**n, dtype=cdouble)
+    for i,t in enumerate(product([0], *((n-1)*[[0,1]]))):
+        v = sum(2**j * e for (j,e) in enumerate(t))
+        if v != i: # non-symmetric number
+            result[[i,v]] = result[[v,i]] # swapping rows i <-> v
+
+    return result.transpose()
+
+BitPlus = PauliX #: alias for the PauliX 
+
 # Methods to create quantum gates
 @lru_cache(maxsize=10)
-def EntangledState(n: int, dtype=None):
+def EntangledState(n: int, dtype=cdouble):
     r'''Created the entangled state for `n` different states.'''
     return (1/sqrt(n))*ones((n,), dtype=dtype)
 
 Psi = EntangledState #: alias for EntangledState
 
-def ApplyWithControl(U, src: int, dst: int, tot: int):
-    r'''Applies to the ``dst`` q-bit the gate ``U`` controlled by the q-bit ``src``'''
-    if any(bit <= 0 or bit > tot for bit in (src, dst)):
-        raise ValueError(f"The control and target q-bit must be between 1 and {tot}")
+def PermuteBits(permutation: Sequence[int]):
+    r'''
+        Gate that permutes the q-bits in order.
+
+        If the given permutation is `(\sigma_0,\ldots,\sigma_{n-1})`, then the quantum circuit will 
+        move to `i`-th position the `\sigma_i` q-bit of the input.
+
+        Examples::
+
+            >>> PermuteBits([2,1,0]) # inverting the order
+            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
+                   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]])
+
+        This is exactly the same as the ``Sw`` gate::
+
+            >>> compare(PermuteBits([2,1,0]), Sw(3))
+            True
+
+        However, this gate allows to move q-bits easier::
+
+            >>> PermuteBits([2,0,1]) # moving (b_0,b_1,b_2) -> (b_2,b_0,b_1)
+            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j],
+                   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j]])
+            >>> from numpy.linalg import matrix_power
+            >>> compare(matrix_power(PermuteBits([2,0,1]),3), eye(2**3))
+            True
+
+
+    '''
+    if any(i not in permutation for i in range(len(permutation))):
+        raise TypeError("The given list is not a permutation")
     
-    size = 2**tot
-    val = lambda b : 2**(tot-b)
-    is_active = lambda p,b: (p//val(b)%2) == 1
-    relative_vals = lambda p, b: (p-val(b), p) if is_active(p, b) else (p, p+val(b))
-    result = eye(size, dtype=cdouble)
-    for i in range(size):
-        if is_active(i, src):
-            dst_0, dst_1 = relative_vals(i, dst)
-            is_on = 1 if is_active(i, dst) else 0
-            result[dst_0][i] = U[0][is_on]; result[dst_1][i] = U[1][is_on]
+    n = len(permutation); size = 2**n
+    result = zeros((size,size), dtype=cdouble)
+    def canonical(size, ind, dtype=cdouble): 
+        out = zeros(size, dtype=dtype)
+        out[ind] = 1
+        return out
+
+    for (k, bits) in enumerate(product([0,1], repeat=n)):
+        permuted_value = sum(2**(n-1-i) * bits[permutation[i]] for i in range(n))
+        result[:,k] = canonical(size,permuted_value)
 
     return result
+
+def ApplyWithControl(U, src: int|Sequence[int], dst: int|Sequence[int], tot: int):
+    r'''
+        Applies to the ``dst`` q-bit the gate ``U`` controlled by the q-bit ``src``
+    '''
+    src = [src] if isinstance(src, int) else src
+    dst = [dst] if isinstance(dst, int) else dst
+
+    if any(bit < 0 or bit >= tot for bit in chain(src, dst)):
+        raise ValueError(f"The control and target q-bit must be between 0 and {tot-1}")
+    if U.shape != (2**len(dst),2**len(dst)):
+        raise TypeError("The number of goal q-bits must match the size of the given gate")
+    if any(bit in dst for bit in src):
+        raise ValueError("The control and the target can not intersect")
+    
+    involved = src + dst
+    permutation = [i for i in range(tot) if i not in involved] + src + dst
+    inverse_permutation = [permutation.index(i) for i in range(tot)]
+
+    first = PermuteBits(permutation)
+    inner = kron(eye(2**(tot-len(src)-len(dst))), ControlledGate(U, len(src)))
+    last = PermuteBits(inverse_permutation)
+
+    return matmul(last, matmul(inner, first))
             
 def ControlledGate(U, n: int=1):
     r'''
@@ -169,12 +266,14 @@ def ControlledGate(U, n: int=1):
                    [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
                    [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
             >>> ControlledGate(PauliX, 2)
-            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-                   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-                   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-                   [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
-                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+            array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+                   [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
     '''
     size = U.shape
     identity_block = eye((2**n - 1)* size[0])
@@ -279,12 +378,15 @@ def base_Fourier(n: int):
     if n == 1:
         return Hadamard
     else:
-        aux = base_Fourier(n-1)
-        last = kron(eye(2, dtype=cdouble), aux)
+        size = 2**n
 
-        first = kron(Hadamard, eye(aux.shape[0], dtype=cdouble))
+        # We create the first gates
+        first = kron(Hadamard, eye(size//2, dtype=cdouble))
         for i in range(2, n+1):
-            first = matmul(ApplyWithControl(R(i), i, 1, n), first)
+            first = matmul(ApplyWithControl(Rot(i), i-1, 0, n), first)
+
+        # We then apply the base Fourier of one less q-bits
+        last = kron(eye(2, dtype=cdouble), base_Fourier(n-1)) # adding one extra bit to previous unswept Fourier
 
         return matmul(last,first)
     
@@ -295,20 +397,34 @@ def FourierTransform(n: int):
         
         It follows the representation of the circuit in page 219 of the Nielsen-Chuang book.
     '''
-    return matmul(S(n), base_Fourier(n))
+    return matmul(Sw(n), base_Fourier(n))
     
 @lru_cache(maxsize=10)
 def FourierTransform_direct(n: int):
-    root_of_unity = cos(2*pi /(2**n)) + sin(2*pi / (2**n))*1j
-    main_vector = array([root_of_unity**i for i in range(2**n)], dtype=cdouble)
-
-    rows = [ones(2**n, dtype=cdouble)]
-    for i in range(2**n - 1):
-        rows += [rows[-1]*main_vector]
-    
-    return (1/sqrt(2**n)) * array(rows, dtype=cdouble)
+    from numpy import vander
+    size = 2**n
+    roots_of_unity = exp(2j*pi/(size) * arange(size))
+    return (1/sqrt(size)) * vander(roots_of_unity, increasing=True)
 
 def K(U):
-    r'''Method to create the Kitaev gate for phase estimation'''
+    r'''Method to create the Kitaev gate for phase estimation with 1 q-bit'''
     return matmul(kron(Hadamard, eye(U.shape[0])), matmul(ControlledGate(U), kron(Hadamard, eye(U.shape[0]))))
+
+def PhaseEstimation(U, n):
+    r'''Get Phase Estimation circuit with `n` q-bits as estimation'''
+    if 2**(int(log2(U.shape[0]))) != U.shape[0]:
+        raise TypeError("The given gate do not apply to the base case of q-bits.")
+    nbits_U = int(log2(U.shape[0]))
+    tot_bits = n + nbits_U
+
+    to_apply = [kron(reduce(lambda p,q: kron(p,q), n*[Hadamard]), eye(U.shape[0]))]
+    Us = [matrix_power(U, 2**i) for i in range(n)]
+    to_apply.extend([ApplyWithControl(Us[i], n-1-i, [n+i for i in range(nbits_U)], tot_bits) for i in range(n)])
+
+    to_apply.append(kron(inv(FourierTransform_direct(n)), eye(U.shape[0]))) # adding the inverse of fourier at the end
+
+    # we now apply all matrices in inverse order
+    return reduce(lambda p,q: matmul(q,p), to_apply)
+    
+
 
