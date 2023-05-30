@@ -24,6 +24,9 @@ from .linalg import NumericalSubspace
 from .rational_function import SparsePolynomial
 
 class DS_QuantumCircuit(FODESystem):
+    r'''
+        Class for representing quantum circuits as dynamical systems.
+    '''
     BACKEND = Aer.get_backend("unitary_simulator")
 
     def __init__(self, unitary, **kwds):
