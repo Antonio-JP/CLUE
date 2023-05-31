@@ -1127,9 +1127,9 @@ class SparsePolynomial(object):
     #--------------------------------------------------------------------------
 
     @staticmethod
-    def from_sympy(sympy_poly, varnames=None):
+    def from_sympy(sympy_poly, varnames=None, domain=None):
         r'''Static method inverse to :func:`to_sympy`'''
-        domain = sympy_poly.ring.domain
+        domain = sympy_poly.ring.domain if domain is None else domain
         # lambda used to handle the case of the algebraic field of coefficients
         if(varnames is None):
             varnames = list(map(lambda g: str(g.as_expr()), sympy_poly.ring.gens))
