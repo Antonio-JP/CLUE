@@ -1,5 +1,11 @@
 # Quantum circuits
 
+## Meeting of 2023/05/31
+
+1. Run all the benchmarks from the website up to 7 q-bits
+2. Produce case studies with several sizes to see scalability
+3. Increase the content on the draft.
+
 ## Things TO DO
 
 1. Write some theory on lumpings on Quantum circuit
