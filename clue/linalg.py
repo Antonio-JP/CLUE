@@ -368,7 +368,7 @@ class SparseVector(object):
 
         return result
 
-    def inner_product(self, rhs : SparseVector):
+    def inner_product(self, rhs : SparseVector, _conjugate=True):
         r'''
             Scalar product of two vectors
 
@@ -386,6 +386,9 @@ class SparseVector(object):
             Input: 
 
             * ``rhs``: vector that will be used for the scalar product with ``self``.
+            * ``_conjugate``: boolean indicating whether or not to conjugate the vector ``rhs``. This is
+              not supposed to be used by the users since it is only used to reuse the code for matrix multiplication,
+              where the conjugation is not necessary.
 
             Output:
 
@@ -440,7 +443,7 @@ class SparseVector(object):
                 >>> v*v
                 (36.0 + 0.0j)
         '''
-        rhs = rhs.conjugate() # we conjugate the vector (in case the field is CC)
+        rhs = rhs.conjugate() if _conjugate else rhs # we conjugate the vector (in case the field is CC) if indicated by argument
         if self.is_zero() or rhs.is_zero():
             return self.field.zero
         # computing the intersection 
@@ -474,7 +477,7 @@ class SparseVector(object):
         result = SparseVector(matr.nrows, self.field)
         
         for i in matr.nonzero:
-            result[i] = self.inner_product(matr.row(i)) # __setitem__ checks if the value is zero or not
+            result[i] = self.inner_product(matr.row(i), _conjugate=False) # __setitem__ checks if the value is zero or not
         return result
 
     #--------------------------------------------------------------------------
@@ -560,7 +563,7 @@ class SparseVector(object):
             
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
-            self.apply_matrix(other.transpose()).conjugate()
+            self.apply_matrix(other.transpose())
         else:
             return NotImplemented
             
