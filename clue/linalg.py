@@ -368,7 +368,7 @@ class SparseVector(object):
 
         return result
 
-    def inner_product(self, rhs : SparseVector, _conjugate=True):
+    def inner_product(self, rhs : SparseVector, *, _conjugate:bool = True):
         r'''
             Scalar product of two vectors
 
@@ -477,7 +477,7 @@ class SparseVector(object):
         result = SparseVector(matr.nrows, self.field)
         
         for i in matr.nonzero:
-            result[i] = self.inner_product(matr.row(i), _conjugate=False) # __setitem__ checks if the value is zero or not
+            result[i] = matr.row(i).inner_product(self, _conjugate=False) # __setitem__ checks if the value is zero or not
         return result
 
     #--------------------------------------------------------------------------
@@ -1411,20 +1411,16 @@ class OrthogonalSubspace(Subspace):
         if self.field == RR or self.field == CC:
             new_vector.scale(self.field.one / math.sqrt(float(abs(new_vector.inner_product(new_vector)))))
 
-        # Now new_vector ir orthogonal to ``self``. We can simply add it to the Subspace
+        # Now new_vector is orthogonal to ``self``. We can simply add it to the Subspace
         self.echelon_form[self.dim()] = new_vector
         # we update the orthogonal projector
         norm2 = new_vector.inner_product(new_vector)
+        new_vector_conj = new_vector.conjugate()
         # updating outside the diagonal
-        for (i,j) in combinations(new_vector.nonzero, 2):
-            to_add = (new_vector._SparseVector__data[i] * new_vector._SparseVector__data[j]) / norm2
+        for i,j in product(new_vector.nonzero, repeat=2):
+            to_add = (new_vector._SparseVector__data[i] * new_vector_conj._SparseVector__data[j]) / norm2
             self.projector.increment(i,j,to_add)
-            self.projector.increment(j,i,to_add)
-        # updating the diagonal
-        for i in new_vector.nonzero:
-            to_add = (new_vector._SparseVector__data[i] * new_vector._SparseVector__data[i]) / norm2
-            self.projector.increment(i,i,to_add)
-
+        
         return self.dim() - 1
 
     def apply_matrices_inplace(self, matrices: list[SparseRowMatrix], monitor_length: bool = False):
