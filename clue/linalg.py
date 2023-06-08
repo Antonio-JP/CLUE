@@ -351,14 +351,34 @@ class SparseVector(object):
 
     #--------------------------------------------------------------------------
     # linear algebra methods
-    def conjugate(self):
+    def conjugate(self, *, _inplace=False):
         r'''
-            Returns a copy of self where all elements have been conjugated.
+            Returns self where all elements have been conjugated.
 
             If the :func:`field` is inside the reals, (i.e., the conjugation leaves everything fixed)
             this method simply returns a copy of ``self``.
+
+            Examples::
+
+                >>> from clue.linalg import SparseVector
+                >>> v = SparseVector.from_list([1+1j,1-1j], field=CC)
+                >>> w = v.conjugate()
+                >>> w is v
+                False
+                >>> v2 = v.conjugate().conjugate(_inplace=True)
+                >>> v2 == v
+                True
+                >>> v2 is v
+                False
+                >>> v2 = v.conjugate(_inplace=True)
+                >>> v2 == v
+                True
+                >>> v2 is v
+                True
+                >>> v.to_list()
+                [(1.0 - 1.0j), (1.0 + 1.0j)]
         '''
-        result = self.copy()
+        result = self if _inplace else self.copy() 
         if self.field == CC:
             for i in self.nonzero:
                 result[i] = result[i].conjugate()
@@ -954,7 +974,7 @@ class Subspace(object):
             Output:
 
             A :class:`SparseVector` with a vector `w` such that `wL = v` for `L` the matrix of the basis of ``self`` and
-            `v` the orivinal vector given by ``vector``.
+            `v` the original vector given by ``vector``.
         '''
         in_vector = vector.copy()
         result = SparseVector(self.dim(), self.field)
@@ -1456,6 +1476,8 @@ class OrthogonalSubspace(Subspace):
             for i in L.nonzero:
                 v = L.row(i)
                 v.scale(self.field.one / v.inner_product(v))
+                v.conjugate(_inplace=True)
+            
             self.__pinv = L.transpose(), L
         return self.__pinv[1] if transposed else self.__pinv[0]
 
