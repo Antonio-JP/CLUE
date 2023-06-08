@@ -145,7 +145,7 @@ def __get_matrix_case_study(case: str, qbits: int):
         # we build the matrix from Grover's algorithm
         matrix = G(f, qbits)
         # we build the entangled state as observable
-        observables = [[[1. for _ in range(2**qbits)]]]
+        observables = [("H-state", [[1. for _ in range(2**qbits)]])]
         data = {"success": success}
     elif case in ("order", "phase"):
         ## We generate a product of two primes that are smaller than 2**qbits
@@ -166,7 +166,7 @@ def __get_matrix_case_study(case: str, qbits: int):
 
         ## Now for each case we distinguish the data
         if case == "order":
-            observables = [[[0,1] + (2**qbits - 2)*[0]]]
+            observables = [("|1>", [[0,1] + (2**qbits - 2)*[0]])]
             data = {"N": N, "x": x, "p": p, "q": q}
         else: # case is "phase"
             ## We compute a non-trivial eigenvector for the matrix
@@ -180,7 +180,7 @@ def __get_matrix_case_study(case: str, qbits: int):
 
             ## We now change to Kitaev's gate:
             matrix = K(matrix)
-            observables = [[kron([1,0], u)], [kron([0,1], u)], [kron([1/sqrt(2), -1/sqrt(2)], u)]]
+            observables = [("|0>|u>", [kron([1,0], u)]), ("|1>|u>", [kron([0,1], u)]), ("H|u>", [kron([1/sqrt(2), -1/sqrt(2)], u)])]
             data = {"N": N, "x": x, "u": u, "lambda": eigenvalue}
     else:
         raise NotImplementedError(f"The case {case} is not recognized")
@@ -203,7 +203,7 @@ def __write_extra_data(case: str, qbits: int, observable, data, out_file):
     else:
         raise NotImplementedError
 
-def __post_lumping_study(case: str, system: DS_QuantumCircuit, lumped: LDESystem, observable: SparsePolynomial, data, out_file):
+def __post_lumping_study(case: str, system: DS_QuantumCircuit, lumped: LDESystem, observable: Sequence[SparsePolynomial], data, out_file):
     r'''Method to do extra computations and print extra results depending on the case study'''
     if case == "search":
         logger.info(f"[case_study ({case})] Checking coherence of result")
@@ -238,12 +238,17 @@ def __post_lumping_study(case: str, system: DS_QuantumCircuit, lumped: LDESystem
     elif case == "phase":
         N = data["N"]; x = data["x"]; u = data["u"]; eigenvalue = data["lambda"]
         ## getting the observable we are using
-        if observable[0].linear_part_as_vec().nonzero_count == len([i for i in range(len(u)) if u[i] != 0]): # it is |j> |u> for j in {0,1}
+        if observable[0].linear_part_as_vec().nonzero_count() == len([i for i in range(len(u)) if u[i] != 0]): # it is |j> |u> for j in {0,1}
             if lumped.size != 2:
                 out_file.write(f"** Size error: {lumped.size}\n")
             else:
                 out_file.write(f"** Success?: True\n")
                 ## Add recovering of phase by measuring the reduced system
+        else: # it is the special case with lumping of size 1
+            if lumped.size != 1:
+                out_file.write(f"** Size error: {lumped.size}\n")
+            else:
+                out_file.write(f"** Success?: True\n")
     else:
         raise NotImplementedError
 
@@ -267,12 +272,16 @@ def run_case_study(case: str, qbits: int, repeats: int = 1):
 
             try:
                 for obs in observables:
+                    if isinstance(obs, tuple) and isinstance(obs[0], str):
+                        name, obs = obs[0], obs[1]
+                    else:
+                        name = str(obs)
                     obs = [SparsePolynomial.from_vector(v, system.variables, system.field) for v in obs]
                     out_file.write("################################################################\n")
-                    out_file.write(f"### Observable: {obs}\n")
+                    out_file.write(f"### Observable: {name}\n")
                     __write_extra_data(case, qbits, obs, data, out_file)
                     out_file.write("################################################################\n")
-                    logger.info(f"[case_study ({case}:{qbits})] Lumping with observable {obs}")
+                    logger.info(f"[case_study ({case}:{qbits})] Lumping with observable {name}")
                     start = time()
                     lumped = system.lumping(obs,print_reduction=True,file=out_file)
                     total = time()-start
