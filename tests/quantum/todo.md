@@ -1,5 +1,10 @@
 # Quantum circuits
 
+## Meeting of 2023/06/09
+
+1. Prepare table to see data in "case_studies.ipynb" (see image)
+2. Rerun the benchmark examples.
+
 ## Meeting of 2023/05/31
 
 1. Run all the benchmarks from the website up to 7 q-bits
