@@ -3,7 +3,7 @@ import sys, os
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
 
-import logging, csv
+import logging, csv, re
 
 from itertools import chain, combinations
 from clue.clue import LDESystem
@@ -299,12 +299,19 @@ def compile_results():
         if file_name.startswith("[output]"):
             with open(os.path.join(SCRIPT_DIR, "results", file_name), "r") as file:
                 circuit = file_name.removeprefix("[output]").removesuffix(".example.txt")
-                logger.log(60, f"[compile] Starting reading result for {circuit}")
+                ## We have two options for the circuit: a case study or a benchmark example
+                if "_qiskit_" in circuit: # these are benchmark examples
+                    qbits = int(circuit.split("_")[-1]); circuit = circuit.removesuffix(f"_{qbits}")
+                else: # case study
+                    qbits = int(circuit.split("[qbits=")[1].removesuffix("]"))
+                    circuit = circuit.split("[")[0]
+                logger.log(60, f"[compile] Starting reading result for {circuit} ({qbits})")
                 line = file.readline().strip() # first line of file
                 while line != "":
                     if line.startswith("################################################################"):
                         # We start an example
                         observable = file.readline().strip().removeprefix("### Observable: ").removeprefix("(").removesuffix(")").removeprefix("[").removesuffix("]").removesuffix(",")
+                        observable = re.sub("Q_[01]*", lambda match : f"|{int(match.group(0).removeprefix('Q_'), base=2)}>", observable)
                         or_size, red_size, time_used = None, None, None
                         line = file.readline().strip()
                         while line != "################################################################": ## Cleaning until the end of header for example
@@ -312,7 +319,7 @@ def compile_results():
                         line = file.readline().strip() # first line of example
                         while line != "################################################################":
                             if line == "": 
-                                logger.error(f"[compile - {circuit}] The format of the result file is not correct: EOF unexpected")
+                                logger.error(f"[compile - {circuit} ({qbits})] The format of the result file is not correct: EOF unexpected")
                                 break
                             if line.startswith("**  Reduction found:"):
                                 or_size, red_size = [int(el.strip()) for el in line.removeprefix("**  Reduction found:").split("-->")]
@@ -321,20 +328,20 @@ def compile_results():
 
                             line = file.readline().strip() # next line
                         else:
-                            data.append([circuit, observable.replace("', '", " & "), or_size, red_size, red_size/or_size, time_used])
+                            data.append([circuit, qbits, observable.replace("', '", " & "), or_size, red_size, red_size/or_size, time_used])
                             line = file.readline().strip() # next line of file
                             continue
                         break
                     line = file.readline().strip() # next line of file
                 
-                logger.log(60, f"[compile] Finished results for {circuit}")
+                logger.log(60, f"[compile] Finished results for {circuit} ({qbits})")
     
     ## We have ompiled all the data: we create a CSV for it
     
     logger.log(60, f"[compile] Dumping to CSV file")
     with open(os.path.join(SCRIPT_DIR, "compilation.csv"), "w") as file:
         writer = csv.writer(file, delimiter=",")
-        writer.writerow(["circuit", "observable", "size", "reduced", "ratio", "time"]) # Header
+        writer.writerow(["circuit", "qbits", "observable", "size", "reduced", "ratio", "time"]) # Header
         for result in data:
             writer.writerow(result)
 
