@@ -8,12 +8,12 @@ import logging, csv, re
 from itertools import chain, combinations
 from clue.clue import LDESystem
 from clue.qiskit import *
-from math import ceil, floor, gcd, sqrt
+from math import ceil, gcd, sqrt
 from numpy import cdouble
 from numpy.linalg import eig
 from os import listdir
 from time import time
-from random import choice, choices, randint
+from random import choice, randint
 
 logger = logging.getLogger("clue")
 
