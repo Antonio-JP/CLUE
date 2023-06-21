@@ -316,6 +316,11 @@ class SparseVector(object):
             result[i] = self.__data[i]
         return result
 
+    def to_numpy(self, dtype=None):
+        r'''Return the Sparse matrix as a numpy ndarray (dense representation)'''
+        from numpy import array
+        return array(self.to_list(), dtype=dtype)
+
     def reduce_mod(self, mod : int):
         r'''
             Method to compute a reduction of ``self`` using a modulus.
@@ -1414,7 +1419,7 @@ class OrthogonalSubspace(Subspace):
             In an orthogonal subspace, this can be done by multiplying by the pseudoinverse. We check that 
             the vector is in the subspace by applying the projector.
         '''
-        if vector.apply_matrix(self.projector) != vector:
+        if not vector in self:
             raise ValueError("The given vector is not in the current subspace")
         return vector.apply_matrix(self.pinv(True))
 
@@ -1524,6 +1529,7 @@ class NumericalSubspace(OrthogonalSubspace):
 
         Methods that are overridden:
 
+        * :func:`contains`
         * :func:`_should_absorb`
     '''
     def __init__(self, field: Domain, delta : float = 1e-4):
@@ -1531,6 +1537,10 @@ class NumericalSubspace(OrthogonalSubspace):
 
         self.__delta = delta #max(abs(delta), 1e-10) # minimal threshold to be like zero
         self.__delta2 = self.__delta**2
+
+    def contains(self, vector: SparseVector):
+        self_proj = self.reduce_vector(vector.copy())
+        return not self._should_absorb(self_proj)
 
     def _should_absorb(self, vector : SparseVector):
         norm_squared = float(abs(vector.inner_product(vector)))
