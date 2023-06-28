@@ -9627,6 +9627,11 @@ qftentangled_indep_qiskit,7,'|89>',128,128,1.0,174.3918650150299
 qftentangled_indep_qiskit,7,'|90>',128,128,1.0,245.6525206565857
 qftentangled_indep_qiskit,7,'|91>',128,128,1.0,144.32437777519226
 qftentangled_indep_qiskit,7,'|92>',128,128,1.0,179.47141242027283
+qftentangled_indep_qiskit,7,'|93>',128,128,1.0,229.94212555885315
+qftentangled_indep_qiskit,7,'|94>',128,128,1.0,161.97332406044006
+qftentangled_indep_qiskit,7,'|95>',128,128,1.0,202.26617550849915
+qftentangled_indep_qiskit,7,'|96>',128,128,1.0,140.34079313278198
+qftentangled_indep_qiskit,7,'|97>',128,128,1.0,185.76150465011597
 qaoa_indep_qiskit,7,'H-State',128,128,1.0,125.90937066078186
 qaoa_indep_qiskit,7,'|0>',128,128,1.0,123.57491397857666
 qaoa_indep_qiskit,7,'|1>',128,128,1.0,127.37330675125122
