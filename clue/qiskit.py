@@ -100,6 +100,17 @@ def is_unitary(U):
     r'''Method that checks if a matrix is unitary or not'''
     return ((matmul(U, U.transpose().conjugate()) - eye(U.shape[0])) < numerical_threshold).all()
 
+def is_symplectic(U):
+    r,c = U.shape
+    if r != c: raise AssertionError("The matrix is not square")
+    if r == 1: return True
+    if r%2 != 0: raise AssertionError("The matrix is not square")
+    om_r = r//2
+    OM = block([
+        [zeros((om_r,om_r),dtype=U.dtype), eye(om_r, om_r,dtype=U.dtype)], 
+        [-eye(om_r, om_r,dtype=U.dtype), zeros((om_r,om_r),dtype=U.dtype)]
+    ])
+    return (matmul(matmul(U.transpose().conjugate(), OM), U) - OM < numerical_threshold).all()
 
 # Gates for 1 q-bit
 Hadamard = (1/sqrt(2))*array([[1,1],[1,-1]], dtype=cdouble)
