@@ -63,6 +63,11 @@ class DS_QuantumCircuit(FODESystem):
 # Numerical threshold for checking equality
 numerical_threshold = 1e-10
 
+def extend_to_power(U):
+    r'''This method extends a unitary matrix to have a size a power of 2, so it fits into a quantum circuit'''
+    to_add = 2**ceil(log2(U.shape[0])) - U.shape[0]
+    return block([[U, zeros((U.shape[0], to_add))], [zeros((to_add, U.shape[1])), eye(to_add)]])
+
 def compare(a, b, precision=10):
     r'''Method to compare up to a precision. If the difference or the "all" return an error, we return "False"'''
     try:
@@ -439,6 +444,3 @@ def PhaseEstimation(U, n):
 
     # we now apply all matrices in inverse order
     return reduce(lambda p,q: matmul(q,p), to_apply)
-    
-
-
