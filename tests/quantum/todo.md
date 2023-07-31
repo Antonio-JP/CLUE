@@ -1,5 +1,14 @@
 # Quantum circuits
 
+## Meeting of 2023/07/31
+
+1. How good is the improvement of performance?
+2. Decided to send to TACAS: change from engineering to more Theoretical Computer Science perspective
+3. CDC: maybe send to TAC journal.
+4. Prepare new table: just one with all the examples that reduce
+  - Check the examples are correct in terms of the input
+  - Distinguish between state preparations, algorithms and gates.
+
 ## Meeting of 2023/06/09
 
 1. Prepare table to see data in "case_studies.ipynb" (see image)
