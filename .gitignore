@@ -72,6 +72,8 @@ ENV/
 docs/_sources
 
 # Tests files of repository
+*.qpy
+*.npy
 *.example.txt
 *.clue
 *.prf

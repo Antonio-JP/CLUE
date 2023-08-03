@@ -9,14 +9,18 @@ from itertools import chain, combinations
 from clue.clue import LDESystem
 from clue.qiskit import *
 from math import ceil, gcd, sqrt
-from numpy import cdouble
+from numpy import cdouble, load, save
 from numpy.linalg import eig
 from os import listdir
+from qiskit import QuantumRegister, ClassicalRegister, QuantumCircuit, execute, Aer, qpy
 from time import time
 from random import choice, randint
 
 logger = logging.getLogger("clue")
 
+########################################################################
+### AUXILIARY METHODS
+########################################################################
 def add_first(first, gen):
     yield first
     yield from gen
@@ -87,6 +91,94 @@ def list_circuits(*argv):
             print(" | ".join([(line[i] if line[i] != None else "None").ljust(max_length[i]) for i in range(n_elem)]))
     else:
         print(" ".join([name for name in examples if filter(name)]))
+
+########################################################################
+### METHODS FOR COMPRESSING
+########################################################################
+def reduce_circuit(circuit: str, observable: list[str] = None, **kwds):
+    with open(os.path.join(SCRIPT_DIR, "results", f"[compress]{circuit}.example.txt"), "w") as out_file:
+        out_file.write("########################################################################\n")
+        out_file.write(f"### Compressing {circuit} with observable {observable}\n")
+        out_file.write("########################################################################\n")
+        out_file.write("*** Reading the Dynamical System...\n"); ctime = time()
+        ## Reading the ".qasm" circuit
+        system = DS_QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
+        read_time=time()-ctime; 
+        ## Computing the lumping for the first state
+        out_file.write("*** Computing lumping...\n"); ctime = time()
+        observable = [system.variables[0]] if observable is None else observable
+        lumped = system.lumping(observable, file=out_file)
+        lumping_time=time()-ctime
+        ## Writing the reduced circuit
+        out_file.write("*** Building reduces .qpy...\n"); ctime = time()
+        Ur = lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble); Ur
+        Ur = extend_to_power(Ur)
+        nqbits = int(log2(Ur.shape[0]))
+        q = QuantumRegister(nqbits,'q')
+        c = ClassicalRegister(nqbits,'c')
+        red_circuit = QuantumCircuit(q,c)
+        red_circuit.unitary(Ur, q)
+        red_circuit.measure(q, c)
+        with open(os.path.join(SCRIPT_DIR, "circuits", "reduced", f"{circuit}.qpy"), "wb") as f:
+            qpy.dump(red_circuit, f)
+        reduced_time = time()-ctime
+        ## Writing the lumping matrix
+        out_file.write("*** Saving the lumping data...\n"); ctime = time()
+        save(os.path.join(SCRIPT_DIR, "circuits", "reduced", f"{circuit}.npy"), lumped.lumping_matrix.to_numpy(dtype=cdouble))
+        matrix_time = time()-ctime
+
+        out_file.write("########################################################################\n")
+        out_file.write("*** Execution data:\n")
+        out_file.write(f"*** Time reading: {read_time}\n")
+        out_file.write(f"*** Time lumping: {lumping_time}\n")
+        out_file.write(f"*** Time saving the reduced circuit: {reduced_time}\n")
+        out_file.write(f"*** Time saving the lumping: {matrix_time}\n")
+        out_file.write(f"*** Total time: {sum((read_time,lumping_time, reduced_time, matrix_time))}\n")
+        out_file.write(f"*** Size of reduction (in qbits): {nqbits} (from {int(log2(system.size))})\n")
+        out_file.write("########################################################################\n")
+        
+        return {"read": read_time, "lumping": lumping_time, "reduced": reduced_time, "matrix": matrix_time}
+
+def simulate_qasm(circuit, shots=8192):
+    ctime = time()
+    ## Reading the quantum circuit
+    circuit = QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits",f"{circuit}.qasm"))
+    reading_time = time()-ctime; ctime=time()
+    ## Simulating the quantum circuit
+    backend = Aer.get_backend('aer_simulator')
+    job = execute(circuit, backend, shots=shots)
+    simulation_time = time()-ctime; ctime=time()
+    ## Collecting the data to have proper output
+    output = job.result().get_counts()
+    output_time = time()-ctime
+    
+    return output, {"read": reading_time, "simulation": simulation_time, "output": output_time}
+
+def simulate_reduced(circuit_name, shots=8192):
+    ctime = time()
+    ## Reading the quantum circuit
+    with open(os.path.join(SCRIPT_DIR, "circuits","reduced", f"{circuit_name}.qpy"), "rb") as f:
+        circuit = qpy.load(f)[0]
+    reading_time = time()-ctime; ctime=time()    
+    ## Simulating the quantum circuit
+    backend = Aer.get_backend('aer_simulator')
+    job = execute(circuit, backend, shots=shots)
+    simulation_time = time()-ctime; ctime=time()
+    ## Collecting the data to have proper output
+    #### Reading the lumping matrix
+    Ur = load(os.path.join(SCRIPT_DIR, "circuits","reduced", f"{circuit_name}.npy"))
+    nqbits = int(log2(Ur.shape[1]))
+    matrix_time = time()-ctime; ctime=time()
+    #### Measuring the data from qasm to the original states
+    output = dict()
+    for (out, times) in job.result().get_counts().items():
+        for m,t in repeated_measure(Ur[int(out, 2)], times, out=dict).items():
+            output[m] = output.get(m,0) + t
+    output = {format(k, f"0{nqbits}b"): v for k,v in output.items()}
+    measuring_time = time()-ctime
+    output_time = matrix_time + measuring_time
+    
+    return output, {"read": reading_time, "simulation": simulation_time, "output": {"total": output_time, "matrix": matrix_time, "measure": measuring_time}}
 
 def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
@@ -371,6 +463,14 @@ if __name__ == "__main__":
 
         for case, size in product(cases, sizes):
             run_case_study(case, size, repeats)
+    elif sys.argv[1] == "compress":
+        for circuit in sys.argv[2:]:
+            logger.info(f"[compress] Compressing circuit {circuit}...")
+            try:
+                reduce_circuit(circuit)
+            except Exception as e:
+                logger.error(f"[compress] Error in circuit {circuit}: {e}")
+            logger.info(f"[compress] Compressing circuit {circuit}... Done")
     else:
         n = 1; nargs = len(sys.argv); kwds = dict(); circuits = list()
         while n < nargs:

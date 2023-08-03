@@ -13,7 +13,6 @@ case_studies:
 	@echo "Finished all case studies"
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-
 compile:
 	$(PYTHON) script.py compile
 
