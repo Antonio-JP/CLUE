@@ -48,9 +48,10 @@ class DS_QuantumCircuit(FODESystem):
     @staticmethod
     def from_qasm_file(path: str, **kwds) -> DS_QuantumCircuit:
         circuit = QuantumCircuit.from_qasm_file(path)
+        circuit.remove_final_measurements(True) # we remove the final measeurements (hence, we do not need to remove them from the .qasm file)
         job = execute(circuit, DS_QuantumCircuit.BACKEND, shots=kwds.pop("shots", 8192))
         unitary = job.result().get_unitary(circuit)
-
+        
         return DS_QuantumCircuit(unitary, name=circuit.name, **kwds)
 
 ###########################################################################
@@ -93,13 +94,16 @@ def measure(v):
     if inner_product(v,v) - 1 > numerical_threshold:
         raise ValueError("The state is not well defined") 
     
-    val = rand()
-    val -= v[0]*v[0].conjugate(); i = 0
-    while val > 0:
-        i += 1
-        val -= v[i]*v[i].conjugate()
+    return repeated_measure(v, 1)[0]
 
-    return i
+def repeated_measure(v, shots: int=1, out=list):
+    r'''This method assumes `v` is a vector with module 1'''
+    from random import choices
+    output = choices(range(len(v)), v*v.conjugate(), k = shots)
+    if out == dict:
+        from collections import Counter
+        output = Counter(output)
+    return output
 
 def is_unitary(U):
     r'''Method that checks if a matrix is unitary or not'''

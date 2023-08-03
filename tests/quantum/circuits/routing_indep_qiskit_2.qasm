@@ -19,5 +19,5 @@ cx q[0],q[1];
 ry(1.46213217253153) q[0];
 ry(2.4135628694577) q[1];
 barrier q[0],q[1];
-// measure q[0] -> meas[0];
-// measure q[1] -> meas[1];
+measure q[0] -> meas[0];
+measure q[1] -> meas[1];
