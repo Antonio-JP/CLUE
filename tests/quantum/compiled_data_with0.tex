@@ -1,181 +1,108 @@
-
 \begin{table}
-    \caption{Application of CLUE to Benchmark examples with input $\ket{0}$}
-    \label{table:benchmark}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% TO COMMENT THE TABLE, UNCOMMENT THIS BLOCK
-    % \centering
-    % \begin{tabular}{lrlrr}
-    % \toprule
-    % Antonio: table currently commented, contains a first attempt for the table with input $\ket{0}$
-    % \end{tabular}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% TO COMMENT THE TABLE, COMMENT EVERITHING BELOW UNTIL \end{table}
-    \makebox[\textwidth]{\makebox[1.05\textwidth]{%
-    \begin{minipage}[t]{0.5\textwidth}
-    \tiny
-    \centering
-    \begin{tabular}{lrlrr}
-    \toprule
-    Circuit & Q-bits & Input state & Red & Time \\
-    \midrule
-    \midrule
-    ae & 3 & $\ket{0}$ & 1.000000 & 0.050663 \\
-    ae & 4 & $\ket{0}$ & 1.000000 & 0.293970 \\
-    ae & 5 & $\ket{0}$ & 1.000000 & 2.257684 \\
-    ae & 6 & $\ket{0}$ & 1.000000 & 15.858385 \\
-    ae & 7 & $\ket{0}$ & 1.000000 & 138.145220 \\
-    \midrule
-    dj & 3 & $\ket{0}$ & 0.500000 & 0.015929 \\
-    dj & 4 & $\ket{0}$ & 0.250000 & 0.066749 \\
-    dj & 5 & $\ket{0}$ & 0.125000 & 0.244592 \\
-    dj & 6 & $\ket{0}$ & 0.062500 & 0.703075 \\
-    dj & 7 & $\ket{0}$ & 0.031250 & 5.198216 \\
-    \midrule
-    ghz & 3 & $\ket{0}$ & 0.750000 & 0.017473 \\
-    ghz & 4 & $\ket{0}$ & 0.875000 & 0.094078 \\
-    ghz & 5 & $\ket{0}$ & 0.500000 & 0.354947 \\
-    ghz & 6 & $\ket{0}$ & 0.250000 & 0.795513 \\
-    ghz & 7 & $\ket{0}$ & 0.125000 & 2.533804 \\
-    \midrule
-    graphstate & 3 & $\ket{0}$ & 0.500000 & 0.035117 \\
-    graphstate & 4 & $\ket{0}$ & 0.250000 & 0.057761 \\
-    graphstate & 5 & $\ket{0}$ & 0.250000 & 0.467307 \\
-    graphstate & 6 & $\ket{0}$ & 0.093750 & 1.066717 \\
-    graphstate & 7 & $\ket{0}$ & 0.109375 & 9.913336 \\
-    \midrule
-    groundstate\_small & 4 & $\ket{0}$ & 1.000000 & 0.315327 \\
-    \midrule
-    grover-noancilla & 3 & $\ket{0}$ & 0.750000 & 0.016566 \\
-    grover-noancilla & 4 & $\ket{0}$ & 0.250000 & 0.023913 \\
-    grover-noancilla & 5 & $\ket{0}$ & 0.187500 & 0.122568 \\
-    grover-noancilla & 6 & $\ket{0}$ & 0.062500 & 0.224430 \\
-    grover-noancilla & 7 & $\ket{0}$ & 0.031250 & 0.979733 \\
-    \midrule
-    % grover-noancilla\_no\_H & 3 & $\ket{0}$ & 0.250000 & 0.008881 \\
-    % grover-noancilla\_no\_H & 4 & $\ket{0}$ & 0.375000 & 0.032567 \\
-    % grover-noancilla\_no\_H & 5 & $\ket{0}$ & 0.125000 & 0.138552 \\
-    % grover-noancilla\_no\_H & 6 & $\ket{0}$ & 0.093750 & 0.383434 \\
-    % \midrule
-    grover-v-chain & 3 & $\ket{0}$ & 0.750000 & 0.016916 \\
-    grover-v-chain & 4 & $\ket{0}$ & 0.250000 & 0.023310 \\
-    grover-v-chain & 5 & $\ket{0}$ & 0.312500 & 0.565567 \\
-    grover-v-chain & 7 & $\ket{0}$ & 0.046875 & 4.055676 \\
-    \midrule
-    hhl & 5 & $\ket{0}$ & 0.125000 & 0.220157 \\
-    \midrule
-    portfolioqaoa & 3 & $\ket{0}$ & 1.000000 & 0.107243 \\
-    portfolioqaoa & 4 & $\ket{0}$ & 1.000000 & 0.297692 \\
-    portfolioqaoa & 5 & $\ket{0}$ & 1.000000 & 4.161615 \\
-    portfolioqaoa & 6 & $\ket{0}$ & 1.000000 & 20.704310 \\
-    portfolioqaoa & 7 & $\ket{0}$ & 1.000000 & 138.672397 \\
-    \midrule
-    portfoliovqe & 3 & $\ket{0}$ & 1.000000 & 0.101213 \\
-    portfoliovqe & 4 & $\ket{0}$ & 1.000000 & 0.225997 \\
-    portfoliovqe & 5 & $\ket{0}$ & 1.000000 & 1.991052 \\
-    portfoliovqe & 6 & $\ket{0}$ & 1.000000 & 13.001182 \\
-    portfoliovqe & 7 & $\ket{0}$ & 1.000000 & 94.901608 \\
-    \midrule
-    pricingcall & 5 & $\ket{0}$ & 0.250000 & 0.046871 \\
-    pricingcall & 7 & $\ket{0}$ & 0.125000 & 0.416377 \\
-    \midrule
-    pricingput & 5 & $\ket{0}$ & 0.250000 & 0.047629 \\
-    pricingput & 7 & $\ket{0}$ & 0.125000 & 0.403162 \\
-    \midrule
-    qaoa & 3 & $\ket{0}$ & 0.500000 & 0.086511 \\
-    qaoa & 4 & $\ket{0}$ & 0.375000 & 0.089917 \\
-    qaoa & 5 & $\ket{0}$ & 0.250000 & 0.399110 \\
-    \vdots & \vdots & \vdots & \vdots & \vdots
-    \end{tabular}
-    \end{minipage}\hfill
-    \begin{minipage}[t]{0.5\textwidth}
-    \tiny
-    \centering
-    \begin{tabular}{lrlrr}
-    \toprule
-    Circuit & Q-bits & Input state & Red & Time \\
-    \midrule
-    \midrule
-    qaoa & 6 & $\ket{0}$ & 0.203125 & 4.686586 \\
-    qaoa & 7 & $\ket{0}$ & 1.000000 & 123.574914 \\
-    \midrule
-    qft & 2 & $\ket{0}$ & 0.500000 & 0.003161 \\
-    qft & 3 & $\ket{0}$ & 0.250000 & 0.012128 \\
-    qft & 4 & $\ket{0}$ & 0.125000 & 0.031079 \\
-    qft & 5 & $\ket{0}$ & 0.062500 & 0.083612 \\
-    qft & 6 & $\ket{0}$ & 0.031250 & 0.355955 \\
-    qft & 7 & $\ket{0}$ & 0.015625 & 2.027165 \\
-    \midrule
-    % qftentangled & 3 & $\ket{0}$ & 1.000000 & 0.043925 \\
-    % qftentangled & 4 & $\ket{0}$ & 1.000000 & 0.364760 \\
-    % qftentangled & 5 & $\ket{0}$ & 1.000000 & 2.330317 \\
-    % qftentangled & 6 & $\ket{0}$ & 1.000000 & 17.101154 \\
-    % qftentangled & 7 & $\ket{0}$ & 1.000000 & 179.744415 \\
-    % \midrule
-    qgan & 3 & $\ket{0}$ & 1.000000 & 0.044208 \\
-    qgan & 4 & $\ket{0}$ & 0.875000 & 0.244662 \\
-    qgan & 5 & $\ket{0}$ & 1.000000 & 1.977661 \\
-    qgan & 6 & $\ket{0}$ & 1.000000 & 15.345010 \\
-    \midrule
-    qpeexact & 3 & $\ket{0}$ & 1.000000 & 0.016482 \\
-    qpeexact & 4 & $\ket{0}$ & 1.000000 & 0.093946 \\
-    qpeexact & 5 & $\ket{0}$ & 1.000000 & 0.560983 \\
-    qpeexact & 6 & $\ket{0}$ & 1.000000 & 3.984638 \\
-    \midrule
-    % qpeexact\_no\_H & 3 & $\ket{0}$ & 0.250000 & 0.008894 \\
-    % qpeexact\_no\_H & 4 & $\ket{0}$ & 0.125000 & 0.020072 \\
-    % qpeexact\_no\_H & 5 & $\ket{0}$ & 0.062500 & 0.037796 \\
-    % qpeexact\_no\_H & 6 & $\ket{0}$ & 0.031250 & 0.117764 \\
-    % \midrule
-    qpeinexact & 3 & $\ket{0}$ & 1.000000 & 0.015659 \\
-    qpeinexact & 4 & $\ket{0}$ & 1.000000 & 0.099988 \\
-    qpeinexact & 5 & $\ket{0}$ & 1.000000 & 0.768878 \\
-    qpeinexact & 6 & $\ket{0}$ & 1.000000 & 3.967944 \\
-    \midrule
-    % qpeinexact\_no\_H & 3 & $\ket{0}$ & 0.250000 & 0.006562 \\
-    % qpeinexact\_no\_H & 4 & $\ket{0}$ & 0.125000 & 0.012544 \\
-    % qpeinexact\_no\_H & 5 & $\ket{0}$ & 0.062500 & 0.033535 \\
-    % qpeinexact\_no\_H & 6 & $\ket{0}$ & 0.031250 & 0.138747 \\
-    % \midrule
-    qwalk-noancilla & 3 & $\ket{0}$ & 0.750000 & 0.010914 \\
-    qwalk-noancilla & 4 & $\ket{0}$ & 0.500000 & 0.141279 \\
-    qwalk-noancilla & 5 & $\ket{0}$ & 0.500000 & 0.842009 \\
-    qwalk-noancilla & 6 & $\ket{0}$ & 0.500000 & 6.579997 \\
-    \midrule
-    qwalk-v-chain & 3 & $\ket{0}$ & 0.750000 & 0.017928 \\
-    qwalk-v-chain & 5 & $\ket{0}$ & 0.250000 & 0.167248 \\
-    \midrule
-    realamprandom & 3 & $\ket{0}$ & 1.000000 & 0.033895 \\
-    realamprandom & 4 & $\ket{0}$ & 1.000000 & 0.228500 \\
-    realamprandom & 5 & $\ket{0}$ & 1.000000 & 1.672081 \\
-    realamprandom & 6 & $\ket{0}$ & 1.000000 & 11.793793 \\
-    \midrule
-    routing & 2 & $\ket{0}$ & 1.000000 & 0.004869 \\
-    routing & 6 & $\ket{0}$ & 1.000000 & 11.818177 \\
-    \midrule
-    su2random & 3 & $\ket{0}$ & 1.000000 & 0.043428 \\
-    su2random & 4 & $\ket{0}$ & 1.000000 & 0.349006 \\
-    su2random & 5 & $\ket{0}$ & 1.000000 & 2.722636 \\
-    su2random & 6 & $\ket{0}$ & 1.000000 & 20.903806 \\
-    \midrule
-    tsp & 4 & $\ket{0}$ & 0.875000 & 0.208396 \\
-    \midrule
-    twolocalrandom & 3 & $\ket{0}$ & 1.000000 & 0.030283 \\
-    twolocalrandom & 4 & $\ket{0}$ & 1.000000 & 0.259633 \\
-    twolocalrandom & 5 & $\ket{0}$ & 1.000000 & 1.445890 \\
-    twolocalrandom & 6 & $\ket{0}$ & 1.000000 & 11.902387 \\
-    \midrule
-    vqe & 3 & $\ket{0}$ & 1.000000 & 0.030646 \\
-    vqe & 4 & $\ket{0}$ & 1.000000 & 0.269265 \\
-    vqe & 5 & $\ket{0}$ & 1.000000 & 1.516964 \\
-    vqe & 6 & $\ket{0}$ & 1.000000 & 12.563373 \\
-    \midrule
-    wstate & 3 & $\ket{0}$ & 1.000000 & 0.027863 \\
-    wstate & 4 & $\ket{0}$ & 1.000000 & 0.169541 \\
-    wstate & 5 & $\ket{0}$ & 1.000000 & 1.147626 \\
-    wstate & 6 & $\ket{0}$ & 1.000000 & 9.106049 \\
-    \bottomrule
-    \end{tabular}
-    \end{minipage}}}
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \end{table}
+\caption{Reduction ratio of CLUE to Benchmark examples with input |0> with actual reduction. We also include the 
+circuits "order", "phase" and "search" described in Section~\ref{sec:examples}}
+\label{table:benchmark}
+\begin{tabular}{llrlll}
+\toprule
+\multicolumn{3}{r}{circuit} & \multicolumn{2}{r}{result} \\
+Family & \# Q-bits & Type & Red. ratio & Time (s) \\
+\midrule
+order & 5 & Quantum Algorithm & 9.375e-02 & 1.877e-02 \\
+order & 6 & Quantum Algorithm & 1.406e-01 & 7.034e-02 \\
+order & 7 & Quantum Algorithm & 9.375e-02 & 2.574e-01 \\
+order & 8 & Quantum Algorithm & 1.094e-01 & 1.198e+00 \\
+order & 9 & Quantum Algorithm & 5.859e-02 & 4.543e+00 \\
+order &10 & Quantum Algorithm & 7.227e-02 & 4.944e+01 \\
+\midrule
+phase & 5 & Quantum Algorithm & 3.125e-02 & 1.309e-01 \\
+phase & 6 & Quantum Algorithm & 1.562e-02 & 3.408e-01 \\
+phase & 7 & Quantum Algorithm & 7.812e-03 & 1.342e+00 \\
+phase & 8 & Quantum Algorithm & 3.906e-03 & 9.159e+00 \\
+phase & 9 & Quantum Algorithm & 1.953e-03 & 1.590e+01 \\
+phase &10 & Quantum Algorithm & 9.766e-04 & 9.811e+01 \\
+\midrule
+search & 5 & Quantum Algorithm & 6.250e-02 & 1.593e-01 \\
+search & 6 & Quantum Algorithm & 3.125e-02 & 5.901e-01 \\
+search & 7 & Quantum Algorithm & 1.562e-02 & 2.178e+00 \\
+search & 8 & Quantum Algorithm & 7.812e-03 & 7.503e+00 \\
+search & 9 & Quantum Algorithm & 3.906e-03 & 2.932e+01 \\
+search &10 & Quantum Algorithm & 1.953e-03 & 1.250e+02 \\
+\midrule
+dj & 3 & Quantum Algorithm & 5.000e-01 & 1.593e-02 \\
+dj & 4 & Quantum Algorithm & 2.500e-01 & 6.675e-02 \\
+dj & 5 & Quantum Algorithm & 1.250e-01 & 2.446e-01 \\
+dj & 6 & Quantum Algorithm & 6.250e-02 & 7.031e-01 \\
+dj & 7 & Quantum Algorithm & 3.125e-02 & 5.198e+00 \\
+\midrule
+ghz & 3 & State Preparation & 7.500e-01 & 1.747e-02 \\
+ghz & 4 & State Preparation & 8.750e-01 & 9.408e-02 \\
+ghz & 5 & State Preparation & 5.000e-01 & 3.549e-01 \\
+ghz & 6 & State Preparation & 2.500e-01 & 7.955e-01 \\
+ghz & 7 & State Preparation & 1.250e-01 & 2.534e+00 \\
+\midrule
+graphstate & 3 & State Preparation & 5.000e-01 & 3.512e-02 \\
+graphstate & 4 & State Preparation & 2.500e-01 & 5.776e-02 \\
+graphstate & 5 & State Preparation & 2.500e-01 & 4.673e-01 \\
+graphstate & 6 & State Preparation & 9.375e-02 & 1.067e+00 \\
+graphstate & 7 & State Preparation & 1.094e-01 & 9.913e+00 \\
+\midrule
+grover-noancilla & 3 & Quantum Algorithm & 7.500e-01 & 1.657e-02 \\
+grover-noancilla & 4 & Quantum Algorithm & 2.500e-01 & 2.391e-02 \\
+grover-noancilla & 5 & Quantum Algorithm & 1.875e-01 & 1.226e-01 \\
+grover-noancilla & 6 & Quantum Algorithm & 6.250e-02 & 2.244e-01 \\
+grover-noancilla & 7 & Quantum Algorithm & 3.125e-02 & 9.797e-01 \\
+\midrule
+grover-noancilla + no_H & 3 & Quantum Algorithm & 2.500e-01 & 8.881e-03 \\
+grover-noancilla + no_H & 4 & Quantum Algorithm & 3.750e-01 & 3.257e-02 \\
+grover-noancilla + no_H & 5 & Quantum Algorithm & 1.250e-01 & 1.386e-01 \\
+grover-noancilla + no_H & 6 & Quantum Algorithm & 9.375e-02 & 3.834e-01 \\
+\midrule
+grover-v-chain & 3 & Quantum Algorithm & 7.500e-01 & 1.692e-02 \\
+grover-v-chain & 4 & Quantum Algorithm & 2.500e-01 & 2.331e-02 \\
+grover-v-chain & 5 & Quantum Algorithm & 3.125e-01 & 5.656e-01 \\
+grover-v-chain & 7 & Quantum Algorithm & 4.688e-02 & 4.056e+00 \\
+\midrule
+hhl & 5 & Quantum Algorithm & 1.250e-01 & 2.202e-01 \\
+\midrule
+pricingcall & 5 & Quantum Algorithm & 2.500e-01 & 4.687e-02 \\
+pricingcall & 7 & Quantum Algorithm & 1.250e-01 & 4.164e-01 \\
+\midrule
+pricingput & 5 & Quantum Algorithm & 2.500e-01 & 4.763e-02 \\
+pricingput & 7 & Quantum Algorithm & 1.250e-01 & 4.032e-01 \\
+\midrule
+qaoa & 3 & Quantum Algorithm & 5.000e-01 & 8.651e-02 \\
+qaoa & 4 & Quantum Algorithm & 3.750e-01 & 8.992e-02 \\
+qaoa & 5 & Quantum Algorithm & 2.500e-01 & 3.991e-01 \\
+qaoa & 6 & Quantum Algorithm & 2.031e-01 & 4.687e+00 \\
+\midrule
+qft & 2 & Quantum Gate & 5.000e-01 & 3.161e-03 \\
+qft & 3 & Quantum Gate & 2.500e-01 & 1.213e-02 \\
+qft & 4 & Quantum Gate & 1.250e-01 & 3.108e-02 \\
+qft & 5 & Quantum Gate & 6.250e-02 & 8.361e-02 \\
+qft & 6 & Quantum Gate & 3.125e-02 & 3.560e-01 \\
+qft & 7 & Quantum Gate & 1.562e-02 & 2.027e+00 \\
+\midrule
+qgan & 4 & Quantum Algorithm & 8.750e-01 & 2.447e-01 \\
+\midrule
+qpeexact + no_H & 3 & Quantum Algorithm & 2.500e-01 & 8.894e-03 \\
+qpeexact + no_H & 4 & Quantum Algorithm & 1.250e-01 & 2.007e-02 \\
+qpeexact + no_H & 5 & Quantum Algorithm & 6.250e-02 & 3.780e-02 \\
+qpeexact + no_H & 6 & Quantum Algorithm & 3.125e-02 & 1.178e-01 \\
+\midrule
+qpeinexact + no_H & 3 & Quantum Algorithm & 2.500e-01 & 6.562e-03 \\
+qpeinexact + no_H & 4 & Quantum Algorithm & 1.250e-01 & 1.254e-02 \\
+qpeinexact + no_H & 5 & Quantum Algorithm & 6.250e-02 & 3.354e-02 \\
+qpeinexact + no_H & 6 & Quantum Algorithm & 3.125e-02 & 1.387e-01 \\
+\midrule
+qwalk-noancilla & 3 & Quantum Algorithm & 7.500e-01 & 1.091e-02 \\
+qwalk-noancilla & 4 & Quantum Algorithm & 5.000e-01 & 1.413e-01 \\
+qwalk-noancilla & 5 & Quantum Algorithm & 5.000e-01 & 8.420e-01 \\
+qwalk-noancilla & 6 & Quantum Algorithm & 5.000e-01 & 6.580e+00 \\
+\midrule
+qwalk-v-chain & 3 & Quantum Algorithm & 7.500e-01 & 1.793e-02 \\
+qwalk-v-chain & 5 & Quantum Algorithm & 2.500e-01 & 1.672e-01 \\
+\midrule
+tsp & 4 & Quantum Algorithm & 8.750e-01 & 2.084e-01 \\
+\bottomrule
+\end{tabular}
+\end{table}
