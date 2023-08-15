@@ -9,6 +9,8 @@
   - Check the examples are correct in terms of the input
   - Distinguish between state preparations, algorithms and gates.
 
+--> Added a compression method to speed up simulations. It seems to be getting improvements in both memory and speed... but the results doe snot seem to fully match with the expected output.
+
 ## Meeting of 2023/06/09
 
 1. Prepare table to see data in "case_studies.ipynb" (see image)

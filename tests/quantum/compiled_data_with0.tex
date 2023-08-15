@@ -1,108 +1,108 @@
-\begin{table}
-\caption{Reduction ratio of CLUE to Benchmark examples with input |0> with actual reduction. We also include the 
-circuits "order", "phase" and "search" described in Section~\ref{sec:examples}}
+\begin{table}[ht!]
+\centering
+\scriptsize
+\caption{Large-scale evaluation of quantum lumpability on quantum circuits taken from the benchmark repository~\cite{quetschlich2022mqtbench}. We also included the circuits \texttt{Kitaev}, \texttt{Grover} and \texttt{Order} described in Section~\ref{sec:prel} and~\ref{sec:applications}. \Max{Add (again): average and maximal reduction ratio; I think 'Type' can be removed.}}
 \label{table:benchmark}
-\begin{tabular}{llrlll}
+\begin{tabular}{lc||ccc}
 \toprule
-\multicolumn{3}{r}{circuit} & \multicolumn{2}{r}{result} \\
-Family & \# Q-bits & Type & Red. ratio & Time (s) \\
+Circuit Name~\cite{quetschlich2022mqtbench} & \#-qbits & R.R. wrt $S_{\ket{0}}$ & Avg. R.R. & Avg. Time (s) \\
 \midrule
-order & 5 & Quantum Algorithm & 9.375e-02 & 1.877e-02 \\
-order & 6 & Quantum Algorithm & 1.406e-01 & 7.034e-02 \\
-order & 7 & Quantum Algorithm & 9.375e-02 & 2.574e-01 \\
-order & 8 & Quantum Algorithm & 1.094e-01 & 1.198e+00 \\
-order & 9 & Quantum Algorithm & 5.859e-02 & 4.543e+00 \\
-order &10 & Quantum Algorithm & 7.227e-02 & 4.944e+01 \\
 \midrule
-phase & 5 & Quantum Algorithm & 3.125e-02 & 1.309e-01 \\
-phase & 6 & Quantum Algorithm & 1.562e-02 & 3.408e-01 \\
-phase & 7 & Quantum Algorithm & 7.812e-03 & 1.342e+00 \\
-phase & 8 & Quantum Algorithm & 3.906e-03 & 9.159e+00 \\
-phase & 9 & Quantum Algorithm & 1.953e-03 & 1.590e+01 \\
-phase &10 & Quantum Algorithm & 9.766e-04 & 9.811e+01 \\
+\texttt{Order} & 5 & 9.38\% & 11.56\% & 1.933e-02 \\
+\texttt{Order} & 6 & 14.06\% & 19.38\% & 8.792e-02 \\
+\texttt{Order} & 7 & 9.38\% & 19.14\% & 3.092e-01 \\
+\texttt{Order} & 8 & 10.94\% & 10.94\% & 9.717e-01 \\
+\texttt{Order} & 9 & 5.86\% & 7.66\% & 5.111e+00 \\
+\texttt{Order} & 10 & 7.23\% & 11.46\% & 2.127e+01 \\
 \midrule
-search & 5 & Quantum Algorithm & 6.250e-02 & 1.593e-01 \\
-search & 6 & Quantum Algorithm & 3.125e-02 & 5.901e-01 \\
-search & 7 & Quantum Algorithm & 1.562e-02 & 2.178e+00 \\
-search & 8 & Quantum Algorithm & 7.812e-03 & 7.503e+00 \\
-search & 9 & Quantum Algorithm & 3.906e-03 & 2.932e+01 \\
-search &10 & Quantum Algorithm & 1.953e-03 & 1.250e+02 \\
+\texttt{Kitaev} & 5 & 3.12\% & 2.60\% & 1.212e-01 \\
+\texttt{Kitaev} & 6 & 1.56\% & 1.30\% & 3.312e-01 \\
+\texttt{Kitaev} & 7 & 0.78\% & 0.65\% & 1.992e+00 \\
+\texttt{Kitaev} & 8 & 0.39\% & 0.33\% & 3.556e+00 \\
+\texttt{Kitaev} & 9 & 0.20\% & 0.16\% & 1.772e+01 \\
+\texttt{Kitaev} & 10 & 0.10\% & 0.08\% & 1.047e+02 \\
 \midrule
-dj & 3 & Quantum Algorithm & 5.000e-01 & 1.593e-02 \\
-dj & 4 & Quantum Algorithm & 2.500e-01 & 6.675e-02 \\
-dj & 5 & Quantum Algorithm & 1.250e-01 & 2.446e-01 \\
-dj & 6 & Quantum Algorithm & 6.250e-02 & 7.031e-01 \\
-dj & 7 & Quantum Algorithm & 3.125e-02 & 5.198e+00 \\
+\texttt{Grover} & 5 & 6.25\% & 6.25\% & 2.040e-01 \\
+\texttt{Grover} & 6 & 3.12\% & 3.12\% & 4.829e-01 \\
+\texttt{Grover} & 7 & 1.56\% & 1.56\% & 2.242e+00 \\
+\texttt{Grover} & 8 & 0.78\% & 0.78\% & 7.308e+00 \\
+\texttt{Grover} & 9 & 0.39\% & 0.39\% & 3.065e+01 \\
+\texttt{Grover} & 10 & 0.20\% & 0.20\% & 1.410e+02 \\
 \midrule
-ghz & 3 & State Preparation & 7.500e-01 & 1.747e-02 \\
-ghz & 4 & State Preparation & 8.750e-01 & 9.408e-02 \\
-ghz & 5 & State Preparation & 5.000e-01 & 3.549e-01 \\
-ghz & 6 & State Preparation & 2.500e-01 & 7.955e-01 \\
-ghz & 7 & State Preparation & 1.250e-01 & 2.534e+00 \\
+dj & 3 & 50.00\% & 93.85\% & 2.963e-02 \\
+dj & 4 & 25.00\% & 24.26\% & 6.364e-02 \\
+dj & 5 & 12.50\% & 12.31\% & 2.448e-01 \\
+dj & 6 & 6.25\% & 6.20\% & 6.924e-01 \\
+dj & 7 & 3.12\% & 3.11\% & 2.781e+00 \\
 \midrule
-graphstate & 3 & State Preparation & 5.000e-01 & 3.512e-02 \\
-graphstate & 4 & State Preparation & 2.500e-01 & 5.776e-02 \\
-graphstate & 5 & State Preparation & 2.500e-01 & 4.673e-01 \\
-graphstate & 6 & State Preparation & 9.375e-02 & 1.067e+00 \\
-graphstate & 7 & State Preparation & 1.094e-01 & 9.913e+00 \\
+ghz & 3 & 75.00\% & 98.14\% & 1.674e-02 \\
+ghz & 4 & 87.50\% & 83.09\% & 1.160e-01 \\
+ghz & 5 & 50.00\% & 48.67\% & 3.881e-01 \\
+ghz & 6 & 25.00\% & 24.66\% & 9.333e-01 \\
+ghz & 7 & 12.50\% & 12.42\% & 2.932e+00 \\
 \midrule
-grover-noancilla & 3 & Quantum Algorithm & 7.500e-01 & 1.657e-02 \\
-grover-noancilla & 4 & Quantum Algorithm & 2.500e-01 & 2.391e-02 \\
-grover-noancilla & 5 & Quantum Algorithm & 1.875e-01 & 1.226e-01 \\
-grover-noancilla & 6 & Quantum Algorithm & 6.250e-02 & 2.244e-01 \\
-grover-noancilla & 7 & Quantum Algorithm & 3.125e-02 & 9.797e-01 \\
+graphstate & 3 & 50.00\% & 95.70\% & 3.810e-02 \\
+graphstate & 4 & 25.00\% & 23.53\% & 6.232e-02 \\
+graphstate & 5 & 25.00\% & 28.79\% & 5.603e-01 \\
+graphstate & 6 & 9.38\% & 9.38\% & 1.212e+00 \\
+graphstate & 7 & 10.94\% & 10.94\% & 1.028e+01 \\
 \midrule
-grover-noancilla + no_H & 3 & Quantum Algorithm & 2.500e-01 & 8.881e-03 \\
-grover-noancilla + no_H & 4 & Quantum Algorithm & 3.750e-01 & 3.257e-02 \\
-grover-noancilla + no_H & 5 & Quantum Algorithm & 1.250e-01 & 1.386e-01 \\
-grover-noancilla + no_H & 6 & Quantum Algorithm & 9.375e-02 & 3.834e-01 \\
+grover-noancilla & 3 & 75.00\% & 96.97\% & 2.058e-02 \\
+grover-noancilla & 4 & 25.00\% & 36.03\% & 4.107e-02 \\
+grover-noancilla & 5 & 18.75\% & 21.59\% & 1.603e-01 \\
+grover-noancilla & 6 & 6.25\% & 9.28\% & 3.659e-01 \\
+grover-noancilla & 7 & 3.12\% & 4.66\% & 1.382e+00 \\
 \midrule
-grover-v-chain & 3 & Quantum Algorithm & 7.500e-01 & 1.692e-02 \\
-grover-v-chain & 4 & Quantum Algorithm & 2.500e-01 & 2.331e-02 \\
-grover-v-chain & 5 & Quantum Algorithm & 3.125e-01 & 5.656e-01 \\
-grover-v-chain & 7 & Quantum Algorithm & 4.688e-02 & 4.056e+00 \\
+grover-noancilla (no\_H) & 3 & 25.00\% & 90.77\% & 2.263e-02 \\
+grover-noancilla (no\_H) & 4 & 37.50\% & 35.29\% & 4.446e-02 \\
+grover-noancilla (no\_H) & 5 & 12.50\% & 12.41\% & 8.914e-02 \\
+grover-noancilla (no\_H) & 6 & 9.38\% & 9.23\% & 3.823e-01 \\
 \midrule
-hhl & 5 & Quantum Algorithm & 1.250e-01 & 2.202e-01 \\
+grover-v-chain & 3 & 75.00\% & 96.97\% & 2.801e-02 \\
+grover-v-chain & 4 & 25.00\% & 36.03\% & 4.261e-02 \\
+grover-v-chain & 5 & 31.25\% & 32.20\% & 6.012e-01 \\
+grover-v-chain & 7 & 4.69\% & 4.69\% & 4.208e+00 \\
 \midrule
-pricingcall & 5 & Quantum Algorithm & 2.500e-01 & 4.687e-02 \\
-pricingcall & 7 & Quantum Algorithm & 1.250e-01 & 4.164e-01 \\
+hhl & 5 & 12.50\% & 78.79\% & 1.874e+00 \\
 \midrule
-pricingput & 5 & Quantum Algorithm & 2.500e-01 & 4.763e-02 \\
-pricingput & 7 & Quantum Algorithm & 1.250e-01 & 4.032e-01 \\
+pricingcall & 5 & 25.00\% & 27.27\% & 9.126e-02 \\
+pricingcall & 7 & 12.50\% & 13.18\% & 1.039e+00 \\
+pricingput & 5 & 25.00\% & 27.27\% & 9.167e-02 \\
+pricingput & 7 & 12.50\% & 13.86\% & 1.116e+00 \\
 \midrule
-qaoa & 3 & Quantum Algorithm & 5.000e-01 & 8.651e-02 \\
-qaoa & 4 & Quantum Algorithm & 3.750e-01 & 8.992e-02 \\
-qaoa & 5 & Quantum Algorithm & 2.500e-01 & 3.991e-01 \\
-qaoa & 6 & Quantum Algorithm & 2.031e-01 & 4.687e+00 \\
+qaoa & 3 & 50.00\% & 95.70\% & 6.147e-02 \\
+qaoa & 4 & 37.50\% & 61.76\% & 1.827e-01 \\
+qaoa & 5 & 25.00\% & 59.09\% & 1.067e+00 \\
+qaoa & 6 & 20.31\% & 80.65\% & 1.815e+01 \\
 \midrule
-qft & 2 & Quantum Gate & 5.000e-01 & 3.161e-03 \\
-qft & 3 & Quantum Gate & 2.500e-01 & 1.213e-02 \\
-qft & 4 & Quantum Gate & 1.250e-01 & 3.108e-02 \\
-qft & 5 & Quantum Gate & 6.250e-02 & 8.361e-02 \\
-qft & 6 & Quantum Gate & 3.125e-02 & 3.560e-01 \\
-qft & 7 & Quantum Gate & 1.562e-02 & 2.027e+00 \\
+qft & 2 & 50.00\% & 84.38\% & 5.194e-03 \\
+qft & 3 & 25.00\% & 93.07\% & 3.002e-02 \\
+qft & 4 & 12.50\% & 22.79\% & 6.167e-02 \\
+qft & 5 & 6.25\% & 11.93\% & 1.896e-01 \\
+qft & 6 & 3.12\% & 6.11\% & 7.595e-01 \\
+qft & 7 & 1.56\% & 3.09\% & 3.173e+00 \\
 \midrule
-qgan & 4 & Quantum Algorithm & 8.750e-01 & 2.447e-01 \\
+qgan & 4 & 87.50\% & 87.50\% & 2.613e-01 \\
 \midrule
-qpeexact + no_H & 3 & Quantum Algorithm & 2.500e-01 & 8.894e-03 \\
-qpeexact + no_H & 4 & Quantum Algorithm & 1.250e-01 & 2.007e-02 \\
-qpeexact + no_H & 5 & Quantum Algorithm & 6.250e-02 & 3.780e-02 \\
-qpeexact + no_H & 6 & Quantum Algorithm & 3.125e-02 & 1.178e-01 \\
+qpeexact (no\_H) & 3 & 25.00\% & 91.99\% & 1.217e-02 \\
+qpeexact (no\_H) & 4 & 12.50\% & 22.06\% & 3.565e-02 \\
+qpeexact (no\_H) & 5 & 6.25\% & 12.12\% & 6.551e-02 \\
+qpeexact (no\_H) & 6 & 3.12\% & 6.06\% & 2.198e-01 \\
 \midrule
-qpeinexact + no_H & 3 & Quantum Algorithm & 2.500e-01 & 6.562e-03 \\
-qpeinexact + no_H & 4 & Quantum Algorithm & 1.250e-01 & 1.254e-02 \\
-qpeinexact + no_H & 5 & Quantum Algorithm & 6.250e-02 & 3.354e-02 \\
-qpeinexact + no_H & 6 & Quantum Algorithm & 3.125e-02 & 1.387e-01 \\
+qpeinexact (no\_H) & 3 & 25.00\% & 97.17\% & 1.258e-02 \\
+qpeinexact (no\_H) & 4 & 12.50\% & 30.15\% & 3.215e-02 \\
+qpeinexact (no\_H) & 5 & 6.25\% & 15.34\% & 7.784e-02 \\
+qpeinexact (no\_H) & 6 & 3.12\% & 53.75\% & 2.567e+00 \\
 \midrule
-qwalk-noancilla & 3 & Quantum Algorithm & 7.500e-01 & 1.091e-02 \\
-qwalk-noancilla & 4 & Quantum Algorithm & 5.000e-01 & 1.413e-01 \\
-qwalk-noancilla & 5 & Quantum Algorithm & 5.000e-01 & 8.420e-01 \\
-qwalk-noancilla & 6 & Quantum Algorithm & 5.000e-01 & 6.580e+00 \\
+qwalk-noancilla & 3 & 75.00\% & 98.54\% & 1.333e-02 \\
+qwalk-noancilla & 4 & 50.00\% & 47.79\% & 1.369e-01 \\
+qwalk-noancilla & 5 & 50.00\% & 48.67\% & 9.006e-01 \\
+qwalk-noancilla & 6 & 50.00\% & 49.28\% & 6.835e+00 \\
 \midrule
-qwalk-v-chain & 3 & Quantum Algorithm & 7.500e-01 & 1.793e-02 \\
-qwalk-v-chain & 5 & Quantum Algorithm & 2.500e-01 & 1.672e-01 \\
+qwalk-v-chain & 3 & 75.00\% & 98.54\% & 1.309e-02 \\
+qwalk-v-chain & 5 & 25.00\% & 21.40\% & 1.181e-01 \\
 \midrule
-tsp & 4 & Quantum Algorithm & 8.750e-01 & 2.084e-01 \\
+tsp & 4 & 87.50\% & 87.50\% & 2.271e-01 \\
 \bottomrule
 \end{tabular}
 \end{table}
