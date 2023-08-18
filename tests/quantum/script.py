@@ -182,14 +182,33 @@ def simulate_reduced(circuit_name, shots=8192):
 
 def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
-
+        
     with open(os.path.join(SCRIPT_DIR, "results", f"[output]{circuit}.example.txt"), "w") as out_file:
-        first_obs = ("+".join(system.variables),)
-        all_obs = 2**len(system.variables); generator = powerset(system.variables)
-        if all_obs > 10000: 
-            all_obs = len(system.variables)+1
-            generator = (tuple([el]) for el in system.variables)
-        generator = add_first(first_obs, generator)
+        if "observable" in kwds:
+            first_obs = None
+            full_observables = list()
+            for obs in kwds["observable"]:
+                observable = list()
+                for part in obs.split("+"):
+                    if part.startswith("|"):
+                        observable.append(system.variables[int(part.removeprefix("|").removesuffix(">"))])
+                    elif part.startswith("Q"):
+                        observable.append(part)
+                    elif part.startswith("H"):
+                        observable.append("+".join(system.variables))
+                    else:
+                        raise NotImplementedError(f"Processing observable part {part} not implemented.")
+                observable = "+".join(observable)
+                full_observables.append(observable)
+                generator = [tuple(full_observables)]
+                all_obs = 1
+        else:
+            first_obs = ("+".join(system.variables),)
+            all_obs = 2**len(system.variables); generator = powerset(system.variables)
+            if all_obs > 10000: 
+                all_obs = len(system.variables)+1
+                generator = (tuple([el]) for el in system.variables)
+            generator = add_first(first_obs, generator)
         
         try:
             for i,obs in enumerate(generator):
@@ -205,7 +224,7 @@ def run_example(circuit: str, **kwds):
                 out_file.write("################################################################\n")
                 out_file.flush()
         except KeyboardInterrupt:
-            logger.info(f"[circuit_example] Interrupted {circuit} with Ctr-C ")
+            logger.info(f"[circuit_example] Interrupted {circuit} with Ctr-C")
 
     return
 
@@ -477,6 +496,10 @@ if __name__ == "__main__":
             if sys.argv[n].startswith("-"):
                 if sys.argv[n].endswith("d"):
                     kwds["delta"] = float(sys.argv[n+1])
+                    n += 2
+                elif sys.argv[n].endswith("o"):
+                    if "observable" not in kwds: kwds["observable"] = list()
+                    kwds["observable"].append(sys.argv[n+1])
                     n += 2
                 else:
                     n+=1
