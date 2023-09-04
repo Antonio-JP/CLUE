@@ -9,6 +9,7 @@ from itertools import chain, combinations
 from clue.clue import LDESystem
 from clue.qiskit import *
 from math import ceil, gcd, sqrt
+from mqt import ddsim
 from numpy import cdouble, load, save
 from numpy.linalg import eig
 from os import listdir
@@ -139,20 +140,20 @@ def reduce_circuit(circuit: str, observable: list[str] = None, **kwds):
         
         return {"read": read_time, "lumping": lumping_time, "reduced": reduced_time, "matrix": matrix_time}
 
-def simulate_qasm(circuit, shots=8192):
+def simulate_qasm(circuit, backend="aer", shots=8192, output="counts"):
     ctime = time()
     ## Reading the quantum circuit
     circuit = QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits",f"{circuit}.qasm"))
-    reading_time = time()-ctime; ctime=time()
+    reading_time = time()-ctime; print("Finished reading the circuit"); ctime=time()
     ## Simulating the quantum circuit
-    backend = Aer.get_backend('aer_simulator')
+    backend = Aer.get_backend('aer_simulator') if backend == "aer" else ddsim.DDSIMProvider().get_backend("qasm_simulator") if backend == "ddsim" else backend
     job = execute(circuit, backend, shots=shots)
-    simulation_time = time()-ctime; ctime=time()
+    simulation_time = time()-ctime; print("Finished executing the job"); ctime=time()
     ## Collecting the data to have proper output
-    output = job.result().get_counts()
-    output_time = time()-ctime
+    output = job.result().get_counts() if output == "counts" else job if output == "job" else job.result()
+    output_time = time()-ctime; print("Finished obtaining results")
     
-    return output, {"read": reading_time, "simulation": simulation_time, "output": output_time}
+    return output, {"read": reading_time, "simulation": simulation_time, "output": output_time}, reading_time + simulation_time + output_time
 
 def simulate_reduced(circuit_name, shots=8192):
     ctime = time()
