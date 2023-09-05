@@ -7,6 +7,8 @@ import logging, csv, re
 
 from itertools import chain, combinations
 from clue.clue import LDESystem
+from clue.linalg import SparseRowMatrix
+from clue.uncertain import UncertainFODESystem
 from clue.qiskit import *
 from math import ceil, gcd, sqrt
 from mqt import ddsim
@@ -181,6 +183,9 @@ def simulate_reduced(circuit_name, shots=8192):
     
     return output, {"read": reading_time, "simulation": simulation_time, "output": {"total": output_time, "matrix": matrix_time, "measure": measuring_time}}
 
+########################################################################
+### GENERAL RUNNING METHOD
+########################################################################
 def run_example(circuit: str, **kwds):
     system = DS_QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits", f"{circuit}.qasm"), delta=kwds.pop("delta", 1e-10))
         
@@ -229,6 +234,9 @@ def run_example(circuit: str, **kwds):
 
     return
 
+########################################################################
+### METHODS FOR BUILDING UNITARY MATRICES (CASE STUDY METHODS)
+########################################################################
 def __is_prime(n):
     return all(n%i != 0 for i in primes(int(ceil(sqrt(n)+1))))
 
@@ -364,6 +372,9 @@ def __post_lumping_study(case: str, system: DS_QuantumCircuit, lumped: LDESystem
     else:
         raise NotImplementedError
 
+########################################################################
+### CASE STUDY RUNNING METHOD
+########################################################################
 def run_case_study(case: str, qbits: int, repeats: int = 1):
     r'''
         Run the case studies with a given number of q-bits and repeat the experiment a given number of times
@@ -405,6 +416,66 @@ def run_case_study(case: str, qbits: int, repeats: int = 1):
             except KeyboardInterrupt:
                 logger.info(f"[case_study] Interrupted {circuit} with Ctr-C")
 
+########################################################################
+### METHODS FOR BUILDING HAMILTONIANS
+########################################################################
+## Formula -> list[Clause]
+## Clause -> tuple[3*Var]
+## Var -> tuple[int, int] # (index, positive)
+def generate_clause(n):
+    return tuple(set((randint(0,n-1), randint(0,1)) for _ in range(3)))
+
+## TODO: filter trivial clauses
+def generate_3sat(n,m):
+    return [generate_clause(n) for _ in range(m)]
+
+def h_C(clause, values: list[int]):
+    for (i,p) in clause:
+        if values[i] == p:
+            return 0 # the clause is True
+    return 1 # the clause is False
+
+def h(formula, values: list[int]):
+    return sum(h_C(clause, values) for clause in formula)
+
+def H_P(formula, n) -> SparseRowMatrix:
+    M = SparseRowMatrix(2**n, CC)
+    for i,values in enumerate(product(range(2), repeat=n)):
+        M.increment(i,i,h(formula,values))
+    
+    return M
+
+def H_B(formula, n):
+    ## TODO: do this more efficient usign the sparse structure. Is it really sparse?
+    return sum(H_B_C(clause, n) for clause in formula)
+
+def H_B_C(clause, n):
+    return sum(h_B(i, n) for (i,_) in clause)
+
+def h_B(index, n):
+    to_kron = (index)*[zeros((2,2), dtype=cdouble)] + [0.5*(eye(2, dtype=cdouble) - array([[0, 1],[1,0]], dtype=cdouble))] + (n-index-1)*[zeros((2,2), dtype=cdouble)]
+    return reduce(lambda p, q: kron(p, q), to_kron)
+
+def try_random(n,m):
+    f = generate_3sat(n, m)
+    return try_out(f, n)
+
+## TODO: check the case when we have repeated variables in a clause
+def try_out(f, n):
+    M = H_P(f, n)
+    M2 = H_B(f, n)
+    M_mat = SparseRowMatrix.from_list(M, field=CC)
+    M2_mat = SparseRowMatrix.from_list(M2, field=CC)
+    variables = [f"Q_{''.join(values)}" for values in product(['0','1'], repeat=n)]
+
+    system = UncertainFODESystem(variables=variables, matrices=(M_mat,M2_mat), lumping_subspace=NumericalSubspace)
+    obs = [SparsePolynomial.from_string('+'.join(variables), variables, domain=CC)]
+    lumped = system.lumping(obs)
+    return lumped
+
+########################################################################
+### COMPILATION METHOD
+########################################################################
 def compile_results():
     data = list()
     for file_name in listdir(os.path.join(SCRIPT_DIR, "results")):
@@ -459,6 +530,9 @@ def compile_results():
 
     return
 
+########################################################################
+### GENERAL SCRIPT
+########################################################################
 if __name__ == "__main__":
     ## Reading the arguments
     if sys.argv[1] == "list":
