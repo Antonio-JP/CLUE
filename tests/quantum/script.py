@@ -11,7 +11,7 @@ from clue.linalg import SparseRowMatrix
 from clue.uncertain import UncertainFODESystem
 from clue.qiskit import *
 from math import ceil, gcd, sqrt
-from mqt import ddsim
+#from mqt import ddsim
 from numpy import cdouble, load, save
 from numpy.linalg import eig
 from os import listdir
@@ -148,7 +148,7 @@ def simulate_qasm(circuit, backend="aer", shots=8192, output="counts"):
     circuit = QuantumCircuit.from_qasm_file(os.path.join(SCRIPT_DIR, "circuits",f"{circuit}.qasm"))
     reading_time = time()-ctime; print("Finished reading the circuit"); ctime=time()
     ## Simulating the quantum circuit
-    backend = Aer.get_backend('aer_simulator') if backend == "aer" else ddsim.DDSIMProvider().get_backend("qasm_simulator") if backend == "ddsim" else backend
+    backend = Aer.get_backend('aer_simulator') #if backend == "aer" else ddsim.DDSIMProvider().get_backend("qasm_simulator") if backend == "ddsim" else backend
     job = execute(circuit, backend, shots=shots)
     simulation_time = time()-ctime; print("Finished executing the job"); ctime=time()
     ## Collecting the data to have proper output
@@ -423,53 +423,100 @@ def run_case_study(case: str, qbits: int, repeats: int = 1):
 ## Clause -> tuple[3*Var]
 ## Var -> tuple[int, int] # (index, positive)
 def generate_clause(n):
+    r'''
+        Generate a valid 3-SAT clause
+
+        A Clause is represented with a tuple of at most 3 elements. Each element 
+        is again a tuple `(i, p)` representing the variable `x_i` and the 
+        value `p` represents whether the variable appears negated (`p=0`) or 
+        not (`p=1`).
+
+        The generation is random among `n` possible variables.
+
+        If the same pair `(i,p)` is generated twice, we omit this element.
+
+        This method can generate trivial clauses (having `x_i` and `not x_i`
+        at the same time).
+    '''
     return tuple(set((randint(0,n-1), randint(0,1)) for _ in range(3)))
 
-## TODO: filter trivial clauses
 def generate_3sat(n,m):
-    return [generate_clause(n) for _ in range(m)]
+    r'''
+        Generate a 3-SAT formula.
+
+        A 3-SAT formula is the conjunction of clauses (see :func:`generate_clause`) with
+        at most 3 variables involved in each clause.
+
+        This method generate `m` random clauses among `n` variables and remove repeated 
+        and trivial clauses.
+    '''
+    result = set()
+    for _ in range(m):
+        clause = generate_clause(n)
+        if len(set(v[0] for v in clause)) == len(clause):
+            result.add(clause)
+    return list(result)
 
 def h_C(clause, values: list[int]):
+    r'''See formula (2.11) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
     for (i,p) in clause:
         if values[i] == p:
             return 0 # the clause is True
     return 1 # the clause is False
 
 def h(formula, values: list[int]):
+    r'''See formula (2.12) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
     return sum(h_C(clause, values) for clause in formula)
 
 def H_P(formula, n) -> SparseRowMatrix:
+    r'''See formula (2.16) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
     M = SparseRowMatrix(2**n, CC)
     for i,values in enumerate(product(range(2), repeat=n)):
         M.increment(i,i,h(formula,values))
-    
     return M
 
 def H_B(formula, n):
-    ## TODO: do this more efficient usign the sparse structure. Is it really sparse?
-    return sum(H_B_C(clause, n) for clause in formula)
+    r'''See formula (2.22) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
+    count = count_variables(formula, n)
+    return sum(count[i]*h_B(i, n) for i in range(n))
 
-def H_B_C(clause, n):
-    return sum(h_B(i, n) for (i,_) in clause)
+def count_variables(formula,n):
+    r'''Method that count appearances of all variables in a 3-SAT formula'''
+    result = {i : 0 for i in range(n)}
+    for clause in formula:
+        for (v, _) in clause:
+            result[v]+=1
+    return result
 
 def h_B(index, n):
-    to_kron = (index)*[zeros((2,2), dtype=cdouble)] + [0.5*(eye(2, dtype=cdouble) - array([[0, 1],[1,0]], dtype=cdouble))] + (n-index-1)*[zeros((2,2), dtype=cdouble)]
-    return reduce(lambda p, q: kron(p, q), to_kron)
+    r'''See formula (2.17) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
+    M = SparseRowMatrix(2**n, CC)
+    for values in product(range(2), repeat=(n-1)):
+        values = list(values)
+        i = int("".join([str(v) for v in values[:index]] + ['0'] + [str(v) for v in values[index:]]), 2)
+        j = int("".join([str(v) for v in values[:index]] + ['1'] + [str(v) for v in values[index:]]), 2)
+        M.increment(i,i,0.5)
+        M.increment(i,j,-0.5)
+        M.increment(j,i,-0.5)
+        M.increment(j,j,0.5)
+    return M
+    # to_kron = (index)*[zeros((2,2), dtype=cdouble)] + [0.5*(eye(2, dtype=cdouble) - array([[0, 1],[1,0]], dtype=cdouble))] + (n-index-1)*[zeros((2,2), dtype=cdouble)]
+    # return reduce(lambda p, q: kron(p, q), to_kron)
 
 def try_random(n,m):
+    r'''Executes CLUE for the Adiabatic system for a random 3-SAT formula'''
     f = generate_3sat(n, m)
     return try_out(f, n)
 
 ## TODO: check the case when we have repeated variables in a clause
 def try_out(f, n):
-    M = H_P(f, n)
-    M2 = H_B(f, n)
-    M_mat = SparseRowMatrix.from_list(M, field=CC)
-    M2_mat = SparseRowMatrix.from_list(M2, field=CC)
+    r'''Executes CLUE for the Adiabatic system for a specific 3-SAT formula'''
+    M_B = H_B(f, n)
+    M_P = H_P(f, n)
     variables = [f"Q_{''.join(values)}" for values in product(['0','1'], repeat=n)]
 
-    system = UncertainFODESystem(variables=variables, matrices=(M_mat,M2_mat), lumping_subspace=NumericalSubspace)
-    obs = [SparsePolynomial.from_string('+'.join(variables), variables, domain=CC)]
+    system = UncertainFODESystem(variables=variables, matrices=(M_B,M_P), lumping_subspace=NumericalSubspace)
+    obs = [2**n*[1]]
     lumped = system.lumping(obs)
     return lumped
 
@@ -519,7 +566,7 @@ def compile_results():
                 
                 logger.log(60, f"[compile] Finished results for {circuit} ({qbits})")
     
-    ## We have ompiled all the data: we create a CSV for it
+    ## We have compiled all the data: we create a CSV for it
     
     logger.log(60, f"[compile] Dumping to CSV file")
     with open(os.path.join(SCRIPT_DIR, "compilation.csv"), "w") as file:
