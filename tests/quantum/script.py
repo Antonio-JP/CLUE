@@ -457,6 +457,17 @@ def generate_3sat(n,m):
             result.add(clause)
     return list(result)
 
+def repr_clause(clause):
+    return "(" + " v ".join(f"{'-' if not cl[1] else ''}x_{cl[0]}" for cl in clause) + ")"
+def repr_3sat(formula):
+    return "["+ " ^ ".join(repr_clause(clause) for clause in formula) +"]"
+
+def parse_clause(clause):
+    clause = clause.strip().removeprefix("(").removesuffix(")")
+    return tuple((int(var.split("_")[1]), int(not var.startswith("-"))) for var in (prt.strip() for prt in clause.split("v")))
+def parse_3sat(formula):
+    return [parse_clause(clause) for clause in (prt.strip() for prt in formula.strip().removeprefix("[").removesuffix("]").split("^")) if len(clause) > 0]
+
 def h_C(clause, values: list[int]):
     r'''See formula (2.11) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
     for (i,p) in clause:
@@ -475,9 +486,9 @@ def H_P(formula, n) -> SparseRowMatrix:
         M.increment(i,i,h(formula,values))
     return M
 
-def H_B(formula, n):
+def H_B(formula, n, weighted: bool = True):
     r'''See formula (2.22) in :doi:`10.48550/ARXIV.QUANT-PH/0001106`'''
-    count = count_variables(formula, n)
+    count = count_variables(formula, n) if weighted else n*[1]
     return sum(count[i]*h_B(i, n) for i in range(n))
 
 def count_variables(formula,n):
@@ -503,22 +514,84 @@ def h_B(index, n):
     # to_kron = (index)*[zeros((2,2), dtype=cdouble)] + [0.5*(eye(2, dtype=cdouble) - array([[0, 1],[1,0]], dtype=cdouble))] + (n-index-1)*[zeros((2,2), dtype=cdouble)]
     # return reduce(lambda p, q: kron(p, q), to_kron)
 
-def try_random(n,m):
+def try_random(n,m,B:bool):
     r'''Executes CLUE for the Adiabatic system for a random 3-SAT formula'''
     f = generate_3sat(n, m)
-    return try_out(f, n)
+    return try_out(f, n, B)
 
 ## TODO: check the case when we have repeated variables in a clause
-def try_out(f, n):
+def try_out(f, n, B: bool):
     r'''Executes CLUE for the Adiabatic system for a specific 3-SAT formula'''
-    M_B = H_B(f, n)
-    M_P = H_P(f, n)
+    if B == True:
+        M_B = H_B(f, n)
+        M_P = H_P(f, n)
+    elif B == "prod":
+        M_B = SparseRowMatrix(2**n, CC)
+        M_P = H_B(f,n) * H_P(f,n)
+    elif B == "unweight":
+        M_B = H_B(f, n, False)
+        M_P = H_P(f, n)
+    else:
+        M_B = SparseRowMatrix(2**n, CC)
+        M_P = H_P(f,n)
+
     variables = [f"Q_{''.join(values)}" for values in product(['0','1'], repeat=n)]
 
     system = UncertainFODESystem(variables=variables, matrices=(M_B,M_P), lumping_subspace=NumericalSubspace)
     obs = [2**n*[1]]
-    lumped = system.lumping(obs)
+    lumped = system.lumping(obs, print_reduction=False, print_system=False)
     return lumped
+
+def run_hamiltonian(min_size, max_size, min_examples, with_B):
+    B = lambda : with_B if with_B != None else bool(randint(0,1))
+    get_m = lambda n : randint(n, n**2)
+    existed = os.path.exists(os.path.join(SCRIPT_DIR, "hamiltonian.csv"))
+    with open(os.path.join(SCRIPT_DIR, "hamiltonian.csv"), "a") as file:
+        ## Opening the CSV writer
+        writer = csv.writer(file, delimiter=",")
+        if not existed:
+            writer.writerow(["qbits", "clauses", "size", "lumped", "ratio", "with_B", "time", "variables", "all", "formula"]) # Header
+
+        ## Running the minimal examples
+        print(f"[hamiltonian] EXECUTING MINIMAL EXAMPLES FOR EACH SIZE")
+        B = lambda : with_B if with_B != None else choice([True,False,"prod","unweight"])
+        for size in range(min_size, max_size+1):
+            for _ in range(min_examples):
+                m = get_m(size); has_B = B()
+                print(f"[hamiltonian] +++ Executing example with n={size}, {m=}, {has_B=}...")
+                f = generate_3sat(size, m)
+                ctime = time()
+                l = try_out(f, size, has_B)
+                ctime = time() - ctime
+                print(f"[hamiltonian] +++ Finished example in {ctime:.3f} secs")
+                variables = set(sum([[v[0] for v in clause] for clause in f],[]))
+                has_all = (len(variables) == size)
+                variables = "[" + " & ".join(f"x_{i}" for i in variables) + "]"
+                writer.writerow([size, m, 2**size, l.size, l.size / 2**size, has_B, ctime, variables, has_all, repr_3sat(f)])
+                file.flush()
+
+        print(f"[hamiltonian] EXECUTING INFINITE NUMBER OF EXAMPLES")
+        B = lambda : choice([True,False,"prod","unweight"])
+        while(True):
+            try:
+                size = randint(min_size, max_size)
+                m = get_m(size); has_B = B()
+                print(f"[hamiltonian] +++ Executing example with n={size}, {m=}, {has_B=}...")
+                f = generate_3sat(size, m)
+                ctime = time()
+                l = try_out(f, size, has_B)
+                ctime = time() - ctime
+                print(f"[hamiltonian] +++ Finished example in {ctime:.3f} secs")
+                variables = set(sum([[v[0] for v in clause] for clause in f],[]))
+                has_all = (len(variables) == size)
+                variables = "[" + " & ".join(f"x_{i}" for i in variables) + "]"
+                writer.writerow([size, m, 2**size, l.size, l.size / 2**size, has_B, ctime, variables, has_all, repr_3sat(f)])
+                file.flush()
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(f"Found an error in the Hamiltonian simulation: {e}. Trying a new example")
+
 
 ########################################################################
 ### COMPILATION METHOD
@@ -612,6 +685,25 @@ if __name__ == "__main__":
             except Exception as e:
                 logger.error(f"[compress] Error in circuit {circuit}: {e}")
             logger.info(f"[compress] Compressing circuit {circuit}... Done")
+    elif sys.argv[1] == "hamiltonian":
+        n = 2; nargs = len(sys.argv)
+        min_size = 3; max_size = 8
+        min_examples = 0
+        with_B = None
+        while n < nargs: 
+            if sys.argv[n].startswith("-"):
+                if sys.argv[n].endswith("m"):
+                    min_size = int(sys.argv[n+1])
+                elif sys.argv[n].endswith("M"):
+                    max_size = int(sys.argv[n+1])
+                elif sys.argv[n].endswith("base"):
+                    with_B = sys.argv[n+1]
+                    if not with_B in ("prod", "unweight"):
+                        with_B = bool(with_B)
+                elif sys.argv[n].endswith("exec"):
+                    min_examples = int(sys.argv[n+1])
+                n += 2
+        run_hamiltonian(min_size, max_size, min_examples, with_B)
     else:
         n = 1; nargs = len(sys.argv); kwds = dict(); circuits = list()
         while n < nargs:
