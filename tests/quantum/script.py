@@ -531,6 +531,9 @@ def try_out(f, n, B: bool):
     elif B == "unweight":
         M_B = H_B(f, n, False)
         M_P = H_P(f, n)
+    elif B == "complex":
+        M_B = SparseRowMatrix(2**n, CC)
+        M_P = CC(-1j)*H_P(f, n)
     else:
         M_B = SparseRowMatrix(2**n, CC)
         M_P = H_P(f,n)
@@ -554,7 +557,7 @@ def run_hamiltonian(min_size, max_size, min_examples, with_B):
 
         ## Running the minimal examples
         print(f"[hamiltonian] EXECUTING MINIMAL EXAMPLES FOR EACH SIZE")
-        B = lambda : with_B if with_B != None else choice([True,False,"prod","unweight"])
+        B = lambda : with_B if with_B != None else choice([True,False,"prod","unweight","complex"])
         for size in range(min_size, max_size+1):
             for _ in range(min_examples):
                 m = get_m(size); has_B = B()
@@ -571,7 +574,7 @@ def run_hamiltonian(min_size, max_size, min_examples, with_B):
                 file.flush()
 
         print(f"[hamiltonian] EXECUTING INFINITE NUMBER OF EXAMPLES")
-        B = lambda : choice([True,False,"prod","unweight"])
+        B = lambda : choice([True,False,"prod","unweight","complex"])
         while(True):
             try:
                 size = randint(min_size, max_size)
@@ -592,6 +595,116 @@ def run_hamiltonian(min_size, max_size, min_examples, with_B):
             except Exception as e:
                 print(f"Found an error in the Hamiltonian simulation: {e}. Trying a new example")
 
+from qiskit.circuit import QuantumCircuit
+from qiskit.circuit.library import PhaseGate
+
+@lru_cache(maxsize=16)
+def F(dt) -> QuantumCircuit:
+    C = QuantumCircuit(1, name=f"F")
+    C.p(-dt,0)
+    return C
+@lru_cache(maxsize=16)
+def T(dt) -> QuantumCircuit:
+    C = QuantumCircuit(1, name=f"T")
+    C.x(0)
+    C.p(-dt,0)
+    C.x(0)
+    return C
+@lru_cache(maxsize=16)
+def TT(dt) -> QuantumCircuit:
+    C = QuantumCircuit(2, name=f"TT")
+    ## Negating qubit 0
+    C.x(0)
+    ## Apply conditioned T to qbit 2
+    C.cx(0, 1)
+    C.cp(-dt, 0, 1)
+    C.cx(0, 1)
+    ## Restoring qubit 0
+    C.x(0)
+    return C
+@lru_cache(maxsize=16)
+def FT(dt) -> QuantumCircuit:
+    C = QuantumCircuit(2, name=f"FT")
+    ## Apply conditioned T to qbit 2
+    C.cx(0, 1)
+    C.cp(-dt, 0, 1)
+    C.cx(0, 1)
+    return C
+@lru_cache(maxsize=16)
+def FF(dt) -> QuantumCircuit:
+    C = QuantumCircuit(2, name=f"FF")
+    ## Apply conditioned F to qbit 2
+    C.cp(-dt, 0, 1)
+    return C
+@lru_cache(maxsize=16)
+def FFF(dt) -> QuantumCircuit:
+    C = QuantumCircuit(3, name=f"FFF")
+    C.append(PhaseGate(-dt).control(2), [0,1,2])
+    
+    return C
+@lru_cache(maxsize=16)
+def FTT(dt) -> QuantumCircuit:
+    C = QuantumCircuit(3, name=f"FTT")
+    C.cx(0,1)
+    C.ccx(0,1,2)
+    C.append(PhaseGate(-dt).control(2), [0,1,2])
+    C.ccx(0,1,2)
+    C.cx(0,1)
+    return C
+@lru_cache(maxsize=16)
+def FFT(dt) -> QuantumCircuit:
+    C = QuantumCircuit(3, name=f"FFT")
+    C.ccx(0,1,2)
+    C.append(PhaseGate(-dt).control(2), [0,1,2])
+    C.ccx(0,1,2)
+    return C
+@lru_cache(maxsize=16)
+def TTT(dt) -> QuantumCircuit:
+    C = QuantumCircuit(3, name=f"TTT")
+    C.x(0)
+    C.cx(0,1)
+    C.ccx(0,1,2)
+    C.append(PhaseGate(-dt).control(2), [0,1,2])
+    C.ccx(0,1,2)
+    C.cx(0,1)
+    C.x(0)
+    return C
+
+def trotter_hamiltonian(formula, n, dt, name="formula", order=2, to_dump = True):
+    if order != 2:
+        raise ValueError(f"Trotterization with order different than 2 not implemented.")
+    
+    q = QuantumRegister(n,'q')
+    circuit = QuantumCircuit(q)
+    gate_gen = [None, [T, F], [TT,FT, FF], [TTT,FTT,FFT,FFF]]
+    gates = {}
+    for clause in formula:
+        print("")
+        m = len(clause) # number of variables in the clause
+        f = len([el for el in clause if el[1] == 0]) # number of false
+        b = [el[0] for el in clause if el[1] == 0] + [el[0] for el in clause if el[1] == 1]
+        if not (m,f) in gates:
+            gates[(m,f)] = gate_gen[m][f](dt)
+        gate = gates[(m,f)]
+        circuit.append(gate, b)
+
+    if to_dump:
+        # from qiskit.qasm3 import dump
+        # with open(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{name}.qasm"), "w") as f:
+        #     dump(circuit, f)
+        name = f"{name}_{n}_{len(formula)}"
+        final_name = name; i = 0
+        while os.path.exists(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm")):
+            final_name = f"{name}_{i}"
+            i += 1
+        circuit.qasm(True, os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm"))
+        with open(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm"), "a+") as f:
+            f.write(f"\n\n// True formula: {repr_3sat(formula)}\n")
+            variables = set(sum([[v[0] for v in clause] for clause in formula],[]))
+            f.write(f"// Variables appearing: {variables}\n")
+            f.write(f"// Appear all: {len(variables) == n}\n")
+    
+    return circuit
 
 ########################################################################
 ### COMPILATION METHOD
@@ -698,7 +811,7 @@ if __name__ == "__main__":
                     max_size = int(sys.argv[n+1])
                 elif sys.argv[n].endswith("base"):
                     with_B = sys.argv[n+1]
-                    if not with_B in ("prod", "unweight"):
+                    if not with_B in ("prod", "unweight", "complex"):
                         with_B = bool(with_B)
                 elif sys.argv[n].endswith("exec"):
                     min_examples = int(sys.argv[n+1])
