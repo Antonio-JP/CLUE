@@ -595,7 +595,7 @@ def run_hamiltonian(min_size, max_size, min_examples, with_B):
             except Exception as e:
                 print(f"Found an error in the Hamiltonian simulation: {e}. Trying a new example")
 
-from qiskit.circuit import QuantumCircuit
+from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.circuit.library import PhaseGate
 
 @lru_cache(maxsize=16)
@@ -670,39 +670,88 @@ def TTT(dt) -> QuantumCircuit:
     C.x(0)
     return C
 
+def store_circuit(circuit, formula, n, parameter, name):
+    if len(circuit.parameters) > 0:
+        circuit = circuit.bind_parameters({circuit.parameters[0]: parameter})
+
+    final_name = name; i = 0
+    while os.path.exists(os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm")):
+        final_name = f"{name}_{i}"
+        i += 1
+    circuit.qasm(True, os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm"))
+    with open(os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm"), "a+") as f:
+        f.write(f"\n\n// True formula: {repr_3sat(formula)}\n")
+        variables = set(sum([[v[0] for v in clause] for clause in formula],[]))
+        f.write(f"// Variables appearing: {variables}\n")
+        f.write(f"// Appear all: {len(variables) == n}\n")
+        f.write(f"\n// For creating the entangled state:\n")
+        for i in range(n):
+            f.write(f"//h q[{i}];\n")
+        f.write(f"//barrier q;")
+
+
+def trotter(circuit: QuantumCircuit, clauses: list[tuple[QuantumCircuit, list[int]]], order=2):
+    r'''
+        Computes the Trotter approximation of a list of clauses
+
+        If an operation can be expressed as `e^{t\sum H_i}`, then we can approximate this 
+        operation by the product of the matrices:
+        
+        .. MATH::
+
+            e^{t\sum H_i} = \prod e^{tH_i} + \mathcal{O}(t^2)
+
+        This is called Suzuki-Trotter decomposition. It has several formulas for 
+        different orders of approximation. 
+
+        INPUT:
+
+        * ``circuit``: the circuit on which we will apply the Trotter decomposition,
+        * ``clauses``: the set of operations `e^{tH_i}` in form `(gate, bits)`. Hence, multiplying 
+          by `e^{tH_i}` can e done with ``circuit.append(*clauses[i])``.
+        * ``order``: order of the Trotter decomposition.
+
+        WARNING:
+
+        The circuit is modified in-place.
+    '''
+    if order == 2:
+        for clause in clauses:
+            circuit.append(*clause)
+    else:
+        raise NotImplementedError(f"Trotter decomposition for order {order} not yet implemented")
+    
+    return circuit
+
+
 def trotter_hamiltonian(formula, n, dt, name="formula", order=2, to_dump = True):
     if order != 2:
         raise ValueError(f"Trotterization with order different than 2 not implemented.")
     
+    ## Creating the QUantum Circuit with a parameter `t` and `n` qbits
+    par = Parameter("t")
     q = QuantumRegister(n,'q')
     circuit = QuantumCircuit(q)
+
+    ## Creating the gates representing each clause.
     gate_gen = [None, [T, F], [TT,FT, FF], [TTT,FTT,FFT,FFF]]
     gates = {}
+    clauses = []
     for clause in formula:
-        print("")
         m = len(clause) # number of variables in the clause
         f = len([el for el in clause if el[1] == 0]) # number of false
         b = [el[0] for el in clause if el[1] == 0] + [el[0] for el in clause if el[1] == 1]
         if not (m,f) in gates:
-            gates[(m,f)] = gate_gen[m][f](dt)
+            gates[(m,f)] = gate_gen[m][f](par)
         gate = gates[(m,f)]
-        circuit.append(gate, b)
+        clauses.append((gate, b))
 
+    ## Applying a Trotter decomposition on the clauses
+    trotter(circuit, clauses, order)
+
+    ## Dumping into a file if requested (we evaluate the parameter)
     if to_dump:
-        # from qiskit.qasm3 import dump
-        # with open(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{name}.qasm"), "w") as f:
-        #     dump(circuit, f)
-        name = f"{name}_{n}_{len(formula)}"
-        final_name = name; i = 0
-        while os.path.exists(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm")):
-            final_name = f"{name}_{i}"
-            i += 1
-        circuit.qasm(True, os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm"))
-        with open(os.path.join(SCRIPT_DIR, "circuits", "hamiltonians", f"{final_name}.qasm"), "a+") as f:
-            f.write(f"\n\n// True formula: {repr_3sat(formula)}\n")
-            variables = set(sum([[v[0] for v in clause] for clause in formula],[]))
-            f.write(f"// Variables appearing: {variables}\n")
-            f.write(f"// Appear all: {len(variables) == n}\n")
+        store_circuit(circuit, formula, n, dt, f"{name}_{n}_{len(formula)}")
     
     return circuit
 
