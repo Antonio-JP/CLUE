@@ -849,13 +849,17 @@ class UndirectedGraph(defaultdict):
 
         return M
         
-    def visualize(self):
+    def visualize(self, save=False):
         import networkx as nx
         import matplotlib.pyplot as plt
         G = nx.Graph()
         G.add_edges_from(self.edges)
         nx.draw_networkx(G)
-        plt.show()
+        if save:
+            plt.savefig(save)
+        else:
+            plt.show()
+        plt.close()
 
     def quantum_cut(self):
         circuit = QuantumCircuit(len(self))
@@ -892,6 +896,8 @@ class UndirectedGraph(defaultdict):
             for i in range(len(graph)):
                 f.write(f"//h q[{i}];\n")
             f.write(f"//barrier q;")
+        graph.visualize(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.png"))
+
 ########################################################################
 ### COMPILATION METHOD
 ########################################################################
