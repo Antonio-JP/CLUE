@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys, os
 
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
@@ -5,6 +6,7 @@ sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
 
 import logging, csv, re
 
+from collections import defaultdict
 from itertools import chain, combinations
 from clue.clue import LDESystem
 from clue.linalg import SparseRowMatrix
@@ -689,7 +691,6 @@ def store_circuit(circuit, formula, n, parameter, name):
             f.write(f"//h q[{i}];\n")
         f.write(f"//barrier q;")
 
-
 def trotter(circuit: QuantumCircuit, clauses: list[tuple[QuantumCircuit, list[int]]], order=2):
     r'''
         Computes the Trotter approximation of a list of clauses
@@ -723,7 +724,6 @@ def trotter(circuit: QuantumCircuit, clauses: list[tuple[QuantumCircuit, list[in
     
     return circuit
 
-
 def trotter_hamiltonian(formula, n, dt, name="formula", order=2, to_dump = True):
     if order != 2:
         raise ValueError(f"Trotterization with order different than 2 not implemented.")
@@ -755,6 +755,143 @@ def trotter_hamiltonian(formula, n, dt, name="formula", order=2, to_dump = True)
     
     return circuit
 
+########################################################################
+### METHODS FOR BUILDING GRAPHS
+########################################################################
+class UndirectedGraph(defaultdict):
+    def __init__(self):
+        super().__init__()
+
+        self.__vertices = []
+
+    @staticmethod
+    def random_graph(vertices: int, edges:int = None, density:float = None):
+        from random import sample, random
+        ## We create the vertices
+        G = UndirectedGraph()
+        for _ in range(vertices): G.add_vertex()
+
+        possible_edges = [edge for edge in product(G, repeat=2) if edge[0] != edge[1]]
+        possible_edges = list(set(tuple(sorted(list(edge))) for edge in possible_edges))
+
+        ## If we are given number of edges, we do the pick randomly
+        if edges != None:
+            edges = sample(possible_edges, edges)
+        else: # Otherwise we do with the density
+            edges = [edge for edge in possible_edges if random() < density]
+
+        for (s,t) in edges:
+            G.add_edge(s,t)
+
+        return G
+
+    def __setitem__(self, __key, __value) -> None:
+        raise NotImplementedError
+    
+    def __delitem__(self, __key) -> None:
+        raise NotImplementedError
+
+    def add_vertex(self, label=None):
+        if label is None:
+            label = 0
+            while label in self:
+                label += 1
+        if label in self:
+            raise ValueError(f"Repeated labels are not allowed")
+        self.__vertices.append(label)
+        super().__setitem__(label, set())
+
+    def add_edge(self, src, trg):
+        if src not in self:
+            raise KeyError(f"Vertex {src} is nto in the graph.")
+        if trg not in self:
+            raise KeyError(f"Vertex {trg} is nto in the graph.")
+        if trg in self[src]:
+            raise ValueError(f"Repeated edges are not allow")
+        
+        self[src].add(trg); self[trg].add(src)
+
+    @property
+    def vertices(self):
+        return self.__vertices.copy()
+
+    @property
+    def edges(self):
+        return list(set(tuple(set([v,w])) for v in self for w in self[v]))
+
+    def adjacency_matrix(self):
+        M = SparseRowMatrix(len(self))
+        for (i,v) in enumerate(self.__vertices):
+            for w in self[v]:
+                M.increment(i, self.__vertices.index(w), 1)
+        return M
+        
+    def cut_cost(self, V_0: set, V_1 = None):
+        ## Checking V_0
+        if any(v not in self for v in V_0):
+            raise ValueError(f"The given set {V_0=} contains elements not in the grpah")
+        
+        ## Checking V_1
+        if V_1 != None:
+            if V_0.union(V_1) != set(self.__vertices):
+                raise ValueError(f"The given cut does not cover the whole graph")
+        else:
+            V_1 = set([v for v in self if v not in V_0])
+
+        ## Counting edges from V_0 to V_1
+        return sum(len(self[v].intersection(V_1)) for v in V_0)
+
+    def cut_matrix(self):
+        r'''Return a 2^n square matrix with the cut counting'''
+        M = SparseRowMatrix(2**len(self))
+        for i,values in enumerate(product(range(2), repeat=len(self))):
+            M.increment(i,i,self.cut_cost(set(v for (j,v) in enumerate(self.__vertices) if values[j] == 0)))
+
+        return M
+        
+    def visualize(self):
+        import networkx as nx
+        import matplotlib.pyplot as plt
+        G = nx.Graph()
+        G.add_edges_from(self.edges)
+        nx.draw_networkx(G)
+        plt.show()
+
+    def quantum_cut(self):
+        circuit = QuantumCircuit(len(self))
+        t = Parameter("t")
+        edge_gate = QuantumCircuit(2, name="E")
+        edge_gate.x(0)
+        edge_gate.cp(t, 0, 1)
+        edge_gate.x(0); edge_gate.x(1)
+        edge_gate.cp(t, 1, 0)
+        edge_gate.x(1)
+
+        for edge in self.edges:
+            circuit.append(edge_gate, edge)
+
+        return circuit, t
+            
+    @staticmethod
+    def store_circuit(graph: UndirectedGraph, parameter, name="graph"):
+        circuit, par = graph.quantum_cut()
+        circuit = circuit.bind_parameters({par: parameter})
+
+        name = f"{name}_{len(graph)}_{len(graph.edges)}"
+        final_name = name; i = 0
+        while os.path.exists(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm")):
+            final_name = f"{name}_{i}"
+            i += 1
+        circuit.qasm(True, os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm"))
+        with open(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm"), "a+") as f:
+            f.write(f"\n\n// Description of the graph:\n")
+            f.write(f"//\t * Vertices: {graph.vertices}\n")
+            f.write(f"//\t * Edges: {graph.edges}\n")
+            f.write(f"//\t * Number of edges: {len(graph.edges)}\n\n")
+            f.write(f"\n// For creating the entangled state:\n")
+            for i in range(len(graph)):
+                f.write(f"//h q[{i}];\n")
+            f.write(f"//barrier q;")
 ########################################################################
 ### COMPILATION METHOD
 ########################################################################
