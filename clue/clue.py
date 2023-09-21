@@ -231,7 +231,7 @@ class FODESystem:
 
         equations = [SparsePolynomial.from_vector(matrix.column(i), variables) for i in range(len(variables))]
         system = FODESystem(equations, observables, variables, ic, name, linear_part=matrix, **kwds)
-        system._lumping_matr["polynomial"] = [matrix] # the matrix for lumping is just the defining matrix
+        system._lumping_matr["polynomial"] = tuple([matrix]) # the matrix for lumping is just the defining matrix
         return system
 
     # Getters of attributes
