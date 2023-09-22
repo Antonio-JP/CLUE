@@ -15,7 +15,9 @@ from clue import FODESystem
 from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from itertools import product
-from mqt import ddsim
+from mqt import ddsim #pylint: disable=no-name-in-module
+from numpy import cdouble, count_nonzero, diag, diagonal, matmul
+from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import QuantumCircuit, Parameter
 from random import sample, random
@@ -94,7 +96,7 @@ class UndirectedGraph(defaultdict):
     def cut_cost(self, V_0: set, V_1 = None):
         ## Checking V_0
         if any(v not in self for v in V_0):
-            raise ValueError(f"The given set {V_0=} contains elements not in the grpah")
+            raise ValueError(f"The given set {V_0=} contains elements not in the graph")
         
         ## Checking V_1
         if V_1 != None:
@@ -119,7 +121,7 @@ class UndirectedGraph(defaultdict):
         return set(M[(i,i)] for i in range(M.nrows))
 
     def visualize(self, save=False):
-        import networkx as nx
+        import networkx as nx #pylint: disable=import-error
         import matplotlib.pyplot as plt
         G = nx.Graph()
         G.add_edges_from(self.edges)
@@ -130,7 +132,7 @@ class UndirectedGraph(defaultdict):
             plt.show()
         plt.close()
 
-    def quantum_cut(self):
+    def quantum_cut(self) -> tuple[QuantumCircuit, Parameter]:
         circuit = QuantumCircuit(len(self))
         t = Parameter("t")
         edge_gate = QuantumCircuit(2, name="E")
@@ -142,6 +144,43 @@ class UndirectedGraph(defaultdict):
 
         for edge in self.edges:
             circuit.append(edge_gate, edge)
+
+        return circuit, t
+    
+    def quantum_cutB(self) -> tuple[QuantumCircuit, Parameter]:
+        r'''
+            From :arxiv:`1411.4028v1` the begin Hamiltonian is the exponential matrix
+
+            .. MATH::
+
+                H_B = e^{B}
+            
+            where `B = sum_{i=1}^n \sigma_i^x`. Since the gates `\sigma_i^x` commutes for different 
+            values of `i`, then the matrix `H_B` is the product (i.e., composition) of the individual
+            exponential.
+
+            The matrix `\sigma_i^x` diagonalizes in the `\ket{+},\ket{-}` basis, meaning that:
+
+            .. MATH::
+
+                e^{-it\sigma_{j}^x} = H e^{-it H\sigma_j^x H} H,
+
+            where now `H\sigma_j^x H = [(1,0),(0,-1)]^T = \sigma_j^z`. Finally, we can write the exponential
+            of `-it\sigma_j^z` as the following 4-gates: `P_j(-i*t) \rightarrow \sigma_j^x \rightarrow P_j(i*t) \rightarrow \sigma_j^x`.
+
+            Hence, to build `H_B` we need to concatenate 6 gates per q-bit:
+
+            ``c.h(j).p(-t,j).x(j).p(t,j).x(j).h(j)``
+        '''
+        circuit = QuantumCircuit(len(self))
+        t = Parameter("t")
+        for i in range(len(self)):
+            circuit.h(i)
+            circuit.p(-t,i)
+            circuit.x(i)
+            circuit.p(t,i)
+            circuit.x(i)
+            circuit.h(i)
 
         return circuit, t
             
@@ -235,8 +274,8 @@ def ddsim_reduction(size: int, result_file):
     print(f"%%% [ddsim] Computing all cut values for graph...")
     eval_values = graph.cut_values() if size <=20 else list(range(len(graph)))
 
-    print(f"%%% [ddsim] Creating the full cirtuit and job to simulate with DDSIM")
-    m = len(eval_values) # number of values of true simulataneously
+    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
+    m = len(eval_values) # number of values of true simultaneously
     U_P, par = graph.quantum_cut(); U_P = U_P.bind_parameters({par: 1/(m*1000)})
     circuit = loop(U_P, size, m, True, True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
@@ -270,7 +309,41 @@ def clue_iteration(size: int, iterations, result_file):
         ["size", "edges", "time_lumping", "kappa", "time_iteration", "memory", "graph"]
     '''
     graph = generate_valid_example(size)
-    raise NotImplementedError(f"Experiment 'full_clue' not yet implemented")
+    
+    print(f"%%% [full-clue] Computing all true values for graph...")
+    eval_values = graph.cut_values()
+
+    print(f"%%% [full-clue] Creating the full system with the problem matrix")
+    system = FODESystem.LinearSystem(graph.cut_matrix(), lumping_subspace=NumericalSubspace)
+    obs = tuple([SparseVector.from_list(system.size*[1], field=CC)])
+    
+    print(f"%%% [clue] Computing the lumped system...")
+    tracemalloc.start()
+    lump_time = time()
+    lumped = system.lumping(obs, print_reduction=False, print_system=False)
+    lump_time = time()-lump_time
+
+    print(f"%%% [full-clue] Checking size...")
+    if len(eval_values) != lumped.size:
+        print(f"%%% [full-clue] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {len(eval_values)}\n%%% \t* Got: {lumped.size}\n%%% \t* Graph: {graph}")
+
+    print(f"%%% [full-clue] Getting the reduced U_P")
+    U_P = lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble)
+    print(f"%%% [full-clue] Getting the reduced U_B")
+    if count_nonzero(U_P - diag(diagonal(U_P))): # not diagonal
+        U_B = diag([len(graph.edges)] + (U_P.shape[0]-1)*[1/len(graph.edges)])
+    else:
+        raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
+    
+    print(f"%%% [full-clue] Computing the iteration (U_P*U_B)^iterations")
+    it_time = time()
+    _ = matrix_power(matmul(U_P, U_B), iterations)
+    it_time = time() - it_time
+    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    ## We check if the matrix is diagonal
+    result_file.writerow([size, len(graph.edges), lump_time, iterations, it_time, memory, repr(graph)])
 
 def ddsim_iteration(size: int, iterations, result_file): 
     r'''
@@ -285,10 +358,32 @@ def ddsim_iteration(size: int, iterations, result_file):
         ["size", "edges", "kappa", "time_iteration", "memory", "graph"]
     '''
     graph = generate_valid_example(size)
-    raise NotImplementedError(f"Experiment 'full_ddsim' not yet implemented")
+    print(f"%%% [ddsim] Computing all cut values for graph...")
+    eval_values = graph.cut_values() if size <=20 else list(range(len(graph)))
+
+    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
+    m = len(eval_values) # number of values of true simultaneously
+    U_P, par = graph.quantum_cut(); U_P = U_P.bind_parameters({par: 1/(m*10*iterations)})
+    U_B, par = graph.quantum_cutB(); U_B = U_B.bind_parameters({par: 1/(m*10*iterations)})
+    U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
+    circuit = loop(U_P, size, iterations, True, True)
+    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+    
+    print(f"%%% [ddsim] Computing the simulation of the circuit...")
+    tracemalloc.start()
+    ctime = time()
+    ## Executing the circuit one time
+    job = execute(circuit, backend, shots=1)
+    job.result()
+    ctime = time()-ctime
+    memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    print(f"%%% [ddsim] Storing the data...")
+    result_file.writerow([size, len(graph.edges), iterations, ctime, memory, repr(graph)])
 
 if __name__ == "__main__":
-    n = 1; m = 3; M=10; ttype="clue"; repeats=100
+    n = 1; m = 5; M=10; ttype="clue"; repeats=100
     ## Processing arguments
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
@@ -320,7 +415,7 @@ if __name__ == "__main__":
                 if ttype in ("clue", "ddsim"):
                     method(size, csv_writer)
                 else:
-                    for it in (10,100,1000):#,10000)
+                    for it in (1,10,100):#,1000):#,10000)
                         print(f"------ Case with {it} iterations")
                         method(size, it, csv_writer)
                 print(f"### Finished execution {execution}/{repeats}")

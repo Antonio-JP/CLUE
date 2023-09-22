@@ -15,7 +15,9 @@ from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from functools import lru_cache
 from itertools import product
-from mqt import ddsim
+from mqt import ddsim #pylint: disable=no-name-in-module
+from numpy import cdouble, count_nonzero, diag, diagonal, matmul
+from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import QuantumCircuit, Parameter
 from qiskit.circuit.library import PhaseGate
@@ -28,7 +30,7 @@ from misc import *
 class Clause:
     def __init__(self, *elements):
         elements = tuple(set(tuple(el) for el in elements)) # removed repeated
-        if any((i != j and elements[i][0] == elements[j][0]) for i in range(len(elements)) for j in range(len(elements))): # if two oposite variables are present we have a trivial clause 
+        if any((i != j and elements[i][0] == elements[j][0]) for i in range(len(elements)) for j in range(len(elements))): # if two opposite variables are present we have a trivial clause 
             elements = tuple()
 
         self.__values = tuple([el[0] for el in elements])
@@ -68,7 +70,7 @@ class Clause:
         C = QuantumCircuit(2, name=f"TT")
         ## Negating qubit 0
         C.x(0)
-        ## Apply conditioned T to qbit 2
+        ## Apply conditioned T to qubit 2
         C.cx(0, 1)
         C.cp(-dt, 0, 1)
         C.cx(0, 1)
@@ -79,7 +81,7 @@ class Clause:
     @lru_cache(maxsize=16)
     def FT(dt) -> QuantumCircuit:
         C = QuantumCircuit(2, name=f"FT")
-        ## Apply conditioned T to qbit 2
+        ## Apply conditioned T to qubit 2
         C.cx(0, 1)
         C.cp(-dt, 0, 1)
         C.cx(0, 1)
@@ -88,7 +90,7 @@ class Clause:
     @lru_cache(maxsize=16)
     def FF(dt) -> QuantumCircuit:
         C = QuantumCircuit(2, name=f"FF")
-        ## Apply conditioned F to qbit 2
+        ## Apply conditioned F to qubit 2
         C.cp(-dt, 0, 1)
         return C
     @staticmethod
@@ -188,7 +190,7 @@ class SATFormula(set[Clause]):
             raise TypeError(f"SATFormula only allow clauses as elements")
         if self.n != None:
             if any(v >= self.n for v in __element.variables):
-                raise ValueError(f"Formula bounded to {self.n} variables. Received variable outside: {self.__element.variables}")
+                raise ValueError(f"Formula bounded to {self.n} variables. Received variable outside: {__element.variables}")
         if not __element.is_trivial():
             super().add(__element)
 
@@ -250,6 +252,36 @@ class SATFormula(set[Clause]):
         trotter(circuit, gates, 2)
 
         return circuit, par
+    
+    def eval_quantumB(self) -> tuple[QuantumCircuit, Parameter]:
+        r'''
+            From :arxiv:`0001106v1`, the begin Hamiltonian is the exponential matrix 
+
+            .. MATH::
+
+                H_B = e^{-itB}
+
+            where `B = \sum_{j=1}^n d_j B_j`. First of all, the matrices `B_j` commute among themselves, since they only 
+            act on one of the q-bits. Hence, we can compute the matrix `H_B` as the product of the exponential of the independent
+            `B_j` with the corresponding factor `-id_j t`.
+             
+            Now, `B_j` diagonalizes with eigenvalues 1 and 0 on the basis `\ket{+},\ket{-}`. Hence we can deduce that 
+
+            .. MATH::
+
+                e^{-id_j t B_j} = H_j\begin{pmatrix}e^{-id_j t} & 0\\0 & 1\ned{pmatrix}H_j = H_j \sigma_j^x P_j(-d_j t) \sigma_j^x H_j.
+        '''
+        par = Parameter("t")
+        count = [sum(n in clause.variables for clause in self) for n in self.total_variables]
+        circuit = QuantumCircuit(len(self.total_variables))
+        for i in range(len(self.total_variables)):
+            circuit.h(i)
+            circuit.x(i)
+            circuit.p(-par*count[i], i)
+            circuit.x(i)
+            circuit.h(i)
+        
+        return circuit, par
 
     def eval_begin_matrix(self) -> SparseRowMatrix:
         count = [sum(n in clause.variables for clause in self) for n in self.total_variables]
@@ -303,7 +335,7 @@ def generate_valid_example(size: int) -> SATFormula:
     print(f"%%% [GEN] Generating a valid formula of SAT3 with {size} variables...")
     formula = SATFormula.random(size, randint(size, 3*size))
     while len(formula.variables) != formula.total_size:
-        print(f"%%% [GEN] Generated formula with fewer variables than expeceted. Repeating...")
+        print(f"%%% [GEN] Generated formula with fewer variables than expected. Repeating...")
         formula = SATFormula.random(size, randint(size, 3*size))
     
     print(f"%%% [GEN] Generated formula with {len(formula)} clauses")
@@ -366,8 +398,8 @@ def ddsim_reduction(size: int, result_file):
     print(f"%%% [ddsim] Computing all true values for formula...")
     eval_values = formula.eval_values() if size <=20 else list(range(len(formula)))
 
-    print(f"%%% [ddsim] Creating the full cirtuit and job to simulate with DDSIM")
-    m = len(eval_values) # number of values of true simulataneously
+    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
+    m = len(eval_values) # number of values of true simultaneously
     U_P, par = formula.eval_quantum(); U_P = U_P.bind_parameters({par: 1/(m*1000)})
     circuit = loop(U_P, size, m, True, True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
@@ -401,7 +433,41 @@ def clue_iteration(size: int, iterations, result_file):
         ["size", "clauses", "time_lumping", "kappa", "time_iteration", "memory", "formula"]
     '''
     formula = generate_valid_example(size)
-    raise NotImplementedError(f"Experiment 'full_clue' not yet implemented")
+    
+    print(f"%%% [full-clue] Computing all true values for formula...")
+    eval_values = formula.eval_values()
+
+    print(f"%%% [full-clue] Creating the full system with the problem matrix")
+    system = FODESystem.LinearSystem(formula.eval_matrix(), lumping_subspace=NumericalSubspace)
+    obs = tuple([SparseVector.from_list(system.size*[1], field=CC)])
+    
+    print(f"%%% [clue] Computing the lumped system...")
+    tracemalloc.start()
+    lump_time = time()
+    lumped = system.lumping(obs, print_reduction=False, print_system=False)
+    lump_time = time()-lump_time
+
+    print(f"%%% [full-clue] Checking size...")
+    if len(eval_values) != lumped.size:
+        print(f"%%% [full-clue] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {len(eval_values)}\n%%% \t* Got: {lumped.size}\n%%% \t* Formula: {formula}")
+
+    print(f"%%% [full-clue] Getting the reduced U_P")
+    U_P = lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble)
+    print(f"%%% [full-clue] Getting the reduced U_B")
+    if count_nonzero(U_P - diag(diagonal(U_P))): # not diagonal
+        U_B = diag([len(formula)] + (U_P.shape[0]-1)*[1/len(formula)])
+    else:
+        raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
+    
+    print(f"%%% [full-clue] Computing the iteration (U_P*U_B)^iterations")
+    it_time = time()
+    _ = matrix_power(matmul(U_P, U_B), iterations)
+    it_time = time() - it_time
+    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    ## We check if the matrix is diagonal
+    result_file.writerow([size, len(formula), lump_time, iterations, it_time, memory, repr(formula)])
 
 def ddsim_iteration(size: int, iterations, result_file): 
     r'''
@@ -416,10 +482,32 @@ def ddsim_iteration(size: int, iterations, result_file):
         ["size", "clauses", "kappa", "time_iteration", "memory", "formula"]
     '''
     formula = generate_valid_example(size)
-    raise NotImplementedError(f"Experiment 'full_ddsim' not yet implemented")
+    print(f"%%% [ddsim] Computing all true values for formula...")
+    eval_values = formula.eval_values() if size <=20 else list(range(len(formula)))
+
+    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
+    m = len(eval_values) # number of values of true simultaneously
+    U_P, par = formula.eval_quantum(); U_P = U_P.bind_parameters({par: 1/(m*10*iterations)})
+    U_B, par = formula.eval_quantumB(); U_B = U_B.bind_parameters({par: 1/(m*10*iterations)})
+    U_B.append(U_P, U_B.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
+    circuit = loop(U_B, size, iterations, True, True)
+    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+    
+    print(f"%%% [ddsim] Computing the simulation of the circuit...")
+    tracemalloc.start()
+    ctime = time()
+    ## Executing the circuit one time
+    job = execute(circuit, backend, shots=1)
+    job.result()
+    ctime = time()-ctime
+    memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    print(f"%%% [ddsim] Storing the data...")
+    result_file.writerow([size, len(formula), iterations, ctime, memory, repr(formula)])
 
 if __name__ == "__main__":
-    n = 1; m = 3; M=10; ttype="clue"; repeats=100
+    n = 1; m = 5; M=10; ttype="clue"; repeats=100
     ## Processing arguments
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
@@ -443,7 +531,7 @@ if __name__ == "__main__":
         if not existed:
             gen_header(csv_writer, ttype)
         print(f"##################################################################################")
-        print(f"### EXECUTION ON QSAT [{m=}, {M=}, {repeats=}, method={ttype}]")
+        print(f"### EXECUTION ON Q-SAT [{m=}, {M=}, {repeats=}, method={ttype}]")
         print(f"##################################################################################")
         for size in range(m, M+1):
             for execution in range(1,repeats+1):
@@ -451,7 +539,7 @@ if __name__ == "__main__":
                 if ttype in ("clue", "ddsim"):
                     method(size, csv_writer)
                 else:
-                    for it in (10,100,1000):#,10000)
+                    for it in (1,10,100):#,1000):#,10000)
                         print(f"------ Case with {it} iterations")
                         method(size, it, csv_writer)
                 print(f"### Finished execution {execution}/{repeats}")
