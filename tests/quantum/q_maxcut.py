@@ -408,7 +408,7 @@ def ddsim_iteration(size: int, iterations, result_file, timeout=0):
     result_file.writerow([size, len(graph.edges), iterations, ctime, memory, repr(graph)])
 
 if __name__ == "__main__":
-    n = 1; m = 5; M=10; ttype="clue"; repeats=100
+    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0
     ## Processing arguments
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
