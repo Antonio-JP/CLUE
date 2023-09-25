@@ -8,7 +8,7 @@ git add [result]q_sat_clue.csv;
 git commit -m "Updated results of Q-SAT (clue)";
 git push;
 python3 q_maxcut.py -M 8 -r 20;
-git add [result]q_maxcut_clue.csv,
+git add [result]q_maxcut_clue.csv;
 git commit -m "Updated results of Q-MAXCUT (clue)";
 git push;
 python3 q_sat.py -M 10 -r 20 -t ddsim;
@@ -42,7 +42,7 @@ git add [result]q_maxcut_ddsim.csv;
 git commit -m "Updated results of Q-MAXCUT (ddsim) from 21 to 25";
 git push;
 python3 q_maxcut.py -r 20 -to 600;
-git add [result]q_maxcut_ddsim.csv;
+git add [result]q_maxcut_clue.csv;
 git commit -m "Updated results of Q-MAXCUT (clue)";
 git push;
 
