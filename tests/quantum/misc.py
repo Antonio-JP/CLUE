@@ -2,6 +2,27 @@ r'''
     Some auxiliary methods
 '''
 from qiskit.circuit import QuantumCircuit
+import signal
+
+class Timeout(object):
+    def __init__(self, seconds):
+        self.seconds = seconds
+        self.old = None
+    def __enter__(self):
+        self.old = signal.signal(signal.SIGALRM, Timeout.alarm_handler)
+        signal.alarm(self.seconds)
+        return self
+    def __exit__(self, type, value, traceback):
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, self.old)
+
+    @staticmethod
+    def alarm_handler(sgn, _):
+        if(sgn == signal.SIGALRM):
+            raise TimeoutError
+        else:
+            raise RuntimeError
+
 
 def loop(circuit: QuantumCircuit, size: int, iterations: int, prepend_H: bool = True, measure: bool = False):
     r'''

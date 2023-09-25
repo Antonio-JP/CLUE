@@ -16,7 +16,7 @@ from csv import writer
 from functools import lru_cache
 from itertools import product
 from mqt import ddsim #pylint: disable=no-name-in-module
-from numpy import cdouble, count_nonzero, diag, diagonal, matmul
+from numpy import cdouble, count_nonzero, diag, diagonal, matmul, Inf
 from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import QuantumCircuit, Parameter
@@ -351,7 +351,7 @@ def gen_header(csv_writer, ttype):
     else:
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
-def clue_reduction(size: int, result_file): 
+def clue_reduction(size: int, result_file, timeout=0): 
     r'''
         This method computes the CLUE lumping
 
@@ -371,9 +371,15 @@ def clue_reduction(size: int, result_file):
     
     print(f"%%% [clue] Computing the lumped system...")
     tracemalloc.start()
-    ctime = time()
-    lumped = system.lumping(obs, print_reduction=False, print_system=False)
-    ctime = time()-ctime
+    try:
+        with(Timeout(timeout)):
+            ctime = time()
+            lumped = system.lumping(obs, print_reduction=False, print_system=False)
+            ctime = time()-ctime
+    except TimeoutError:
+        print(f"%%% [clue] Timeout reached for execution")
+        ctime = Inf
+    
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
@@ -382,7 +388,7 @@ def clue_reduction(size: int, result_file):
         print(f"%%% [clue] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {len(eval_values)}\n%%% \t* Got: {lumped.size}\n%%% \t* Formula: {formula}")
     result_file.writerow([size, len(formula), lumped.size/system.size, ctime, memory, repr(formula)])
 
-def ddsim_reduction(size: int, result_file): 
+def ddsim_reduction(size: int, result_file, timeout=0): 
     r'''
         This method computes the DDSIM lumping
 
@@ -406,18 +412,23 @@ def ddsim_reduction(size: int, result_file):
     
     print(f"%%% [ddsim] Computing the simulation of the circuit...")
     tracemalloc.start()
-    ctime = time()
-    ## Executing the circuit one time
-    job = execute(circuit, backend, shots=1)
-    job.result()
-    ctime = time()-ctime
+    try:
+        with(Timeout(timeout)):
+            ctime = time()
+            ## Executing the circuit one time
+            job = execute(circuit, backend, shots=1)
+            job.result()
+            ctime = time()-ctime
+    except TimeoutError:
+        print(f"%%% [ddsim] Timeout reached for execution")
+        ctime = Inf
     memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
     print(f"%%% [ddsim] Storing the data...")
     result_file.writerow([size, len(formula), m/2**size, ctime, memory, repr(formula)])
 
-def clue_iteration(size: int, iterations, result_file): 
+def clue_iteration(size: int, iterations, result_file, timeout=0): 
     r'''
         This method computes the CLUE iteration
 
@@ -441,11 +452,21 @@ def clue_iteration(size: int, iterations, result_file):
     system = FODESystem.LinearSystem(formula.eval_matrix(), lumping_subspace=NumericalSubspace)
     obs = tuple([SparseVector.from_list(system.size*[1], field=CC)])
     
-    print(f"%%% [clue] Computing the lumped system...")
-    tracemalloc.start()
-    lump_time = time()
-    lumped = system.lumping(obs, print_reduction=False, print_system=False)
-    lump_time = time()-lump_time
+    print(f"%%% [full-clue] Computing the lumped system...")
+    tracemalloc.start()    
+    try:
+        with(Timeout(timeout)):
+            lump_time = time()
+            ## Executing the circuit one time
+            lumped = system.lumping(obs, print_reduction=False, print_system=False)
+            lump_time = time()-lump_time
+    except TimeoutError:
+        print(f"%%% [full-clue] Timeout reached for execution")
+        lump_time = Inf
+        memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+        tracemalloc.stop()
+        result_file.writerow([size, len(formula), lump_time, iterations, Inf, memory, repr(formula)])
+        return
 
     print(f"%%% [full-clue] Checking size...")
     if len(eval_values) != lumped.size:
@@ -469,7 +490,7 @@ def clue_iteration(size: int, iterations, result_file):
     ## We check if the matrix is diagonal
     result_file.writerow([size, len(formula), lump_time, iterations, it_time, memory, repr(formula)])
 
-def ddsim_iteration(size: int, iterations, result_file): 
+def ddsim_iteration(size: int, iterations, result_file, timeout=0): 
     r'''
         This method computes the DDSIM iteration
 
@@ -482,10 +503,10 @@ def ddsim_iteration(size: int, iterations, result_file):
         ["size", "clauses", "kappa", "time_iteration", "memory", "formula"]
     '''
     formula = generate_valid_example(size)
-    print(f"%%% [ddsim] Computing all true values for formula...")
+    print(f"%%% [full-ddsim] Computing all true values for formula...")
     eval_values = formula.eval_values() if size <=20 else list(range(len(formula)))
 
-    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
+    print(f"%%% [full-ddsim] Creating the full circuit and job to simulate with DDSIM")
     m = len(eval_values) # number of values of true simultaneously
     U_P, par = formula.eval_quantum(); U_P = U_P.bind_parameters({par: 1/(m*10*iterations)})
     U_B, par = formula.eval_quantumB(); U_B = U_B.bind_parameters({par: 1/(m*10*iterations)})
@@ -493,21 +514,26 @@ def ddsim_iteration(size: int, iterations, result_file):
     circuit = loop(U_B, size, iterations, True, True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
     
-    print(f"%%% [ddsim] Computing the simulation of the circuit...")
+    print(f"%%% [full-ddsim] Computing the simulation of the circuit...")
     tracemalloc.start()
-    ctime = time()
-    ## Executing the circuit one time
-    job = execute(circuit, backend, shots=1)
-    job.result()
-    ctime = time()-ctime
+    try:
+        with(Timeout(timeout)):
+            ctime = time()
+            ## Executing the circuit one time
+            job = execute(circuit, backend, shots=1)
+            job.result()
+            ctime = time()-ctime
+    except TimeoutError:
+        print(f"%%% [full-ddsim] Timeout reached for execution")
+        ctime = Inf
     memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [ddsim] Storing the data...")
+    print(f"%%% [full-ddsim] Storing the data...")
     result_file.writerow([size, len(formula), iterations, ctime, memory, repr(formula)])
 
 if __name__ == "__main__":
-    n = 1; m = 5; M=10; ttype="clue"; repeats=100
+    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0
     ## Processing arguments
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
@@ -518,6 +544,8 @@ if __name__ == "__main__":
             elif sys.argv[n].endswith("t"):
                 ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "full_clue", "full_ddsim") else ttype
                 n += 2
+            elif sys.argv[n].endswith("to"):
+                timeout = int(sys.argv[n+1]); n+=2
             elif sys.argv[n].endswith("r"):
                 repeats = int(sys.argv[n+1]); n+=2
         else:
@@ -537,7 +565,7 @@ if __name__ == "__main__":
             for execution in range(1,repeats+1):
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 if ttype in ("clue", "ddsim"):
-                    method(size, csv_writer)
+                    method(size, csv_writer, timeout=timeout)
                 else:
                     for it in (1,10,100):#,1000):#,10000)
                         print(f"------ Case with {it} iterations")
