@@ -22,7 +22,7 @@ from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import QuantumCircuit, Parameter
 from random import sample, random
-from time import time
+from time import time, process_time
 
 ## Imports from the local folder
 from misc import *
@@ -250,9 +250,9 @@ def clue_reduction(size: int, result_file, timeout=0):
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = time()
+            ctime = process_time()
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            ctime = time()-ctime
+            ctime = process_time()-ctime
     except TimeoutError:
         print(f"%%% [clue] Timeout reached for execution")
         ctime = Inf
@@ -290,11 +290,11 @@ def ddsim_reduction(size: int, result_file, timeout=0):
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = time()
+            ctime = process_time()
             ## Executing the circuit one time
             job = execute(circuit, backend, shots=1)
             job.result()
-            ctime = time()-ctime
+            ctime = process_time()-ctime
     except TimeoutError:
         print(f"%%% [ddsim] Timeout reached for execution")
         ctime = Inf
@@ -332,10 +332,10 @@ def clue_iteration(size: int, iterations, result_file, timeout=0):
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            lump_time = time()
+            lump_time = process_time()
             ## Executing the circuit one time
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            lump_time = time()-lump_time
+            lump_time = process_time()-lump_time
     except TimeoutError:
         print(f"%%% [full-clue] Timeout reached for execution")
         lump_time = Inf
@@ -357,9 +357,9 @@ def clue_iteration(size: int, iterations, result_file, timeout=0):
         raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
     
     print(f"%%% [full-clue] Computing the iteration (U_P*U_B)^iterations")
-    it_time = time()
+    it_time = process_time()
     _ = matrix_power(matmul(U_P, U_B), iterations)
-    it_time = time() - it_time
+    it_time = process_time() - it_time
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
@@ -394,11 +394,11 @@ def ddsim_iteration(size: int, iterations, result_file, timeout=0):
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = time()
+            ctime = process_time()
             ## Executing the circuit one time
             job = execute(circuit, backend, shots=1)
             job.result()
-            ctime = time()-ctime
+            ctime = process_time()-ctime
     except TimeoutError:
         print(f"%%% [ddsim] Timeout reached for execution")
         ctime = Inf
