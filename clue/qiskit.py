@@ -330,7 +330,7 @@ def G(f, n):
                    [-0.5+0.j, -0.5+0.j, -0.5+0.j, -0.5+0.j],
                    [-0.5+0.j,  0.5-0.j,  0.5+0.j, -0.5+0.j],
                    [-0.5+0.j,  0.5-0.j, -0.5+0.j,  0.5+0.j]])
-            >>> f = lambda p : 1 if p != 1 else 0 # looking number 1
+            >>> f = lambda p : 1 if p != 1 else 0 # looking anything but 1
             >>> G(f, 2)
             array([[-0.5+0.j, -0.5+0.j,  0.5-0.j,  0.5-0.j],
                    [ 0.5-0.j,  0.5+0.j,  0.5-0.j,  0.5-0.j],

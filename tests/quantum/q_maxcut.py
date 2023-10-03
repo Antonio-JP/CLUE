@@ -15,6 +15,7 @@ from clue import FODESystem
 from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from itertools import product
+from math import ceil, sqrt
 from mqt import ddsim #pylint: disable=no-name-in-module
 from numpy import cdouble, count_nonzero, diag, diagonal, Inf, matmul
 from numpy.linalg import matrix_power
@@ -386,7 +387,7 @@ def ddsim_iteration(size: int, iterations, result_file, timeout=0):
     U_P, par = graph.quantum_cut(); U_P = U_P.bind_parameters({par: 1/(m*10*iterations)})
     U_B, par = graph.quantum_cutB(); U_B = U_B.bind_parameters({par: 1/(m*10*iterations)})
     U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
-    circuit = loop(U_P, size, iterations, True, True)
+    circuit = loop(U_B, size, iterations, True, True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
     
     print(f"%%% [ddsim] Computing the simulation of the circuit...")
@@ -442,8 +443,9 @@ if __name__ == "__main__":
                 if ttype in ("clue", "ddsim"):
                     method(size, csv_writer, timeout=timeout)
                 else:
-                    for it in (1,10,100):#,1000):#,10000)
-                        print(f"------ Case with {it} iterations")
-                        method(size, it, csv_writer)
+                    #for it in (1,10,100):#,1000):#,10000)
+                    it = ceil(sqrt(2**size))
+                    print(f"------ Case with {it} iterations")
+                    method(size, it, csv_writer)
                 print(f"### Finished execution {execution}/{repeats}")
                 result_file.flush()

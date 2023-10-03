@@ -15,6 +15,7 @@ from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from functools import lru_cache
 from itertools import product
+from math import ceil, sqrt
 from mqt import ddsim #pylint: disable=no-name-in-module
 from numpy import cdouble, count_nonzero, diag, diagonal, matmul, Inf
 from numpy.linalg import matrix_power
@@ -567,8 +568,9 @@ if __name__ == "__main__":
                 if ttype in ("clue", "ddsim"):
                     method(size, csv_writer, timeout=timeout)
                 else:
-                    for it in (1,10,100):#,1000):#,10000)
-                        print(f"------ Case with {it} iterations")
-                        method(size, it, csv_writer)
+                    #for it in (1,10,100):#,1000):#,10000)
+                    it = ceil(sqrt(2**size))
+                    print(f"------ Case with {it} iterations")
+                    method(size, it, csv_writer)
                 print(f"### Finished execution {execution}/{repeats}")
                 result_file.flush()
