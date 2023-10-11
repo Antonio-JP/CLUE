@@ -21,7 +21,10 @@ if __name__ == "__main__":
                 row["memory (MB)"] < get_filter(M_high, row) and 
                 row["memory (MB)"] > get_filter(M_low, row)
             )])
+        
+        if "red. ratio" in data.columns:
+            data["red. size"] = (2**data["size"])*data["red. ratio"]
     
     ## PRINTING RESULTING DATA
-    print(data.drop(columns=data.columns[-1:]).groupby(by=["size"] + (["kappa"] if "kappa" in data.columns else [])).mean())
+    print(data.drop(columns=data.columns[-2:-1]).groupby(by=["size"] + (["kappa"] if "kappa" in data.columns else [])).mean())
     sys.exit(1)
