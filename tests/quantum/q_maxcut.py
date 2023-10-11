@@ -17,7 +17,7 @@ from csv import writer
 from itertools import product
 from math import ceil, sqrt
 from mqt import ddsim #pylint: disable=no-name-in-module
-from numpy import cdouble, count_nonzero, diag, diagonal, Inf, matmul
+from numpy import cdouble, count_nonzero, diag, diagonal, exp, Inf, matmul
 from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import QuantumCircuit, Parameter
@@ -120,6 +120,26 @@ class UndirectedGraph(defaultdict):
     def cut_values(self) -> set[int]:
         M = self.cut_matrix()
         return set(M[(i,i)] for i in range(M.nrows))
+    
+    def cut_split(self) -> tuple[SparseRowMatrix, SparseRowMatrix]:
+        r'''Return a direct lumping and reduced model from the graph'''
+        eigenvalues = dict()
+        for i,values in enumerate(product(range(2), repeat=len(self))):
+            cost = self.cut_cost(set(v for (j,v) in enumerate(self.__vertices) if values[j] == 0))
+            if not cost in eigenvalues:
+                eigenvalues[cost] = list()
+            eigenvalues[cost].append(i)
+
+        d = len(eigenvalues)
+        L = SparseRowMatrix((d,2**(len(self))), CC)
+        U = SparseRowMatrix((d,d), CC)
+        for i,eigenvalue in enumerate(eigenvalues.keys()):
+            m = 1/sqrt(len(eigenvalues[eigenvalue]))
+            for j in eigenvalues[eigenvalue]:
+                L.increment(i,j,m)
+            U.increment(i,i,exp(-1j*eigenvalue))
+
+        return L,U
 
     def visualize(self, save=False):
         import networkx as nx #pylint: disable=import-error
@@ -219,9 +239,9 @@ def generate_valid_example(size: int) -> UndirectedGraph:
     return graph
 
 def gen_header(csv_writer, ttype):
-    if ttype in ("clue", "ddsim"):
+    if ttype in ("clue", "ddsim", "direct"):
         csv_writer.writerow(["size", "edges", "red. ratio", "time_lumping", "memory (MB)", "graph"])
-    elif ttype == "full_clue":
+    elif ttype in ("full_clue", "full_direct"):
         csv_writer.writerow(["size", "edges", "time_lumping", "kappa", "time_iteration", "memory (MB)", "graph"])
     elif ttype == "full_ddsim":
         csv_writer.writerow(["size", "edges", "kappa", "time_iteration", "memory (MB)", "graph"])
@@ -303,6 +323,34 @@ def ddsim_reduction(size: int, result_file, timeout=0):
 
     print(f"%%% [ddsim] Storing the data...")
     result_file.writerow([size, len(graph.edges), m/2**size, ctime, memory, repr(graph)])
+
+def direct_reduction(size: int, result_file, timeout=0): 
+    r'''
+        This method computes the CLUE lumping directly
+
+        This method generates a random graph and computes the lumping of the problem matrix associated
+        to it with a special case of CLUE.
+         
+        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
+        ["size", "edges", "red. ratio", "time_lumping", "memory", "graph"]
+    '''
+    graph = generate_valid_example(size)
+    
+    print(f"%%% [direct] Computing the lumped system...")
+    tracemalloc.start()
+    try:
+        with(Timeout(timeout)):
+            ctime = process_time()
+            L, U = graph.cut_split()
+            ctime = process_time()-ctime
+    except TimeoutError:
+        print(f"%%% [direct] Timeout reached for execution")
+        ctime = Inf
+    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    print(f"%%% [direct] Storing the data...")
+    result_file.writerow([size, len(graph.edges), L.nrows/L.ncols, ctime, memory, repr(graph)])
 
 def clue_iteration(size: int, iterations, result_file, timeout=0): 
     r'''
@@ -408,6 +456,57 @@ def ddsim_iteration(size: int, iterations, result_file, timeout=0):
     print(f"%%% [ddsim] Storing the data...")
     result_file.writerow([size, len(graph.edges), iterations, ctime, memory, repr(graph)])
 
+def direct_iteration(size: int, iterations, result_file, timeout=0): 
+    r'''
+        This method computes the CLUE iteration with the direct approach
+
+        This method generates a random graph and computes the lumping of the problem matrix associated
+        to it with CLUE in a direct fashion.
+        
+        Then it creates a valid begin Hamiltonian within the invariant space and compute the alternate application 
+        of both the begin and problem Hamiltonian in the reduced space (i.e., we used the lumped matrix from the 
+        actual lumping) up to ``iterations`` times. 
+         
+        It stores the execution time of the lumping, the number of iterations and the time for the computed iteration. 
+        It stores the result on ``result_file``.
+        ["size", "edges", "time_lumping", "kappa", "time_iteration", "memory", "graph"]
+    '''
+    graph = generate_valid_example(size)
+    
+    print(f"%%% [full-direct] Computing the lumped system...")
+    tracemalloc.start()
+    try:
+        with(Timeout(timeout)):
+            lump_time = process_time()
+            ## Executing the circuit one time
+            L, U_P = graph.cut_split()
+            lump_time = process_time()-lump_time
+    except TimeoutError:
+        print(f"%%% [full-direct] Timeout reached for execution")
+        lump_time = Inf
+        memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+        tracemalloc.stop()
+        result_file.writerow([size, len(graph.edges), lump_time, iterations, Inf, memory, repr(graph)])
+        return
+
+    print(f"%%% [full-direct] Getting the reduced U_P")
+    U_P = U_P.to_numpy(dtype=cdouble)
+    print(f"%%% [full-direct] Getting the reduced U_B")
+    if count_nonzero(U_P - diag(diagonal(U_P))): # not diagonal
+        U_B = diag([len(graph.edges)] + (U_P.shape[0]-1)*[1/len(graph.edges)])
+    else:
+        raise NotImplementedError(f"[full-direct] Base hamiltonian not defined when U_P is diagonal")
+    
+    print(f"%%% [full-direct] Computing the iteration (U_P*U_B)^iterations")
+    it_time = process_time()
+    _ = matrix_power(matmul(U_P, U_B), iterations)
+    it_time = process_time() - it_time
+    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
+    tracemalloc.stop()
+
+    ## We check if the matrix is diagonal
+    result_file.writerow([size, len(graph.edges), lump_time, iterations, it_time, memory, repr(graph)])
+
 if __name__ == "__main__":
     n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0
     ## Processing arguments
@@ -418,7 +517,7 @@ if __name__ == "__main__":
             elif sys.argv[n].endswith("M"):
                 M = int(sys.argv[n+1]); n+=2
             elif sys.argv[n].endswith("t"):
-                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "full_clue", "full_ddsim") else ttype
+                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct") else ttype
                 n += 2
             elif sys.argv[n].endswith("to"):
                 timeout = int(sys.argv[n+1]); n+=2
@@ -427,8 +526,8 @@ if __name__ == "__main__":
         else:
             n += 1
 
-    methods = [clue_reduction, ddsim_reduction, clue_iteration, ddsim_iteration]
-    method = methods[["clue", "ddsim", "full_clue", "full_ddsim"].index(ttype)]
+    methods = [clue_reduction, ddsim_reduction, direct_reduction, clue_iteration, ddsim_iteration, direct_iteration]
+    method = methods[["clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct"].index(ttype)]
     existed = os.path.exists(os.path.join(SCRIPT_DIR, f"[result]q_maxcut_{ttype}.csv"))
     with open(os.path.join(SCRIPT_DIR, f"[result]q_maxcut_{ttype}.csv"), "at" if existed else "wt") as result_file:
         csv_writer = writer(result_file)
@@ -440,7 +539,7 @@ if __name__ == "__main__":
         for size in range(m, M+1):
             for execution in range(1,repeats+1):
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
-                if ttype in ("clue", "ddsim"):
+                if ttype in ("clue", "ddsim", "direct"):
                     method(size, csv_writer, timeout=timeout)
                 else:
                     #for it in (1,10,100):#,1000):#,10000)
