@@ -46,5 +46,5 @@ if __name__ == "__main__":
 
     
     ## PRINTING RESULTING DATA
-    print(data.drop(columns=data.columns[-2:-1]).groupby(by=["size"] + (["name"] if "name" in data.columns else []) + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
+    print(data.drop(columns=data.columns[-2:-1]).groupby(by=(["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
     #sys.exit(1)
