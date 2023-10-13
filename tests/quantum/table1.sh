@@ -1,9 +1,9 @@
 # Executing examples Up to order 15
-#python3 q_sat.py -t direct -m 5 -M 15 -r 50;
-#git add [result]q_sat_direct.csv; git commit -m "Table 1 (SAT) up to order 15"; git push;
-#python3 q_maxcut.py -t direct -m 5 -M 15 -r 50;
-#git add [result]q_maxcut_direct.csv; git commit -m "Table 1 (MAXCUT) up to order 15"; git push;
-#python3 q_order.py -m 5 -M 12 -r 50;
+python3 q_sat.py -t direct -m 5 -M 15 -r 50;
+git add [result]q_sat_direct.csv; git commit -m "Table 1 (SAT) up to order 15"; git push;
+python3 q_maxcut.py -t direct -m 5 -M 15 -r 50;
+git add [result]q_maxcut_direct.csv; git commit -m "Table 1 (MAXCUT) up to order 15"; git push;
+python3 q_order.py -m 5 -M 12 -r 50;
 git add [result]q_order_clue.csv; git commit -m "Table 1 (ORDER) up to order 12"; git push;
 python3 q_search.py -m 5 -M 10 -r 50;
 git add [result]q_search_clue.csv; git commit -m "Table 1 (GROVER) up to order 10"; git push;
