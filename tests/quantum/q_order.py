@@ -229,8 +229,8 @@ if __name__ == "__main__":
 
     methods = [clue_reduction, ddsim_reduction, clue_iteration, ddsim_iteration]
     method = methods[["clue", "ddsim", "full_clue", "full_ddsim"].index(ttype)]
-    existed = os.path.exists(os.path.join(SCRIPT_DIR, f"[result]q_order_{ttype}.csv"))
-    with open(os.path.join(SCRIPT_DIR, f"[result]q_order_{ttype}.csv"), "at" if existed else "wt") as result_file:
+    existed = os.path.exists(os.path.join(SCRIPT_DIR, "results", f"[result]q_order_{ttype}.csv"))
+    with open(os.path.join(SCRIPT_DIR, "results", f"[result]q_order_{ttype}.csv"), "at" if existed else "wt") as result_file:
         csv_writer = writer(result_file)
         if not existed:
             gen_header(csv_writer, ttype)
