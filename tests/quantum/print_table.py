@@ -34,8 +34,8 @@ if __name__ == "__main__":
                     row["memory (MB)"] > get_filter(M_low, row)
                 )])
             
-            if "red. ratio" in data.columns:
-                data["red. size"] = (2**data["size"])*data["red. ratio"]
+    if "red. ratio" in data.columns:
+        data["red. size"] = (2**data["size"])*data["red. ratio"]
 
     ## FILTERING BY OBSERVABLE IF REQUIRED
     if "obs" in data.columns:
