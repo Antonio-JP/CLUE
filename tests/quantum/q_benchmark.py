@@ -245,7 +245,7 @@ if __name__ == "__main__":
         print(f"##################################################################################")
         for size in range(m, M+1):
             for execution in range(1,repeats+1):
-                my_obs = list(range(2**size)) + ["H"] if len(obs) == 0 else obs
+                my_obs = (["H"] + list(range(2**size))) if len(obs) == 0 else obs
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 for i,observable in enumerate(my_obs):
                     if ttype in ("clue", "ddsim"):
