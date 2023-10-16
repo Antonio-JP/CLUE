@@ -37,7 +37,7 @@ if __name__ == "__main__":
                     row["memory (MB)"] > get_filter(M_low, row)
                 )])
             
-    if without_infinity:
+    if without_infinity and "time_lumping" in data.columns:
         data = pd.DataFrame(
             [row for (_,row) in data.iterrows() if (
                     row["time_lumping"] != inf
