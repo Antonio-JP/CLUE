@@ -2799,3 +2799,4 @@ size,name,obs,red. ratio,time_lumping,memory (MB),problem
 9,tsp,H,unknown,inf,90.34040069580078,tsp with 3 qubits.
 9,tsp,0,unknown,inf,89.88558197021484,tsp with 3 qubits.
 9,tsp,H,unknown,inf,90.34040069580078,tsp with 3 qubits.
+5,dj,0,0.125,1.040251,0.6911125183105469,dj with 5 qubits.
