@@ -28,8 +28,8 @@ from misc import *
 VALID_BENCHMARKS = {"ae": ae, "dj" : dj, "ghz": ghz, "graphstate": graphstate, "pricingput": pricingput, "pricingcall": pricingcall, 
                     "portfolioqaoa": portfolioqaoa, "portfoliovqe": portfoliovqe, "qft":qft, "qpeexact": qpeexact, "qpeinexact": qpeinexact,
                     "qwalk": qwalk, "tsp": tsp, "qnn": qnn, "vqe": vqe, "wstate": wstate}
-FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deitsch-Jozsa", "ghz": "Greenberger-Horne_zeilinger", "graphstate": "Graph State", 
-              "pricingput": "Pricing Put Option", "pricingcall": "Princing Put Call", "portfolioqaoa": "Portfolio Optimization", "portfoliovqe": "VQE Portfolio Optimizaiton", 
+FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deutsch-Jozsa", "ghz": "Greenberger-Horne-Zeilinger", "graphstate": "Graph State", 
+              "pricingput": "Pricing Put Option", "pricingcall": "Princing Call Option", "portfolioqaoa": "Portfolio Optimization", "portfoliovqe": "VQE Portfolio Optimizaiton", 
               "qft":"Quantum Fourier Transform", "qpeexact": "Exact Quantum Phase Estimation", "qpeinexact": "Inexact Qunatum Phase Estimation", "qwalk": "Quantum Walk", 
               "tsp": "Travelling Salesman", "qnn": "Quantum Neural Network", "vqe": "Variational Quantum Eigensolver ", "wstate": "W State"}
 
