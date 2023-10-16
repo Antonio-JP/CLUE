@@ -9,25 +9,19 @@ import sys, os
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
 
-import tracemalloc
 from collections import defaultdict
-from clue import FODESystem
-from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
+from clue.linalg import CC, SparseRowMatrix, SparseVector
 from csv import writer
 from itertools import product
 from math import ceil, sqrt
-from mqt import ddsim #pylint: disable=no-name-in-module
-from numpy import cdouble, count_nonzero, diag, diagonal, exp, Inf, matmul
-from numpy.linalg import matrix_power
-from qiskit import execute
+from numpy import  count_nonzero, diag, diagonal, exp
 from qiskit.circuit import QuantumCircuit, Parameter
 from random import sample, random
-from time import time, process_time
 
 ## Imports from the local folder
 from misc import *
 
-class UndirectedGraph(defaultdict):
+class UndirectedGraph(defaultdict, Experiment):
     def __init__(self):
         super().__init__()
 
@@ -109,7 +103,7 @@ class UndirectedGraph(defaultdict):
         ## Counting edges from V_0 to V_1
         return sum(len(self[v].intersection(V_1)) for v in V_0)
 
-    def cut_matrix(self):
+    def cut_matrix(self) -> SparseRowMatrix:
         r'''Return a 2^n square matrix with the cut counting'''
         M = SparseRowMatrix(2**len(self), field=CC)
         for i,values in enumerate(product(range(2), repeat=len(self))):
@@ -229,8 +223,22 @@ class UndirectedGraph(defaultdict):
 
     def __repr__(self):
         return f"(Vertices: {self.vertices}) -- (Edges: {self.edges})"
+    
+    ## NECESSARY METHOD FOR EXPERIMENT
+    def size(self) -> int: return len(self)
+    def correct_size(self) -> int: return len(self.cut_values())
+    def direct(self) -> tuple[SparseRowMatrix, SparseRowMatrix]: return self.cut_split()
+    def matrix(self) -> SparseRowMatrix: return self.cut_matrix()
+    def matrix_B(self, red_U: ndarray) -> ndarray: 
+        if count_nonzero(red_U - diag(diagonal(red_U))): # not diagonal
+            return diag([len(self.edges)] + (red_U.shape[0]-1)*[1/len(self.edges)])
+        else:
+            ## We assume is because it comes from the direct algorithm
+            raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
+    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cut()
+    def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cutB()
 
-def generate_valid_example(size: int) -> UndirectedGraph:
+def generate_example(_: str, size: int) -> UndirectedGraph:
     print(f"%%% [GEN] Generating a valid graph with {size} nodes...")
     graph = UndirectedGraph.random(size, density=1/3)    
     while(len(graph.edges) == 0):
@@ -238,7 +246,7 @@ def generate_valid_example(size: int) -> UndirectedGraph:
     print(f"%%% [GEN] Generated a graph with {len(graph.edges)} edges")
     return graph
 
-def gen_header(csv_writer, ttype):
+def generate_header(csv_writer, ttype):
     if ttype in ("clue", "ddsim", "direct"):
         csv_writer.writerow(["size", "edges", "red. ratio", "time_lumping", "memory (MB)", "graph"])
     elif ttype in ("full_clue", "full_direct"):
@@ -248,264 +256,16 @@ def gen_header(csv_writer, ttype):
     else:
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
-def clue_reduction(size: int, result_file, timeout=0): 
-    r'''
-        This method computes the CLUE lumping
+## METHODS TO GENERATE OBSERVABLES
+def generate_observable_clue(graph: UndirectedGraph, size: int) -> tuple[SparseVector]:
+    return tuple([SparseVector.from_list(2**len(graph)*[1], field=CC)])
 
-        This method generates a random 3-SAT formula and computes the lumping of the problem matrix associated
-        to it with CLUE.
-         
-        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
-        ["size", "edges", "red. ratio", "time_lumping", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    print(f"%%% [clue] Computing all cut values for graph...")
-    eval_values = graph.cut_values()
+def generate_observable_ddsim(_: UndirectedGraph, size: int) -> bool:
+    return True
 
-    print(f"%%% [clue] Creating the full system with the problem matrix")
-    system = FODESystem.LinearSystem(graph.cut_matrix(), lumping_subspace=NumericalSubspace)
-    obs = tuple([SparseVector.from_list(system.size*[1], field=CC)])
-    
-    print(f"%%% [clue] Computing the lumped system...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            ctime = process_time()
-            lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            ctime = process_time()-ctime
-    except TimeoutError:
-        print(f"%%% [clue] Timeout reached for execution")
-        ctime = Inf
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    print(f"%%% [clue] Storing the data...")
-    if len(eval_values) != lumped.size:
-        print(f"%%% [clue] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {len(eval_values)}\n%%% \t* Got: {lumped.size}\n%%% \t* Graph: {graph}")
-    result_file.writerow([size, len(graph.edges), lumped.size/system.size, ctime, memory, repr(graph)])
-
-def ddsim_reduction(size: int, result_file, timeout=0): 
-    r'''
-        This method computes the DDSIM lumping
-
-        This method generates a random 3-SAT formula and computes the lumping of the problem matrix associated
-        to it with DDSIM. Since we can not use linear algebra on Decision Diagrams, we compute the simulation time
-        of a quantum circuit that repeats the circuit as many times as the bound of the lumping size (i.e., number
-        of clauses).
-         
-        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
-        ["size", "edges", "red. ratio", "time_lumping", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    print(f"%%% [ddsim] Computing all cut values for graph...")
-    eval_values = graph.cut_values() if size <=20 else list(range(len(graph)))
-
-    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
-    m = len(eval_values) # number of values of true simultaneously
-    U_P, par = graph.quantum_cut(); U_P = U_P.bind_parameters({par: 1/(m*1000)})
-    circuit = loop(U_P, size, m, True, True)
-    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
-    
-    print(f"%%% [ddsim] Computing the simulation of the circuit...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            ctime = process_time()
-            ## Executing the circuit one time
-            job = execute(circuit, backend, shots=1)
-            job.result()
-            ctime = process_time()-ctime
-    except TimeoutError:
-        print(f"%%% [ddsim] Timeout reached for execution")
-        ctime = Inf
-    memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    print(f"%%% [ddsim] Storing the data...")
-    result_file.writerow([size, len(graph.edges), m/2**size, ctime, memory, repr(graph)])
-
-def direct_reduction(size: int, result_file, timeout=0): 
-    r'''
-        This method computes the CLUE lumping directly
-
-        This method generates a random graph and computes the lumping of the problem matrix associated
-        to it with a special case of CLUE.
-         
-        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
-        ["size", "edges", "red. ratio", "time_lumping", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    
-    print(f"%%% [direct] Computing the lumped system...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            ctime = process_time()
-            L, U = graph.cut_split()
-            ctime = process_time()-ctime
-    except TimeoutError:
-        print(f"%%% [direct] Timeout reached for execution")
-        ctime = Inf
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    print(f"%%% [direct] Storing the data...")
-    result_file.writerow([size, len(graph.edges), L.nrows/L.ncols, ctime, memory, repr(graph)])
-
-def clue_iteration(size: int, iterations, result_file, timeout=0): 
-    r'''
-        This method computes the CLUE iteration
-
-        This method generates a random 3-SAT formula and computes the lumping of the problem matrix associated
-        to it with CLUE. 
-        
-        Then it creates a valid begin Hamiltonian within the invariant space and compute the alternate application 
-        of both the begin and problem Hamiltonian in the reduced space (i.e., we used the lumped matrix from the 
-        actual lumping) up to ``iterations`` times. 
-         
-        It stores the execution time of the lumping, the number of iterations and the time for the computed iteration. 
-        It stores the result on ``result_file``.
-        ["size", "edges", "time_lumping", "kappa", "time_iteration", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    
-    print(f"%%% [full-clue] Computing all true values for graph...")
-    eval_values = graph.cut_values()
-
-    print(f"%%% [full-clue] Creating the full system with the problem matrix")
-    system = FODESystem.LinearSystem(graph.cut_matrix(), lumping_subspace=NumericalSubspace)
-    obs = tuple([SparseVector.from_list(system.size*[1], field=CC)])
-    
-    print(f"%%% [full-clue] Computing the lumped system...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            lump_time = process_time()
-            ## Executing the circuit one time
-            lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            lump_time = process_time()-lump_time
-    except TimeoutError:
-        print(f"%%% [full-clue] Timeout reached for execution")
-        lump_time = Inf
-        memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-        tracemalloc.stop()
-        result_file.writerow([size, len(graph.edges), lump_time, iterations, Inf, memory, repr(graph)])
-        return
-
-    print(f"%%% [full-clue] Checking size...")
-    if len(eval_values) != lumped.size:
-        print(f"%%% [full-clue] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {len(eval_values)}\n%%% \t* Got: {lumped.size}\n%%% \t* Graph: {graph}")
-
-    print(f"%%% [full-clue] Getting the reduced U_P")
-    U_P = lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble)
-    print(f"%%% [full-clue] Getting the reduced U_B")
-    if count_nonzero(U_P - diag(diagonal(U_P))): # not diagonal
-        U_B = diag([len(graph.edges)] + (U_P.shape[0]-1)*[1/len(graph.edges)])
-    else:
-        raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
-    
-    print(f"%%% [full-clue] Computing the iteration (U_P*U_B)^iterations")
-    it_time = process_time()
-    _ = matrix_power(matmul(U_P, U_B), iterations)
-    it_time = process_time() - it_time
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    ## We check if the matrix is diagonal
-    result_file.writerow([size, len(graph.edges), lump_time, iterations, it_time, memory, repr(graph)])
-
-def ddsim_iteration(size: int, iterations, result_file, timeout=0): 
-    r'''
-        This method computes the DDSIM iteration
-
-        This method generates a random 3-SAT formula and computes application of ``iterations`` times the alternating 
-        of the begin and problem Hamiltonian associated with the formula. 
-        The method will build both circuits, alternate them and combine them on a loop of ``iterations`` times. 
-         
-        It stores the number of iterations and the time for the computed iteration. 
-        It stores the result on ``result_file``.
-        ["size", "edges", "kappa", "time_iteration", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    print(f"%%% [ddsim] Computing all cut values for graph...")
-    eval_values = graph.cut_values() if size <=20 else list(range(len(graph)))
-
-    print(f"%%% [ddsim] Creating the full circuit and job to simulate with DDSIM")
-    m = len(eval_values) # number of values of true simultaneously
-    U_P, par = graph.quantum_cut(); U_P = U_P.bind_parameters({par: 1/(m*10*iterations)})
-    U_B, par = graph.quantum_cutB(); U_B = U_B.bind_parameters({par: 1/(m*10*iterations)})
-    U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
-    circuit = loop(U_B, size, iterations, True, True)
-    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
-    
-    print(f"%%% [ddsim] Computing the simulation of the circuit...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            ctime = process_time()
-            ## Executing the circuit one time
-            job = execute(circuit, backend, shots=1)
-            job.result()
-            ctime = process_time()-ctime
-    except TimeoutError:
-        print(f"%%% [ddsim] Timeout reached for execution")
-        ctime = Inf
-    memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    print(f"%%% [ddsim] Storing the data...")
-    result_file.writerow([size, len(graph.edges), iterations, ctime, memory, repr(graph)])
-
-def direct_iteration(size: int, iterations, result_file, timeout=0): 
-    r'''
-        This method computes the CLUE iteration with the direct approach
-
-        This method generates a random graph and computes the lumping of the problem matrix associated
-        to it with CLUE in a direct fashion.
-        
-        Then it creates a valid begin Hamiltonian within the invariant space and compute the alternate application 
-        of both the begin and problem Hamiltonian in the reduced space (i.e., we used the lumped matrix from the 
-        actual lumping) up to ``iterations`` times. 
-         
-        It stores the execution time of the lumping, the number of iterations and the time for the computed iteration. 
-        It stores the result on ``result_file``.
-        ["size", "edges", "time_lumping", "kappa", "time_iteration", "memory", "graph"]
-    '''
-    graph = generate_valid_example(size)
-    
-    print(f"%%% [full-direct] Computing the lumped system...")
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            lump_time = process_time()
-            ## Executing the circuit one time
-            L, U_P = graph.cut_split()
-            lump_time = process_time()-lump_time
-    except TimeoutError:
-        print(f"%%% [full-direct] Timeout reached for execution")
-        lump_time = Inf
-        memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-        tracemalloc.stop()
-        result_file.writerow([size, len(graph.edges), lump_time, iterations, Inf, memory, repr(graph)])
-        return
-
-    print(f"%%% [full-direct] Getting the reduced U_P")
-    U_P = U_P.to_numpy(dtype=cdouble)
-    print(f"%%% [full-direct] Getting the reduced U_B")
-    if count_nonzero(U_P - diag(diagonal(U_P))): # not diagonal
-        U_B = diag([len(graph.edges)] + (U_P.shape[0]-1)*[1/len(graph.edges)])
-    else:
-        raise NotImplementedError(f"[full-direct] Base hamiltonian not defined when U_P is diagonal")
-    
-    print(f"%%% [full-direct] Computing the iteration (U_P*U_B)^iterations")
-    it_time = process_time()
-    _ = matrix_power(matmul(U_P, U_B), iterations)
-    it_time = process_time() - it_time
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    ## We check if the matrix is diagonal
-    result_file.writerow([size, len(graph.edges), lump_time, iterations, it_time, memory, repr(graph)])
+### METHODS TO GENERATE THE DATA
+def generate_data(graph: UndirectedGraph, *args) -> list:
+    return [size, len(graph.edges)] + [*args] + [repr(graph)]
 
 if __name__ == "__main__":
     n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0
@@ -532,7 +292,7 @@ if __name__ == "__main__":
     with open(os.path.join(SCRIPT_DIR, "results", f"[result]q_maxcut_{ttype}.csv"), "at" if existed else "wt") as result_file:
         csv_writer = writer(result_file)
         if not existed:
-            gen_header(csv_writer, ttype)
+            generate_header(csv_writer, ttype)
         print(f"##################################################################################")
         print(f"### EXECUTION ON MAXCUT [{m=}, {M=}, {repeats=}, method={ttype}]")
         print(f"##################################################################################")
@@ -540,11 +300,27 @@ if __name__ == "__main__":
             for execution in range(1,repeats+1):
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 if ttype in ("clue", "ddsim", "direct"):
-                    method(size, csv_writer, timeout=timeout)
+                    method(
+                        "maxcut", 
+                        generate_example, 
+                        generate_observable_clue if ttype != "ddsim" else generate_observable_ddsim,
+                        generate_data,
+                        csv_writer, 
+                        size, #args
+                        timeout=timeout
+                    )
                 else:
-                    #for it in (1,10,100):#,1000):#,10000)
-                    it = ceil(sqrt(2**size))
-                    print(f"------ Case with {it} iterations")
-                    method(size, it, csv_writer)
+                    for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
+                        print(f"------ Case with {it} iterations")
+                        method(
+                            "maxcut", 
+                            generate_example, 
+                            generate_observable_clue if ttype != "full_ddsim" else generate_observable_ddsim,
+                            generate_data,
+                            it,
+                            csv_writer, 
+                            size, #args
+                            timeout=timeout
+                        )
                 print(f"### Finished execution {execution}/{repeats}")
                 result_file.flush()
