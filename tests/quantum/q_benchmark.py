@@ -13,7 +13,7 @@ import tracemalloc
 from clue import FODESystem
 from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
-from math import floor, ceil, sqrt
+from math import ceil, sqrt
 from mqt import ddsim #pylint: disable=no-name-in-module
 from mqt.bench.benchmarks import (ae, dj, ghz, graphstate, pricingput, pricingcall, portfolioqaoa, portfoliovqe, qft, 
                                   qpeexact, qpeinexact, qwalk, tsp, qnn, vqe, wstate)
@@ -253,14 +253,16 @@ if __name__ == "__main__":
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 for i,observable in enumerate(my_obs):
                     if ttype in ("clue", "ddsim"):
-                        timeout -= floor(method(name, size, csv_writer, observable=observable, timeout=timeout if timeout != None else 0))
+                        timeout -= method(name, size, csv_writer, observable=observable, timeout=timeout if timeout != None else 0)
                     else:
                         #for it in (1,10,100):#,1000):#,10000)
                         it = ceil(sqrt(2**size))
                         print(f"------ Case with {it} iterations")
-                        timeout -= floor(method(name, size, it, csv_writer, observable=observable, timeout=timeout if timeout != None else 0))
+                        timeout -= method(name, size, it, csv_writer, observable=observable, timeout=timeout if timeout != None else 0)
                     print(f"### -- Finished execution with {observable=} ({i+1}/{len(my_obs)})")
                     result_file.flush()
                     if timeout != None and timeout <= 0:
                         break
+                    elif timeout != None:
+                        timeout = ceil(timeout)
                 print(f"### Finished execution {execution}/{repeats}")
