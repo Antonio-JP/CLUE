@@ -33,7 +33,7 @@ FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deutsch-Jozsa", "ghz": "Gree
               "qft":"Quantum Fourier Transform", "qpeexact": "Exact Quantum Phase Estimation", "qpeinexact": "Inexact Qunatum Phase Estimation", "qwalk": "Quantum Walk", 
               "tsp": "Travelling Salesman", "qnn": "Quantum Neural Network", "vqe": "Variational Quantum Eigensolver ", "wstate": "W State"}
 
-class QuantumBenchmark:
+class QuantumBenchmark(Experiment):
     BACKEND = Aer.get_backend("unitary_simulator")
     DDSIM = ddsim.DDSIMProvider().get_backend("qasm_simulator")
 
@@ -56,7 +56,7 @@ class QuantumBenchmark:
     @property
     def full_name(self) -> str: return FULL_NAMES[self.name]
     @property
-    def size(self) -> int: return self.__size
+    def qbits(self) -> int: return self.__size
     @property
     def circuit(self) -> QuantumCircuit:return self.__circuit
     @property
@@ -74,12 +74,18 @@ class QuantumBenchmark:
     def quantum_ddsim(self) -> QuantumCircuit:
         raise NotImplementedError
     
-    def __repr__(self) -> str: return f"{self.name} with {self.size} qubits." 
+    def __repr__(self) -> str: return f"{self.name} with {self.qbits} qubits." 
 
-def generate_valid_example(name: str, size: int) -> QuantumBenchmark:
+    ## NECESSARY METHOD FOR EXPERIMENT
+    def size(self) -> int: return sum(len(reg) for reg in self.circuit.qregs)
+    def correct_size(self) -> int: return None
+    def matrix(self) -> SparseRowMatrix: return self.unitary_matrix()
+    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.circuit, None
+
+def generate_example(name: str, size: int, obs) -> QuantumBenchmark:
     return QuantumBenchmark.random(name, size)
 
-def gen_header(csv_writer, ttype):
+def generate_header(csv_writer, ttype):
     if ttype in ("clue", "ddsim"):
         csv_writer.writerow(["size", "name", "obs", "red. ratio", "time_lumping", "memory (MB)", "problem"])
     elif ttype == "full_clue":
@@ -89,120 +95,24 @@ def gen_header(csv_writer, ttype):
     else:
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
-def clue_reduction(name: str, size: int, result_file, observable: int | str = 0, timeout=0) -> int: 
-    r'''
-        This method computes the CLUE lumping
-
-        This method generates a problem with given name and size and compute hte CLUE lumping of its unitary matrix.
-         
-        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
-        ["size", "name", "obs", "red. ratio", "time_lumping", "memory", "problem"]
-    '''
-    benchmark = generate_valid_example(name, size)
-    size = sum(len(reg) for reg in benchmark.circuit.qregs) # adjusting just in case
-    if isinstance(observable, int) and observable >= 0 and observable < 2**size:
-        list_to_obs = (2**size)*[0]; list_to_obs[observable] = 1
+## METHODS TO GENERATE OBSERVABLES
+def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple[SparseVector]:
+    size = example.size()
+    if isinstance(obs, int) and obs >= 0 and obs < 2**size:
+        list_to_obs = (2**size)*[0]; list_to_obs[obs] = 1
         obs = SparseVector.from_list(list_to_obs)
-    elif isinstance(observable, str) and "H" in observable:
+    elif isinstance(obs, str) and "H" in obs:
         obs = SparseVector.from_list((2**size)*[1])
     else:
-        raise ValueError(f"%%% [clue @ {name}] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+        raise ValueError(f"%%% [clue @ {name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+    return tuple([obs])
 
-    print(f"%%% [clue @ {name}] Creating the full system to be lumped...", flush=True)
-    system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
-    obs = tuple([obs])
-    
-    print(f"%%% [clue @ {name}] Computing the lumped system...", flush=True)
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            ctime = process_time()
-            lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            ctime = process_time()-ctime
-    except TimeoutError:
-        print(f"%%% [clue @ {name}] Timeout reached for execution", flush=True)
-        ctime = Inf
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
+def generate_observable_ddsim(_: QuantumBenchmark, size: int, obs) -> bool:
+    return obs == "H"
 
-    print(f"%%% [clue @ {name}] Storing the data...", flush=True)
-    result_file.writerow([size, benchmark.full_name, observable, "unknown" if ctime == Inf else lumped.size/system.size, ctime, memory, repr(benchmark)])
-
-    return ctime
-
-def ddsim_reduction(name:str, size: int, result_file, observable: int|str = 0, timeout=0) -> int: 
-    r'''
-        This method computes the DDSIM lumping
-
-        This method generates a problem from a benchmark and computes the lumping of the problem matrix associated
-        to it with DDSIM. 
-
-        It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``.
-        ["size", "name", "red. ratio", "time_lumping", "memory", "problem"]
-    '''
-    raise NotImplementedError("DDSIM for Benchmarks not implemented")
-
-def clue_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0) -> int: 
-    r'''
-        This method computes the CLUE iteration
-
-        This method generates a problem with given name and size and compute hte CLUE lumping of its unitary matrix.
-        
-        Then it computes the application of the reduced matrix up to ``iterations`` times. 
-         
-        It stores the execution time of the lumping, the number of iterations and the time for the computed iteration. 
-        It stores the result on ``result_file``.
-        ["size", "name", "time_lumping", "kappa", "time_iteration", "memory", "gate"]
-    '''
-    benchmark = generate_valid_example(name, size)
-    size = len(benchmark.circuit.qregs[0]) # adjusting just in case
-    if isinstance(observable, int) and observable >= 0 and observable < 2**size:
-        list_to_obs = (2**size)*[0]; list_to_obs[observable] = 1
-        obs = SparseVector.from_list(list_to_obs)
-    elif isinstance(observable, str) and "H" in observable:
-        obs = SparseVector.from_list((2**size)*[1])
-    else:
-        raise ValueError(f"%%% [clue] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
-
-    print(f"%%% [full-clue @ {name}] Creating the full system to be lumped...", flush=True)
-    system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
-    obs = tuple([obs])
-    
-    print(f"%%% [full-clue @ {name}] Computing the lumped system...", flush=True)
-    tracemalloc.start()
-    try:
-        with(Timeout(timeout)):
-            lump_time = process_time()
-            ## Executing the circuit one time
-            lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            lump_time = process_time()-lump_time
-            print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations", flush=True)
-            it_time = process_time()
-            _ = matrix_power(lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble), iterations)
-            it_time = process_time() - it_time
-    except TimeoutError:
-        print(f"%%% [full-clue @ {name}] Timeout reached for execution", flush=True)
-        lump_time = Inf
-        it_time = Inf
-    finally:
-        memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-        tracemalloc.stop()
-        ## We check if the matrix is diagonal
-        result_file.writerow([size, benchmark.full_name, observable, lump_time, iterations, it_time, memory, repr(benchmark)])
-
-    return lump_time + it_time
-
-def ddsim_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0) -> int: 
-    r'''
-        This method computes the DDSIM iteration
-
-        This method generates a benchmark problem and computes application of ``iterations`` times the its circuit.
-         
-        It stores the number of iterations and the time for the computed iteration. 
-        It stores the result on ``result_file``.
-        ["size", "name", "kappa", "time_iteration", "memory", "gate"]
-    '''
-    raise NotImplementedError("DDSIM for Benchmarks not implemented")
+### METHODS TO GENERATE THE DATA
+def generate_data(example: QuantumBenchmark, *args) -> list:
+    return [size, example.name] + [*args] + [repr(example)]
 
 if __name__ == "__main__":
     n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=None; name=None; obs=list()
@@ -214,7 +124,7 @@ if __name__ == "__main__":
             elif sys.argv[n].endswith("M"):
                 M = int(sys.argv[n+1]); n+=2
             elif sys.argv[n].endswith("t"):
-                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "full_clue", "full_ddsim") else ttype
+                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct") else ttype
                 n += 2
             elif sys.argv[n].endswith("to"):
                 timeout = int(sys.argv[n+1]); n+=2
@@ -233,18 +143,18 @@ if __name__ == "__main__":
 
     if name is None:
         raise ValueError(f"At least a name must be given for the tests (with command -n)")
-    methods = [clue_reduction, ddsim_reduction, clue_iteration, ddsim_iteration]
-    method = methods[["clue", "ddsim", "full_clue", "full_ddsim"].index(ttype)]
+    methods = [clue_reduction, ddsim_reduction, direct_reduction, clue_iteration, ddsim_iteration, direct_iteration]
+    method = methods[["clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct"].index(ttype)]
     existed = os.path.exists(os.path.join(SCRIPT_DIR, "results", f"[result]q_benchmark_{ttype}.csv"))
     with open(os.path.join(SCRIPT_DIR, "results", f"[result]q_benchmark_{ttype}.csv"), "at" if existed else "wt") as result_file:
         csv_writer = writer(result_file)
         if not existed:
-            gen_header(csv_writer, ttype)
+            generate_header(csv_writer, ttype)
         print(f"##################################################################################")
         print(f"### EXECUTION ON BENCHMARK {name} [{m=}, {M=}, {repeats=}, method={ttype}]")
         print(f"##################################################################################")
         for size in range(m, M+1):
-            benchmark = generate_valid_example(name, size)
+            benchmark = generate_example(name, size, 0)
             b_size = len(benchmark.circuit.qregs[0]) # adjusting just in case
             for execution in range(1,repeats+1):
                 my_obs = ([0] + ["H"] + list(range(1,2**b_size))) if len(obs) == 0 else obs
@@ -252,12 +162,28 @@ if __name__ == "__main__":
                 rem_timeout = timeout
                 for i,observable in enumerate(my_obs):
                     if ttype in ("clue", "ddsim"):
-                        rem_timeout -= method(name, size, csv_writer, observable=observable, timeout=rem_timeout if rem_timeout != None else 0)
+                        rem_timeout -= method(
+                            name, 
+                            generate_example, 
+                            generate_observable_clue if ttype != "ddsim" else generate_observable_ddsim,
+                            generate_data,
+                            csv_writer, 
+                            size, observable, #args
+                            timeout=rem_timeout
+                        )
                     else:
-                        #for it in (1,10,100):#,1000):#,10000)
-                        it = ceil(sqrt(2**b_size))
-                        print(f"------ Case with {it} iterations")
-                        timeout -= method(name, size, it, csv_writer, observable=observable, timeout=rem_timeout if rem_timeout != None else 0)
+                        for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
+                            print(f"------ Case with {it} iterations")
+                            rem_timeout -= method(
+                                name, 
+                                generate_example, 
+                                generate_observable_clue if ttype != "full_ddsim" else generate_observable_ddsim,
+                                generate_data,
+                                it,
+                                csv_writer, 
+                                size, observable, #args
+                                timeout=ceil(rem_timeout)
+                            )
                     print(f"### -- Finished execution with {observable=} ({i+1}/{len(my_obs)})")
                     result_file.flush()
                     if rem_timeout != None and rem_timeout <= 0:

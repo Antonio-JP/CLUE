@@ -424,7 +424,7 @@ if __name__ == "__main__":
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 if ttype in ("clue", "ddsim", "direct"):
                     method(
-                        "maxcut", 
+                        "q-sat", 
                         generate_example, 
                         generate_observable_clue if ttype != "ddsim" else generate_observable_ddsim,
                         generate_data,
@@ -436,7 +436,7 @@ if __name__ == "__main__":
                     for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
                         print(f"------ Case with {it} iterations")
                         method(
-                            "maxcut", 
+                            "q-sat", 
                             generate_example, 
                             generate_observable_clue if ttype != "full_ddsim" else generate_observable_ddsim,
                             generate_data,

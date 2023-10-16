@@ -33,18 +33,18 @@ class Timeout(object):
             raise RuntimeError
 
 
-def loop(circuit: QuantumCircuit, size: int, iterations: int, prepend_H: bool = True, measure: bool = False):
+def loop(circuit: QuantumCircuit, _: int, iterations: int, prepend_H: bool = True, measure: bool = False):
     r'''
         Creates a quantum circuit as a loop of a circuit with fixed number of iterations
     '''
-    final = QuantumCircuit(size)
-    bits = list(range(size))
+    final = QuantumCircuit(*circuit.qregs, *circuit.cregs)
 
     if prepend_H:
-        for b in bits:
-            final.h(b)
+        for qreg in final.qregs:
+            final.h(qreg)
     
-    final.append(circuit.power(iterations), bits)
+    circuit = circuit.remove_final_measurements(inplace=False)
+    final.append(circuit.power(iterations), final.qregs[0])
 
     if measure:
         final.measure_all()
@@ -354,9 +354,12 @@ def ddsim_iteration(name: str,
     print(f"%%% [full-ddsim] Creating the full circuit and job to simulate with DDSIM", flush = True)
     U_P, par = experiment.quantum()
     if par != None: U_P = U_P.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
-    U_B, par = experiment.quantum_B()
-    if par != None: U_B = U_B.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
-    U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
+    try:
+        U_B, par = experiment.quantum_B()
+        if par != None: U_B = U_B.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
+        U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
+    except NotImplementedError: # U_B do not exist
+        U_B = U_P
     circuit = loop(U_B, experiment.size(), iterations, generate_observable(experiment, *args, **kwds), True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
     
@@ -376,7 +379,7 @@ def ddsim_iteration(name: str,
     tracemalloc.stop()
 
     print(f"%%% [full-ddsim] Storing the data...", flush = True)
-    result_file.writerow(generate_data(experiment, iterations, ctime, memory, experiment))
+    result_file.writerow(generate_data(experiment, iterations, ctime, memory))
 
     return ctime
 
