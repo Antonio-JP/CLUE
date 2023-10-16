@@ -108,11 +108,11 @@ def clue_reduction(name: str, size: int, result_file, observable: int | str = 0,
     else:
         raise ValueError(f"%%% [clue @ {name}] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
 
-    print(f"%%% [clue @ {name}] Creating the full system to be lumped...")
+    print(f"%%% [clue @ {name}] Creating the full system to be lumped...", flush=True)
     system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
     obs = tuple([obs])
     
-    print(f"%%% [clue @ {name}] Computing the lumped system...")
+    print(f"%%% [clue @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -120,12 +120,12 @@ def clue_reduction(name: str, size: int, result_file, observable: int | str = 0,
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [clue @ {name}] Timeout reached for execution")
+        print(f"%%% [clue @ {name}] Timeout reached for execution", flush=True)
         ctime = Inf
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [clue @ {name}] Storing the data...")
+    print(f"%%% [clue @ {name}] Storing the data...", flush=True)
     result_file.writerow([size, benchmark.full_name, observable, "unknown" if ctime == Inf else lumped.size/system.size, ctime, memory, repr(benchmark)])
 
     return ctime
@@ -164,11 +164,11 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
     else:
         raise ValueError(f"%%% [clue] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
 
-    print(f"%%% [full-clue @ {name}] Creating the full system to be lumped...")
+    print(f"%%% [full-clue @ {name}] Creating the full system to be lumped...", flush=True)
     system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
     obs = tuple([obs])
     
-    print(f"%%% [full-clue @ {name}] Computing the lumped system...")
+    print(f"%%% [full-clue @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -176,12 +176,12 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
             ## Executing the circuit one time
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             lump_time = process_time()-lump_time
-            print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations")
+            print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations", flush=True)
             it_time = process_time()
             _ = matrix_power(lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble), iterations)
             it_time = process_time() - it_time
     except TimeoutError:
-        print(f"%%% [full-clue @ {name}] Timeout reached for execution")
+        print(f"%%% [full-clue @ {name}] Timeout reached for execution", flush=True)
         lump_time = Inf
         it_time = Inf
     finally:
