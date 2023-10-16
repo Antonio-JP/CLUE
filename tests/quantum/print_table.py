@@ -1,5 +1,6 @@
 import pandas as pd
 import os, sys
+from math import inf
 
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
                 )])
             
     if "red. ratio" in data.columns:
-        data["red. size"] = (2**data["size"])*data["red. ratio"]
+        data.insert(len(data.columns), "red. size", pd.Series([2**row["size"] * (float(row["red. ratio"]) if row["red. ratio"] != "unknown" else inf) for (_,row) in data.iterrows()]))
 
     ## FILTERING BY OBSERVABLE IF REQUIRED
     if "obs" in data.columns:
@@ -44,7 +45,9 @@ if __name__ == "__main__":
         elif observable != "split":
             data = pd.DataFrame([row for (_,row) in data.iterrows() if row["obs"] == observable], columns=data.columns)
 
+    print(data.dtypes)
+
     
     ## PRINTING RESULTING DATA
-    print(data.drop(columns=data.columns[-2:-1]).groupby(by=(["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
+    print(data.groupby(by=(["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
     #sys.exit(1)

@@ -13,7 +13,7 @@ import tracemalloc
 from clue import FODESystem
 from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
-from math import ceil, sqrt
+from math import floor, ceil, sqrt
 from mqt import ddsim #pylint: disable=no-name-in-module
 from mqt.bench.benchmarks import (ae, dj, ghz, graphstate, pricingput, pricingcall, portfolioqaoa, portfoliovqe, qft, 
                                   qpeexact, qpeinexact, qwalk, tsp, qnn, vqe, wstate)
@@ -89,7 +89,7 @@ def gen_header(csv_writer, ttype):
     else:
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
-def clue_reduction(name: str, size: int, result_file, observable: int | str = 0, timeout=0): 
+def clue_reduction(name: str, size: int, result_file, observable: int | str = 0, timeout=0) -> int: 
     r'''
         This method computes the CLUE lumping
 
@@ -106,13 +106,13 @@ def clue_reduction(name: str, size: int, result_file, observable: int | str = 0,
     elif isinstance(observable, str) and "H" in observable:
         obs = SparseVector.from_list((2**size)*[1])
     else:
-        raise ValueError(f"%%% [clue] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+        raise ValueError(f"%%% [clue @ {name}] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
 
-    print(f"%%% [clue] Creating the full system to be lumped...")
+    print(f"%%% [clue @ {name}] Creating the full system to be lumped...")
     system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
     obs = tuple([obs])
     
-    print(f"%%% [clue] Computing the lumped system...")
+    print(f"%%% [clue @ {name}] Computing the lumped system...")
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -120,15 +120,17 @@ def clue_reduction(name: str, size: int, result_file, observable: int | str = 0,
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [clue] Timeout reached for execution")
+        print(f"%%% [clue @ {name}] Timeout reached for execution")
         ctime = Inf
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [clue] Storing the data...")
+    print(f"%%% [clue @ {name}] Storing the data...")
     result_file.writerow([size, benchmark.name, observable, "unknown" if ctime == Inf else lumped.size/system.size, ctime, memory, repr(benchmark)])
 
-def ddsim_reduction(name:str, size: int, result_file, observable: int|str = 0, timeout=0): 
+    return ctime
+
+def ddsim_reduction(name:str, size: int, result_file, observable: int|str = 0, timeout=0) -> int: 
     r'''
         This method computes the DDSIM lumping
 
@@ -140,7 +142,7 @@ def ddsim_reduction(name:str, size: int, result_file, observable: int|str = 0, t
     '''
     raise NotImplementedError("DDSIM for Benchmarks not implemented")
 
-def clue_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0): 
+def clue_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0) -> int: 
     r'''
         This method computes the CLUE iteration
 
@@ -162,11 +164,11 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
     else:
         raise ValueError(f"%%% [clue] The observable (given {observable=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
 
-    print(f"%%% [full-clue] Creating the full system to be lumped...")
+    print(f"%%% [full-clue @ {name}] Creating the full system to be lumped...")
     system = FODESystem.LinearSystem(benchmark.unitary_matrix(), lumping_subspace=NumericalSubspace)
     obs = tuple([obs])
     
-    print(f"%%% [full-clue] Computing the lumped system...")
+    print(f"%%% [full-clue @ {name}] Computing the lumped system...")
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -175,14 +177,14 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             lump_time = process_time()-lump_time
     except TimeoutError:
-        print(f"%%% [full-clue] Timeout reached for execution")
+        print(f"%%% [full-clue @ {name}] Timeout reached for execution")
         lump_time = Inf
         memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
         tracemalloc.stop()
         result_file.writerow([size, benchmark.name, observable, lump_time, iterations, Inf, memory, repr(benchmark)])
         return
 
-    print(f"%%% [full-clue] Computing the iteration (U)^iterations")
+    print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations")
     it_time = process_time()
     _ = matrix_power(lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble), iterations)
     it_time = process_time() - it_time
@@ -192,7 +194,9 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
     ## We check if the matrix is diagonal
     result_file.writerow([size, benchmark.name, observable, lump_time, iterations, it_time, memory, repr(benchmark)])
 
-def ddsim_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0): 
+    return lump_time + it_time
+
+def ddsim_iteration(name: str, size: int, iterations, result_file, observable: int | str = 0, timeout=0) -> int: 
     r'''
         This method computes the DDSIM iteration
 
@@ -205,7 +209,7 @@ def ddsim_iteration(name: str, size: int, iterations, result_file, observable: i
     raise NotImplementedError("DDSIM for Benchmarks not implemented")
 
 if __name__ == "__main__":
-    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0; name=None; obs=list()
+    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=None; name=None; obs=list()
     ## Processing arguments
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
@@ -249,12 +253,14 @@ if __name__ == "__main__":
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 for i,observable in enumerate(my_obs):
                     if ttype in ("clue", "ddsim"):
-                        method(name, size, csv_writer, observable=observable, timeout=ceil(timeout/len(my_obs)))
+                        timeout -= floor(method(name, size, csv_writer, observable=observable, timeout=timeout if timeout != None else 0))
                     else:
                         #for it in (1,10,100):#,1000):#,10000)
                         it = ceil(sqrt(2**size))
                         print(f"------ Case with {it} iterations")
-                        method(name, size, it, csv_writer, observable=observable, timeout=ceil(timeout/len(my_obs)))
+                        timeout -= floor(method(name, size, it, csv_writer, observable=observable, timeout=timeout if timeout != None else 0))
                     print(f"### -- Finished execution with {observable=} ({i+1}/{len(my_obs)})")
                     result_file.flush()
+                    if timeout != None and timeout <= 0:
+                        break
                 print(f"### Finished execution {execution}/{repeats}")
