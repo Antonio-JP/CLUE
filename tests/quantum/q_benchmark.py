@@ -126,7 +126,7 @@ def clue_reduction(name: str, size: int, result_file, observable: int | str = 0,
     tracemalloc.stop()
 
     print(f"%%% [clue @ {name}] Storing the data...")
-    result_file.writerow([size, benchmark.name, observable, "unknown" if ctime == Inf else lumped.size/system.size, ctime, memory, repr(benchmark)])
+    result_file.writerow([size, benchmark.full_name, observable, "unknown" if ctime == Inf else lumped.size/system.size, ctime, memory, repr(benchmark)])
 
     return ctime
 
@@ -176,23 +176,19 @@ def clue_iteration(name: str, size: int, iterations, result_file, observable: in
             ## Executing the circuit one time
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             lump_time = process_time()-lump_time
+            print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations")
+            it_time = process_time()
+            _ = matrix_power(lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble), iterations)
+            it_time = process_time() - it_time
     except TimeoutError:
         print(f"%%% [full-clue @ {name}] Timeout reached for execution")
         lump_time = Inf
+        it_time = Inf
+    finally:
         memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
         tracemalloc.stop()
-        result_file.writerow([size, benchmark.name, observable, lump_time, iterations, Inf, memory, repr(benchmark)])
-        return
-
-    print(f"%%% [full-clue @ {name}] Computing the iteration (U)^iterations")
-    it_time = process_time()
-    _ = matrix_power(lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble), iterations)
-    it_time = process_time() - it_time
-    memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
-    tracemalloc.stop()
-
-    ## We check if the matrix is diagonal
-    result_file.writerow([size, benchmark.name, observable, lump_time, iterations, it_time, memory, repr(benchmark)])
+        ## We check if the matrix is diagonal
+        result_file.writerow([size, benchmark.full_name, observable, lump_time, iterations, it_time, memory, repr(benchmark)])
 
     return lump_time + it_time
 

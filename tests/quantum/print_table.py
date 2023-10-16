@@ -52,9 +52,6 @@ if __name__ == "__main__":
             data = data.drop("obs", axis=1)
         elif observable != "split":
             data = pd.DataFrame([row for (_,row) in data.iterrows() if row["obs"] == observable], columns=data.columns)
-
-    print(data.dtypes)
-
     
     ## PRINTING RESULTING DATA
     print(data.groupby(by=(["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
