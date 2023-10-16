@@ -244,15 +244,17 @@ if __name__ == "__main__":
         print(f"### EXECUTION ON BENCHMARK {name} [{m=}, {M=}, {repeats=}, method={ttype}]")
         print(f"##################################################################################")
         for size in range(m, M+1):
+            benchmark = generate_valid_example(name, size)
+            b_size = len(benchmark.circuit.qregs[0]) # adjusting just in case
             for execution in range(1,repeats+1):
-                my_obs = (["H"] + list(range(2**size))) if len(obs) == 0 else obs
+                my_obs = ([0] + ["H"] + list(range(1,2**b_size))) if len(obs) == 0 else obs
                 print(f"### Starting execution {execution}/{repeats} ({size=})")
                 for i,observable in enumerate(my_obs):
                     if ttype in ("clue", "ddsim"):
                         timeout -= method(name, size, csv_writer, observable=observable, timeout=timeout if timeout != None else 0)
                     else:
                         #for it in (1,10,100):#,1000):#,10000)
-                        it = ceil(sqrt(2**size))
+                        it = ceil(sqrt(2**b_size))
                         print(f"------ Case with {it} iterations")
                         timeout -= method(name, size, it, csv_writer, observable=observable, timeout=timeout if timeout != None else 0)
                     print(f"### -- Finished execution with {observable=} ({i+1}/{len(my_obs)})")
