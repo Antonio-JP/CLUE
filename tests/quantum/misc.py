@@ -37,14 +37,14 @@ def loop(circuit: QuantumCircuit, _: int, iterations: int, prepend_H: bool = Tru
     r'''
         Creates a quantum circuit as a loop of a circuit with fixed number of iterations
     '''
+    circuit = circuit.remove_final_measurements(inplace=False)
     final = QuantumCircuit(*circuit.qregs, *circuit.cregs)
 
     if prepend_H:
         for qreg in final.qregs:
             final.h(qreg)
     
-    circuit = circuit.remove_final_measurements(inplace=False)
-    final.append(circuit.power(iterations), final.qregs[0])
+    final.append(circuit.power(iterations), final.qbit_argument_conversion(range(final.num_qubits)), final.cbit_argument_conversion(range(final.num_clbits)))
 
     if measure:
         final.measure_all()

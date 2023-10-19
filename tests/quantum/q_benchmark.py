@@ -45,6 +45,7 @@ class QuantumBenchmark(Experiment):
         self.__circuit = VALID_BENCHMARKS[name].create_circuit(size)
         ## Cache for other derived attributes
         self.__unitary = None
+        self.observable = None
 
     @staticmethod
     def random(name, size) -> QuantumBenchmark:
@@ -67,7 +68,7 @@ class QuantumBenchmark(Experiment):
             unitary = job.result().get_unitary(no_measured)
             self.__unitary = asarray(unitary)
         return self.__unitary
-    
+
     def unitary_matrix(self) -> SparseRowMatrix: 
         return SparseRowMatrix.from_vectors([SparseVector.from_list(row, CC) for row in self.unitary])
     
@@ -99,20 +100,23 @@ def generate_header(csv_writer, ttype):
 def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple[SparseVector]:
     size = example.size()
     if isinstance(obs, int) and obs >= 0 and obs < 2**size:
+        example.observable = obs
         list_to_obs = (2**size)*[0]; list_to_obs[obs] = 1
         obs = SparseVector.from_list(list_to_obs)
     elif isinstance(obs, str) and "H" in obs:
+        example.observable = obs
         obs = SparseVector.from_list((2**size)*[1])
     else:
         raise ValueError(f"%%% [clue @ {name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
     return tuple([obs])
 
-def generate_observable_ddsim(_: QuantumBenchmark, size: int, obs) -> bool:
+def generate_observable_ddsim(example: QuantumBenchmark, size: int, obs) -> bool:
+    example.observable = obs
     return obs == "H"
 
 ### METHODS TO GENERATE THE DATA
 def generate_data(example: QuantumBenchmark, *args) -> list:
-    return [size, example.name] + [*args] + [repr(example)]
+    return [size, example.full_name, example.observable] + [*args] + [repr(example)]
 
 if __name__ == "__main__":
     n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=None; name=None; obs=list()

@@ -7,15 +7,19 @@ SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 if __name__ == "__main__":
     what = sys.argv[1]
     data = pd.read_csv(os.path.join(SCRIPT_DIR, "results", f"[result]{what}.csv"))
-    n = 2; observable = "all"; rem_outliers = True; without_infinity = False
+    n = 2; observable = "all"; kappa = "all"; rem_outliers = True; without_infinity = False; add_times = False
     while n < len(sys.argv):
         if sys.argv[n].startswith("-"):
             if sys.argv[n].endswith("obs"):
                 observable = sys.argv[n+1]; n += 2
+            if sys.argv[n].endswith("k"):
+                kappa = int(sys.argv[n+1]); n += 2
             elif sys.argv[n].endswith("wo"):
                 rem_outliers = False; n+=1
             elif sys.argv[n].endswith("noinf"):
                 without_infinity = True; n+=1
+            elif sys.argv[n].endswith("add"):
+                add_times = True; n+=1
             else:
                 n += 1
         else:
@@ -45,14 +49,27 @@ if __name__ == "__main__":
             
     if "red. ratio" in data.columns:
         data.insert(len(data.columns), "red. size", pd.Series([2**row["size"] * (float(row["red. ratio"]) if row["red. ratio"] != "unknown" else inf) for (_,row) in data.iterrows()]))
-
+        data.insert(len(data.columns), "red ratio", pd.Series([(float(row["red. ratio"]) if row["red. ratio"] != "unknown" else inf) for (_,row) in data.iterrows()]))
+    
     ## FILTERING BY OBSERVABLE IF REQUIRED
+    grouping = (["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])
+
     if "obs" in data.columns:
         if observable == "all": # we simply remove the column
+            data = data.groupby(grouping + ["obs"]).mean(numeric_only=True)
+            data = data.reset_index()
             data = data.drop("obs", axis=1)
         elif observable != "split":
             data = pd.DataFrame([row for (_,row) in data.iterrows() if row["obs"] == observable], columns=data.columns)
+
+    if "kappa" in data.columns:
+        if kappa != "all":
+            data = data[data["kappa"] == kappa]
+
+    print(data.columns)
+    if add_times and len([col for col in data.columns if "time" in col]) > 1:
+        data.insert(len(data.columns), "total time", pd.Series([sum(float(row[col]) for col in data.columns if col.startswith("time")) for (_,row) in data.iterrows()]))
     
     ## PRINTING RESULTING DATA
-    print(data.groupby(by=(["name"] if "name" in data.columns else []) + ["size"] + (["obs"] if ("obs" in data.columns and observable != "all") else []) + (["kappa"] if "kappa" in data.columns else [])).mean(numeric_only=True))
+    print(data.groupby(by=grouping).mean(numeric_only=True))
     #sys.exit(1)
