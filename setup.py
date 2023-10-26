@@ -13,7 +13,7 @@ def requirements():
 
 setup(
     name = "CLUE",
-    version = "1.5.3+quiskit", # the VERSION file is shared with the documentation  ## readfile("VERSION").strip(),
+    version = "1.5.3+qiskit", # the VERSION file is shared with the documentation  ## readfile("VERSION").strip(),
     description='Constrained LUmping for differential Equations',
     # long_description = readfile("README.txt"), # get the long description from the README
     # For a Markdown README replace the above line by the following two lines:
@@ -38,6 +38,16 @@ setup(
     keywords = "lumping differential system",
     packages = ["clue"],
     setup_requires   = [],
-    install_requires = requirements(),
+    install_requires = [
+        "mqt.bench==1.0.4",
+        "mqt.ddsim",
+        "natsort",
+        "numpy",
+        "pandas==1.5.3",
+        "pyparsing",
+        "qiskit>=0.44.1",
+        "scipy",
+        "sympy>=1.9"
+    ],
 )
     

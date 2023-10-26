@@ -79,3 +79,6 @@ docs/_sources
 *.prf
 *.log
 *.png
+
+tests/quantum/packages
+tests/quantum/*.zip

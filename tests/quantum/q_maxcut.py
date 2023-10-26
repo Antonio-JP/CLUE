@@ -8,12 +8,12 @@ import sys, os
 
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
+SCRIPT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
-from collections import defaultdict
 from clue.linalg import CC, SparseRowMatrix, SparseVector
-from csv import writer
+from collections import defaultdict
 from itertools import product
-from math import ceil, sqrt
+from math import sqrt
 from numpy import  count_nonzero, diag, diagonal, exp
 from qiskit.circuit import QuantumCircuit, Parameter
 from random import sample, random
@@ -237,13 +237,13 @@ class UndirectedGraph(defaultdict, Experiment):
             raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
     def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cut()
     def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cutB()
+    def data(self): return [len(self.edges)]
 
+## METHODS TO GENERATE THE EXAMPLES OR DATA HEADER
 def generate_example(_: str, size: int) -> UndirectedGraph:
-    print(f"%%% [GEN] Generating a valid graph with {size} nodes...")
     graph = UndirectedGraph.random(size, density=1/3)    
     while(len(graph.edges) == 0):
         graph = UndirectedGraph.random(size, density=1/3)    
-    print(f"%%% [GEN] Generated a graph with {len(graph.edges)} edges")
     return graph
 
 def generate_header(csv_writer, ttype):
@@ -257,70 +257,23 @@ def generate_header(csv_writer, ttype):
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
 ## METHODS TO GENERATE OBSERVABLES
-def generate_observable_clue(graph: UndirectedGraph, size: int) -> tuple[SparseVector]:
-    return tuple([SparseVector.from_list(2**len(graph)*[1], field=CC)])
+def generate_observable_clue(graph: UndirectedGraph, *_) -> tuple[SparseVector]:
+    return tuple([SparseVector.from_list(2**graph.size()*[1], field=CC)])
 
-def generate_observable_ddsim(_: UndirectedGraph, size: int) -> bool:
-    return True
-
-### METHODS TO GENERATE THE DATA
-def generate_data(graph: UndirectedGraph, *args) -> list:
-    return [size, len(graph.edges)] + [*args] + [repr(graph)]
+def generate_observable_ddsim(graph: UndirectedGraph, *_) -> bool:
+    return bool(graph)
 
 if __name__ == "__main__":
-    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=0
-    ## Processing arguments
-    while n < len(sys.argv):
-        if sys.argv[n].startswith("-"):
-            if sys.argv[n].endswith("m"):
-                m = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("M"):
-                M = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("t"):
-                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct") else ttype
-                n += 2
-            elif sys.argv[n].endswith("to"):
-                timeout = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("r"):
-                repeats = int(sys.argv[n+1]); n+=2
-        else:
-            n += 1
-
-    methods = [clue_reduction, ddsim_reduction, direct_reduction, clue_iteration, ddsim_iteration, direct_iteration]
-    method = methods[["clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct"].index(ttype)]
-    existed = os.path.exists(os.path.join(SCRIPT_DIR, "results", f"[result]q_maxcut_{ttype}.csv"))
-    with open(os.path.join(SCRIPT_DIR, "results", f"[result]q_maxcut_{ttype}.csv"), "at" if existed else "wt") as result_file:
-        csv_writer = writer(result_file)
-        if not existed:
-            generate_header(csv_writer, ttype)
-        print(f"##################################################################################")
-        print(f"### EXECUTION ON MAXCUT [{m=}, {M=}, {repeats=}, method={ttype}]")
-        print(f"##################################################################################")
-        for size in range(m, M+1):
-            for execution in range(1,repeats+1):
-                print(f"### Starting execution {execution}/{repeats} ({size=})")
-                if ttype in ("clue", "ddsim", "direct"):
-                    method(
-                        "maxcut", 
-                        generate_example, 
-                        generate_observable_clue if ttype != "ddsim" else generate_observable_ddsim,
-                        generate_data,
-                        csv_writer, 
-                        size, #args
-                        timeout=timeout
-                    )
-                else:
-                    for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
-                        print(f"------ Case with {it} iterations")
-                        method(
-                            "maxcut", 
-                            generate_example, 
-                            generate_observable_clue if ttype != "full_ddsim" else generate_observable_ddsim,
-                            generate_data,
-                            it,
-                            csv_writer, 
-                            size, #args
-                            timeout=timeout
-                        )
-                print(f"### Finished execution {execution}/{repeats}")
-                result_file.flush()
+    ## Processing the arguments
+    ttype, script = get_method(*sys.argv)
+    m, M = get_size_bounds(*sys.argv)
+    timeout = get_timeout(*sys.argv)
+    repeats = get_repeats(*sys.argv)
+    name = "maxcut"; obs = None
+    
+    main_script(SCRIPT_DIR, SCRIPT_NAME, name,
+                [generate_header, generate_example, generate_observable_clue, generate_observable_ddsim],
+                ttype, script,               
+                m, M,                        
+                timeout, repeats,
+                obs)

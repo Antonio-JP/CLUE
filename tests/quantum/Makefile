@@ -1,20 +1,47 @@
-ALL=$(shell python3 script.py list)
-PYTHON=python3
-FLAGS=
+ALL=table1.test table2.test
+BASH=sh
 
-all: $(ALL)
+all: clean $(ALL)
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	@echo "Finished all examples"
 	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-case_studies:
-	@$(PYTHON) script.py case -s 5 -s 6 -s 7 -s 8 -s 9 -s 10
-	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	@echo "Finished all case studies"
-	@echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+install:
+	@echo "Installing requirements..."
+	@pip install --no-index --find-links ./packages clue
+	@mkdir results
 
-compile:
-	$(PYTHON) script.py compile
+clean:
+	@echo "Cleaning result files..."
+	@find . -name "\[result\]*.csv" -type f -delete
+	@echo "Cleaning log files..."
+	@find . -name "*.log" -type f -delete
 
-%:
-	$(PYTHON) script.py $@ $(FLAGS)
+package:
+	@echo "Cleaning the packages folder"
+	@rm -rf ./packages/*.whl ./packages/*.tar.gz
+	@pip cache purge
+	@pip download -d packages -r requirements.txt
+	@pip download -d packages wheel
+	@echo "Creating the 'tar.gz' for CLUE"
+	@cd ../../; python3 setup.py sdist; cp ./dist/CLUE-1.5.3+qiskit.tar.gz ./tests/quantum/packages 
+
+zip: clean package
+	@echo "Compressing the folder"
+	@rm -f TACAS24_AE.zip
+	@zip TACAS24_AE -r *.py *.sh circuits/*.qasm packages/*.whl packages/*.gz Makefile README.md LICENSE requirements.txt
+
+pc_clean:
+	@echo "Cleaning the Python compiled cache..."
+	@rm -rf __pycache__
+
+test: test.test
+	@echo "Executed all tests for checking correctness"
+
+early_light: clean early_light.test
+	@echo "Executed Early Light Review Script"
+
+%.test:
+	$(BASH) $*.sh
+
+.PHONY: clean pc_clean

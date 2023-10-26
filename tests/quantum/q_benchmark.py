@@ -8,41 +8,37 @@ import sys, os
 
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
+SCRIPT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
-import tracemalloc
-from clue import FODESystem
-from clue.linalg import CC, NumericalSubspace, SparseRowMatrix, SparseVector
-from csv import writer
-from math import ceil, sqrt
-from mqt import ddsim #pylint: disable=no-name-in-module
+from clue.linalg import CC, SparseRowMatrix, SparseVector
 from mqt.bench.benchmarks import (ae, dj, ghz, graphstate, pricingput, pricingcall, portfolioqaoa, portfoliovqe, qft, 
                                   qpeexact, qpeinexact, qwalk, tsp, qnn, vqe, wstate)
-from numpy import asarray, cdouble, ndarray, Inf
-from numpy.linalg import matrix_power
+from numpy import asarray, ndarray
 from qiskit import Aer, QuantumCircuit, execute
-from time import process_time
 
 ## Imports from the local folder
 from misc import *
 
-VALID_BENCHMARKS = {"ae": ae, "dj" : dj, "ghz": ghz, "graphstate": graphstate, "pricingput": pricingput, "pricingcall": pricingcall, 
+VALID_BENCHMARKS = {"ae": ae, "dj" : dj, "ghz": ghz, "graphstate": graphstate, "hhl": None, "pricingput": pricingput, "pricingcall": pricingcall, 
                     "portfolioqaoa": portfolioqaoa, "portfoliovqe": portfoliovqe, "qft":qft, "qpeexact": qpeexact, "qpeinexact": qpeinexact,
                     "qwalk": qwalk, "tsp": tsp, "qnn": qnn, "vqe": vqe, "wstate": wstate}
-FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deutsch-Jozsa", "ghz": "Greenberger-Horne-Zeilinger", "graphstate": "Graph State", 
+FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deutsch-Jozsa", "ghz": "Greenberger-Horne-Zeilinger", "graphstate": "Graph State", "hhl": "HHL Algorithm",
               "pricingput": "Pricing Put Option", "pricingcall": "Princing Call Option", "portfolioqaoa": "Portfolio Optimization", "portfoliovqe": "VQE Portfolio Optimizaiton", 
-              "qft":"Quantum Fourier Transform", "qpeexact": "Exact Quantum Phase Estimation", "qpeinexact": "Inexact Qunatum Phase Estimation", "qwalk": "Quantum Walk", 
+              "qft":"Quantum Fourier Transform", "qpeexact": "Exact Quantum Phase Estimation", "qpeinexact": "Inexact Quantum Phase Estimation", "qwalk": "Quantum Walk", 
               "tsp": "Travelling Salesman", "qnn": "Quantum Neural Network", "vqe": "Variational Quantum Eigensolver ", "wstate": "W State"}
 
 class QuantumBenchmark(Experiment):
     BACKEND = Aer.get_backend("unitary_simulator")
-    DDSIM = ddsim.DDSIMProvider().get_backend("qasm_simulator")
 
     def __init__(self, name, size):
         if not name in VALID_BENCHMARKS:
             raise TypeError(f"The given benchmark ({name}) not recognized.")
         self.__name = name; self.__size = size
         ## We try to build the circuit
-        self.__circuit = VALID_BENCHMARKS[name].create_circuit(size)
+        if name == "hhl": # special case for HHL
+            self.__circuit = QuantumCircuit.from_qasm_file(f"./circuits/hhl_indep_qiskit_{3*size-1}.qasm")
+        else:
+            self.__circuit = VALID_BENCHMARKS[name].create_circuit(size)
         ## Cache for other derived attributes
         self.__unitary = None
         self.observable = None
@@ -72,16 +68,14 @@ class QuantumBenchmark(Experiment):
     def unitary_matrix(self) -> SparseRowMatrix: 
         return SparseRowMatrix.from_vectors([SparseVector.from_list(row, CC) for row in self.unitary])
     
-    def quantum_ddsim(self) -> QuantumCircuit:
-        raise NotImplementedError
-    
     def __repr__(self) -> str: return f"{self.name} with {self.qbits} qubits." 
 
     ## NECESSARY METHOD FOR EXPERIMENT
-    def size(self) -> int: return sum(len(reg) for reg in self.circuit.qregs)
+    def size(self) -> int: return self.circuit.num_qubits
     def correct_size(self) -> int: return None
     def matrix(self) -> SparseRowMatrix: return self.unitary_matrix()
     def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.circuit, None
+    def data(self): return [self.full_name, self.observable]
 
 def generate_example(name: str, size: int, obs) -> QuantumBenchmark:
     return QuantumBenchmark.random(name, size)
@@ -107,91 +101,45 @@ def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple
         example.observable = obs
         obs = SparseVector.from_list((2**size)*[1])
     else:
-        raise ValueError(f"%%% [clue @ {name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+        raise ValueError(f"%%% [clue @ {example.name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
     return tuple([obs])
 
 def generate_observable_ddsim(example: QuantumBenchmark, size: int, obs) -> bool:
     example.observable = obs
     return obs == "H"
 
-### METHODS TO GENERATE THE DATA
-def generate_data(example: QuantumBenchmark, *args) -> list:
-    return [size, example.full_name, example.observable] + [*args] + [repr(example)]
+### SCRIPT ARGUMENT PROCCESS METHOD
+def get_benchmark_args(*argv) -> tuple[str, list[Any]]:
+    name = None; obs = list()
+    for (i, arg) in enumerate(argv):
+        if arg == "-n": # name
+            name = argv[i+1]
+        elif arg == "-obs":
+            try:
+                observable = int(argv[i+1])
+            except:
+                observable = argv[i+1]
+            obs.append(observable)
+    
+    ## Checking correctness of arguments
+    if name is None:
+        raise ValueError(f"Script argument [-n] not well used: we required a follow-up name.")
+
+    return name, obs
 
 if __name__ == "__main__":
-    n = 1; m = 5; M=10; ttype="clue"; repeats=100; timeout=None; name=None; obs=list()
-    ## Processing arguments
-    while n < len(sys.argv):
-        if sys.argv[n].startswith("-"):
-            if sys.argv[n].endswith("m"):
-                m = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("M"):
-                M = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("t"):
-                ttype = sys.argv[n+1] if sys.argv[n+1] in ("clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct") else ttype
-                n += 2
-            elif sys.argv[n].endswith("to"):
-                timeout = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("r"):
-                repeats = int(sys.argv[n+1]); n+=2
-            elif sys.argv[n].endswith("n"):
-                name = sys.argv[n+1]; n+=2
-            elif sys.argv[n].endswith("obs"):
-                try:
-                    observable = int(sys.argv[n+1])
-                except:
-                    observable = sys.argv[n+1]
-                obs.append(observable); n += 2
-        else:
-            n += 1
+    ## Processing the arguments
+    ## Generic part
+    ttype, script = get_method(*sys.argv)
+    m, M = get_size_bounds(*sys.argv)
+    timeout = get_timeout(*sys.argv)
+    repeats = get_repeats(*sys.argv)
+    ## Specific part
+    name, obs = get_benchmark_args(*sys.argv)    
 
-    if name is None:
-        raise ValueError(f"At least a name must be given for the tests (with command -n)")
-    methods = [clue_reduction, ddsim_reduction, direct_reduction, clue_iteration, ddsim_iteration, direct_iteration]
-    method = methods[["clue", "ddsim", "direct", "full_clue", "full_ddsim", "full_direct"].index(ttype)]
-    existed = os.path.exists(os.path.join(SCRIPT_DIR, "results", f"[result]q_benchmark_{ttype}.csv"))
-    with open(os.path.join(SCRIPT_DIR, "results", f"[result]q_benchmark_{ttype}.csv"), "at" if existed else "wt") as result_file:
-        csv_writer = writer(result_file)
-        if not existed:
-            generate_header(csv_writer, ttype)
-        print(f"##################################################################################")
-        print(f"### EXECUTION ON BENCHMARK {name} [{m=}, {M=}, {repeats=}, method={ttype}]")
-        print(f"##################################################################################")
-        for size in range(m, M+1):
-            benchmark = generate_example(name, size, 0)
-            b_size = len(benchmark.circuit.qregs[0]) # adjusting just in case
-            for execution in range(1,repeats+1):
-                my_obs = ([0] + ["H"] + list(range(1,2**b_size))) if len(obs) == 0 else obs
-                print(f"### Starting execution {execution}/{repeats} ({size=})")
-                rem_timeout = timeout
-                for i,observable in enumerate(my_obs):
-                    if ttype in ("clue", "ddsim"):
-                        rem_timeout -= method(
-                            name, 
-                            generate_example, 
-                            generate_observable_clue if ttype != "ddsim" else generate_observable_ddsim,
-                            generate_data,
-                            csv_writer, 
-                            size, observable, #args
-                            timeout=rem_timeout
-                        )
-                    else:
-                        for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
-                            print(f"------ Case with {it} iterations")
-                            rem_timeout -= method(
-                                name, 
-                                generate_example, 
-                                generate_observable_clue if ttype != "full_ddsim" else generate_observable_ddsim,
-                                generate_data,
-                                it,
-                                csv_writer, 
-                                size, observable, #args
-                                timeout=ceil(rem_timeout)
-                            )
-                    print(f"### -- Finished execution with {observable=} ({i+1}/{len(my_obs)})")
-                    result_file.flush()
-                    if rem_timeout != None and rem_timeout <= 0:
-                        break
-                    elif rem_timeout != None:
-                        rem_timeout = ceil(rem_timeout)
-                print(f"### Finished execution {execution}/{repeats}")
+    main_script(SCRIPT_DIR, SCRIPT_NAME, name,
+                [generate_header, generate_example, generate_observable_clue, generate_observable_ddsim],
+                ttype, script,               
+                m, M,                        
+                timeout, repeats,
+                obs)

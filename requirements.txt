@@ -3,4 +3,7 @@ pyparsing
 natsort
 scipy
 numpy
-qiskit[visualization]
+qiskit == 0.35
+mqt.ddsim == 1.20.1
+mqt.bench == 1.0.4
+pandas == 1.5.3
