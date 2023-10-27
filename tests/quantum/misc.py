@@ -1,17 +1,23 @@
 r'''
     Some auxiliary methods
 '''
+from __future__ import annotations
+
 from clue import FODESystem, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
+from functools import cached_property, lru_cache, reduce
+from itertools import product
 from math import ceil,inf,sqrt
-from mqt import ddsim
-from numpy import cdouble, eye, matmul, ndarray
+from mqt.ddsim import DDSIMProvider, CircuitSimulator
+from pygraphviz import AGraph, Edge
+from numpy import array, cdouble, eye, matmul, ndarray, sqrt
 from numpy.linalg import matrix_power
 from qiskit import execute
 from qiskit.circuit import Parameter, QuantumCircuit
+from sympy.parsing.sympy_parser import parse_expr
 from time import process_time
 from typing import Any, Callable
-import os, signal, tracemalloc
+import os, re, signal, tracemalloc
 
 ## Utilities for script
 class Timeout(object):
@@ -89,6 +95,246 @@ def trotter(circuit: QuantumCircuit, gates: list[tuple[QuantumCircuit, list[int]
         raise NotImplementedError(f"Trotter decomposition for order {order} not yet implemented")
     
     return circuit
+
+__CACHE_DDSIM_GRAPH = list()
+def ddsim_graph(circuit: QuantumCircuit, iterations: int, state_preparation: bool | QuantumCircuit = True) -> AGraph:
+    r'''
+        Method that generates a DiGraph for the execution of a circuit ``iterations`` times.
+
+        This method uses DDSIM to compute the iteration of a circuit a given amount of times and then proceed
+        to extract the Directed Graph that represents the final state. With this, we can then proceed to 
+        apply linear algebra operations.
+    '''
+    ## We look in the CACHE
+    where = None
+    for (circ, graphs) in __CACHE_DDSIM_GRAPH:
+        if circ is circuit:
+            if (iterations, state_preparation) in graphs:
+                return graphs[(iterations, state_preparation)]
+            where = graphs
+            break
+    else:
+        where = dict()
+        __CACHE_DDSIM_GRAPH.append((circuit, where))
+
+    ## Creating the iterated circuit
+    circuit = loop(circuit, iterations, state_preparation, False)
+    simulator = CircuitSimulator(circuit)
+    simulator.simulate(shots=1) # we run the circuit
+
+    ## We create the Graph structure in networkx
+    result = AGraph(string=simulator.export_dd_to_graphviz_str())
+    where[(iterations, state_preparation)] = result
+
+    return result
+
+def CLUE_circuit(circuit: QuantumCircuit, state_preparation: bool| QuantumCircuit = False, epsilon : float = 1e-6) -> tuple[GraphVector]:
+    r'''
+        Perform approximate CLUE for a quantum circuit using the Orthognal projection approach
+    '''
+    B: list[GraphVector] = []; go_on = True
+    while go_on:
+        print(f"[CLUE-circuit] Starting case with {len(B)} iterations")
+        nextG = GraphVector(ddsim_graph(circuit, len(B), state_preparation))
+        ## We compute the projection over the already computed basis
+        candidate = nextG - sum((nextG*V)*V for V in B)
+
+        print(f"[CLUE-circuit] \tCandidate with norm {float(candidate.norm)}")
+
+        if float(candidate.norm) < epsilon:
+            go_on = False
+        else:
+            B.append(candidate.normalized_vector)
+    print(f"[CLUE-circuit] Finished CLUE. Dimension of lumping: {len(B)}")
+    return tuple(B)
+
+def CLUE_reduced(circuit: QuantumCircuit, lumping : list[GraphVector]) -> ndarray:
+    graphs = [ddsim_graph(circuit, i) for i in range(len(lumping))]
+    C = array([([cdouble(0)] + [lumping[i].coeff(graphs[j]) for j in range(len(lumping)-1)]) for i in range(len(lumping))])
+    last = GraphVector(ddsim_graph(circuit, len(lumping)+1))
+    last_in_basis = array([last*v for v in lumping])
+    U = array([row+last_in_basis for row in C])
+
+    return U.transpose()
+
+class GraphVector:
+    r'''
+        Class that represent a linear combination of decision diagrams.
+
+        Input:
+
+        - ``graphs``: a list defining the linear combination. It is a list of `(G, c)` where `c` is a complex
+          coefficient and `G` is the graph that we are combining. We allow to only provide the graph `G` when 
+          the coefficient is 1.
+
+        This class is immutable, i.e., it does not have any operation that changes the structure inplace.
+
+        This class provides enough method to perform linear algebra operations. More precisely, we provide an 
+        implementation for all the operations required for a Gram-Schmitd scheme, namely:
+
+        * We can compute the addition of two :class:`GraphVector`.
+        * We can scale a :class: `GraphVector` using a complex scalar.
+        * We can compute the scalar product (see :func:`dot`) of two :class:`GraphVector`.
+    '''
+    def __init__(self, *graphs : tuple[cdouble, AGraph] | AGraph):
+        self.__data = dict()
+        for graph in graphs:
+            if isinstance(graph, (tuple, list)):
+                if len(graph) != 2: raise ValueError(f"[GraphVector] Bad format of input: we require that tuples/lists have length 2. Found {graph}")
+                G,c = graph
+            elif not isinstance(graph, AGraph):
+                raise TypeError(f"[GraphVector] Bad format of input: we require the class :AGraph: when coefficient is assumed to be 1")
+            else:
+                c = cdouble(1)
+                G = graph
+            if not G in self.__data:
+                self.__data[G] = cdouble(0)
+            self.__data[G] += c
+
+        ## We clean the zeros
+        self.__data = {G: c for (G,c) in self.__data.items() if c != 0}
+
+    def to_list(self) -> list[tuple[AGraph, cdouble]]:
+        return list(self.__data.items())
+    
+    def coeff(self, graph: AGraph):
+        return self.__data.get(graph, cdouble(0))
+
+    def __len__(self):
+        return len(self.__data)
+    
+    ##############################################################################################
+    ### Vector methods
+    ##############################################################################################
+    def scalar(self, scale: cdouble) -> GraphVector:
+        return GraphVector(*[(G, scale*c) for (G,c) in self.to_list()])
+    
+    def scalar_dot(self, other: GraphVector) -> cdouble:
+        ## Scalar product is linear, so we can do a loop until the scalar product of two AGraph
+        return sum((c1*c2.conjugate()*GraphVector.graph_scalar(G1,G2) for ((G1,c1),(G2,c2)) in product(self.to_list(), other.to_list())), start=cdouble(0))
+    
+    @staticmethod
+    @lru_cache(maxsize=256)
+    def graph_scalar(G1: AGraph, G2: AGraph) -> cdouble:
+        if GraphVector.graph_depth(G1) != GraphVector.graph_depth(G2):
+            raise TypeError(f"Different depth of two graphs. Can not compute scalar product")
+        ## The step with "root" is done first and we start recursion with the first non-root vertex
+        edge1 = G1.out_edges("root")[0]; edge2 = G2.out_edges("root")[0]
+        val1 = GraphVector.t2c(edge1); val2 = GraphVector.t2c(edge2, True)
+        return val1*val2*GraphVector._graph_scalar(G1, edge1[1], G2, edge2[1])
+    
+    @staticmethod
+    def t2c(edge, conjugate=False) -> cdouble:
+        to_parse = edge.attr["tooltip"]
+        transformations = [
+            ("π", "pi"),
+            ("ℯ", "*E**"),
+            ("ipi ", "I*pi*"),
+            ("ipi", "I*pi"),
+            ("√(\d+|pi)", lambda M: str(sqrt(float(parse_expr(M.groups()[0]).n()))))
+        ]
+        output = cdouble(parse_expr(reduce(lambda string, trans : re.sub(trans[0], trans[1], string), [to_parse] + transformations)))
+        if conjugate: output = output.conjugate()
+        return output
+
+    @staticmethod
+    def _graph_scalar(G1: AGraph, root1: Edge, G2: AGraph, root2: Edge):
+        ## We first check if we are in the base case
+        if root1 == G1.get_node("t") and root2 == G2.get_node("t"):
+            return cdouble(1)
+        elif root1 == G1.get_node("t") or root2 == G2.get_node("t"):
+            raise ValueError("Found the end of a graph but not the other: same depth?")
+        
+        ## If not, we proceed to an recursion step
+        ## Getting left/right for node 1
+        edges1 = G1.out_edges(root1)
+        left1 = None; right1 = None
+        for edge in edges1:
+            if "tailport" in edge.attr:
+                if "0" in edge.attr["tailport"]:
+                    if left1 != None: raise TypeError("Repeated left edge for a vertex?")
+                    left1 = (edge[1], GraphVector.t2c(edge))
+                elif "1" in edge.attr["tailport"]:
+                    if right1 != None: raise TypeError("Repeated right edge for a vertex?")
+                    right1 = (edge[1], GraphVector.t2c(edge))
+            else:
+                raise TypeError("No 'tailport' attribute outside the root?")
+        ## Getting left/right for node 1
+        edges2 = G2.out_edges(root2)
+        left2 = None; right2 = None
+        for edge in edges2:
+            if "tailport" in edge.attr:
+                if "0" in edge.attr["tailport"]:
+                    if left2 != None: raise TypeError("Repeated left edge for a vertex?")
+                    left2 = (edge[1], GraphVector.t2c(edge,True))
+                elif "1" in edge.attr["tailport"]:
+                    if right2 != None: raise TypeError("Repeated right edge for a vertex?")
+                    right2 = (edge[1], GraphVector.t2c(edge,True))
+            else:
+                raise TypeError("No 'tailport' attribute outside the root?")
+        
+        ## Computing the resursion
+        left = cdouble(0) if (left1 is None or left2 is None) else left1[1]*left2[1]*GraphVector._graph_scalar(G1, left1[0], G2, left2[0])
+        right = cdouble(0) if (right1 is None or right2 is None) else right1[1]*right2[1]*GraphVector._graph_scalar(G1, right1[0], G2, right2[0])
+        
+        return left + right
+        
+    @staticmethod
+    def graph_depth(G: AGraph) -> int:
+        r'''Computes the depth of a Graph. We use a Depth-Search of node "t" from node "root"'''
+        goal = G.get_node("t")
+        queue = [(G.get_node("root"), 0)]
+        while len(queue) > 0:
+            C, D = queue.pop()
+            if C == goal:
+                return D
+            for N in G.itersucc(C):
+                queue.append((N, D+1))
+    
+    @cached_property
+    def norm(self) -> cdouble:
+        return sqrt(self * self)
+    
+    @cached_property
+    def normalized_vector(self):
+        return self * (1/self.norm)
+
+    ##############################################################################################
+    ### Arithmetic methods
+    ##############################################################################################
+    def __add__(self, other: GraphVector) -> GraphVector:
+        if not isinstance(other, GraphVector): 
+            if other == 0:
+                return self
+            return NotImplemented
+        return GraphVector(*self.to_list(), *other.to_list())
+    
+    def __radd__(self, other: GraphVector) -> GraphVector:
+        return self.__add__(other)
+    
+    def __neg__(self) -> GraphVector:
+        return GraphVector(*[(G,-c) for (G,c) in self.to_list()])
+    
+    def __sub__(self, other: GraphVector) -> GraphVector:
+        return self + (-other)
+    
+    def __rsub__(self, other: GraphVector) -> GraphVector:
+        return (-self).__add__(other)
+    
+    def __mul__(self, other: cdouble | GraphVector) -> GraphVector | cdouble:
+        if isinstance(other, GraphVector):
+            return self.scalar_dot(other)
+        else:
+            try:
+                other = cdouble(other)
+            except:
+                return NotImplemented
+            return self.scalar(other)
+    
+    def __rmul__(self, other: cdouble | GraphVector) -> GraphVector | cdouble:
+        if isinstance(other, GraphVector):
+            return other.scalar_dot(self)
+        return self.__mul__(other)
 
 ## General Experiment interface
 class Experiment:
@@ -192,7 +438,7 @@ def ddsim_reduction(name: str,
     if par != None: U = U.bind_parameters({par: 1/(1000*true_size)})
 
     circuit = loop(U, true_size, generate_observable(experiment, *args, **kwds), True)
-    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+    backend = DDSIMProvider().get_backend("qasm_simulator")
     
     print(f"%%% [ddsim @ {name}] Computing the simulation of the circuit...", flush=True)
     tracemalloc.start()
@@ -370,7 +616,7 @@ def ddsim_iteration(name: str,
     except NotImplementedError: # U_B do not exist
         U_B = U_P
     circuit = loop(U_B, iterations, generate_observable(experiment, *args, **kwds), True)
-    backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
+    backend = DDSIMProvider().get_backend("qasm_simulator")
     
     print(f"%%% [full-ddsim @ {name}] Computing the simulation of the circuit...", flush = True)
     tracemalloc.start()
