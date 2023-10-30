@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from clue import FODESystem, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
+from datetime import datetime
 from functools import cached_property, lru_cache, reduce
 from itertools import product
 from math import ceil,inf,sqrt
@@ -52,9 +53,12 @@ def loop(circuit: QuantumCircuit, iterations: int, state_preparation: bool | Qua
 
     if isinstance(state_preparation, QuantumCircuit):
         final.append(state_preparation, final.qbit_argument_conversion(range(final.num_qubits)), final.cbit_argument_conversion(range(final.num_clbits)))
-    elif state_preparation:
+    elif isinstance(state_preparation, bool):
         for qreg in final.qregs:
             final.h(qreg)
+    elif isinstance(state_preparation, int):
+        for qbit in final.qbit_argument_conversion([i for i,b in enumerate(bin(state_preparation)[::-1][:-2]) if b == "1"]):
+            final.x(qbit) # we set a 1 in each qubit that is needed to set the appropriate input
     
     final.append(circuit.power(iterations), final.qbit_argument_conversion(range(final.num_qubits)), final.cbit_argument_conversion(range(final.num_clbits)))
 
@@ -97,7 +101,7 @@ def trotter(circuit: QuantumCircuit, gates: list[tuple[QuantumCircuit, list[int]
     return circuit
 
 __CACHE_DDSIM_GRAPH = list()
-def ddsim_graph(circuit: QuantumCircuit, iterations: int, state_preparation: bool | QuantumCircuit = True) -> AGraph:
+def ddsim_graph(circuit: QuantumCircuit, iterations: int, state_preparation: bool | QuantumCircuit = True, store: str|None = None) -> AGraph:
     r'''
         Method that generates a DiGraph for the execution of a circuit ``iterations`` times.
 
@@ -107,10 +111,11 @@ def ddsim_graph(circuit: QuantumCircuit, iterations: int, state_preparation: boo
     '''
     ## We look in the CACHE
     where = None
+    key = (iterations, state_preparation if (not isinstance(state_preparation, QuantumCircuit)) else None)
     for (circ, graphs) in __CACHE_DDSIM_GRAPH:
         if circ is circuit:
-            if (iterations, state_preparation) in graphs:
-                return graphs[(iterations, state_preparation)]
+            if key in graphs:
+                return graphs[key]
             where = graphs
             break
     else:
@@ -124,28 +129,38 @@ def ddsim_graph(circuit: QuantumCircuit, iterations: int, state_preparation: boo
 
     ## We create the Graph structure in networkx
     result = AGraph(string=simulator.export_dd_to_graphviz_str())
-    where[(iterations, state_preparation)] = result
+    if store != None:
+        result.draw(f"./graphs/{store}_{iterations}.png", prog="dot")
+    where[key] = result
 
     return result
 
-def CLUE_circuit(circuit: QuantumCircuit, state_preparation: bool| QuantumCircuit = False, epsilon : float = 1e-6) -> tuple[GraphVector]:
+def CLUE_circuit(circuit: QuantumCircuit, state_preparation: bool | QuantumCircuit = False, epsilon : float = 1e-6, bound: None|int = None, store: str|None = None) -> tuple[GraphVector]:
     r'''
         Perform approximate CLUE for a quantum circuit using the Orthognal projection approach
     '''
     B: list[GraphVector] = []; go_on = True
-    while go_on:
-        print(f"[CLUE-circuit] Starting case with {len(B)} iterations")
-        nextG = GraphVector(ddsim_graph(circuit, len(B), state_preparation))
+    while go_on and (True if bound is None else len(B) < bound):
+        print(datetime.now(), f"[CLUE-circuit] Starting case with {len(B)} iterations")
+        nextG = GraphVector(ddsim_graph(circuit, len(B), state_preparation, store))
+        print(datetime.now(), f"[CLUE-circuit] \t- Computed vector with {len(B)} iterations")
         ## We compute the projection over the already computed basis
-        candidate = nextG - sum((nextG*V)*V for V in B)
+        candidate = [nextG]
+        for (i,V) in enumerate(B):
+            print(datetime.now(), f"[CLUE-circuit] \t- Computing scalar product ({i+1}/{len(B)})...")
+            candidate.append((V, -(nextG*V)))
 
-        print(f"[CLUE-circuit] \tCandidate with norm {float(candidate.norm)}")
+        print(datetime.now(), f"[CLUE-circuit] \t- Building the new candidate...")
+        candidate = GraphVector(*candidate)
 
-        if float(candidate.norm) < epsilon:
+        print(datetime.now(), f"[CLUE-circuit] \t- Computing its norm...")
+        print(datetime.now(), f"[CLUE-circuit] \t- Candidate with norm {float(abs(candidate.norm))}")
+
+        if float(abs(candidate.norm)) < epsilon:
             go_on = False
         else:
             B.append(candidate.normalized_vector)
-    print(f"[CLUE-circuit] Finished CLUE. Dimension of lumping: {len(B)}")
+    print(datetime.now(), f"[CLUE-circuit] Finished CLUE. Dimension of lumping: {len(B)}")
     return tuple(B)
 
 def CLUE_reduced(circuit: QuantumCircuit, lumping : list[GraphVector]) -> ndarray:
@@ -176,20 +191,28 @@ class GraphVector:
         * We can scale a :class: `GraphVector` using a complex scalar.
         * We can compute the scalar product (see :func:`dot`) of two :class:`GraphVector`.
     '''
-    def __init__(self, *graphs : tuple[cdouble, AGraph] | AGraph):
+    def __init__(self, *graphs : tuple[cdouble, AGraph] | AGraph | GraphVector):
         self.__data = dict()
         for graph in graphs:
             if isinstance(graph, (tuple, list)):
                 if len(graph) != 2: raise ValueError(f"[GraphVector] Bad format of input: we require that tuples/lists have length 2. Found {graph}")
                 G,c = graph
-            elif not isinstance(graph, AGraph):
-                raise TypeError(f"[GraphVector] Bad format of input: we require the class :AGraph: when coefficient is assumed to be 1")
             else:
                 c = cdouble(1)
                 G = graph
-            if not G in self.__data:
-                self.__data[G] = cdouble(0)
-            self.__data[G] += c
+
+            # Case when
+            if isinstance(G, GraphVector):
+                for (g,d) in G.to_list():
+                    if not g in self.__data:
+                        self.__data[g] = cdouble(0)
+                    self.__data[g] += c*d
+            elif isinstance(G, AGraph):
+                if not G in self.__data:
+                    self.__data[G] = cdouble(0)
+                self.__data[G] += c
+            else:
+                raise TypeError(f"[GraphVector] Wrong type for graph: either class :AGraph: or class :GraphVector:. Got {G.__class__}")
 
         ## We clean the zeros
         self.__data = {G: c for (G,c) in self.__data.items() if c != 0}
@@ -207,27 +230,44 @@ class GraphVector:
     ### Vector methods
     ##############################################################################################
     def scalar(self, scale: cdouble) -> GraphVector:
-        return GraphVector(*[(G, scale*c) for (G,c) in self.to_list()])
+        return GraphVector((self, scale))
     
     def scalar_dot(self, other: GraphVector) -> cdouble:
         ## Scalar product is linear, so we can do a loop until the scalar product of two AGraph
         return sum((c1*c2.conjugate()*GraphVector.graph_scalar(G1,G2) for ((G1,c1),(G2,c2)) in product(self.to_list(), other.to_list())), start=cdouble(0))
     
+
+    __GRAPH_SCALAR_CACHE : dict[set[GraphVector], tuple[tuple[GraphVector,GraphVector],cdouble]] = dict()
+    __GRAPH_SCALAR_CACHE_hits : int = 0
+    __GRAPH_SCALAR_CACHE_calls : int = 0
     @staticmethod
-    @lru_cache(maxsize=256)
+    # @lru_cache(maxsize=256)
     def graph_scalar(G1: AGraph, G2: AGraph) -> cdouble:
-        if GraphVector.graph_depth(G1) != GraphVector.graph_depth(G2):
-            raise TypeError(f"Different depth of two graphs. Can not compute scalar product")
-        ## The step with "root" is done first and we start recursion with the first non-root vertex
-        edge1 = G1.out_edges("root")[0]; edge2 = G2.out_edges("root")[0]
-        val1 = GraphVector.t2c(edge1); val2 = GraphVector.t2c(edge2, True)
-        return val1*val2*GraphVector._graph_scalar(G1, edge1[1], G2, edge2[1])
+        GraphVector.__GRAPH_SCALAR_CACHE_calls += 1
+        key = frozenset((G1, G2))
+        if not key in GraphVector.__GRAPH_SCALAR_CACHE:
+            print(datetime.now(), f"[graph-scalar] Computing the scalar product of two graphs: ({len(G1.nodes())}, {len(G1.edges())}) * ({len(G2.nodes())}, {len(G2.edges())})")
+            if GraphVector.graph_depth(G1) != GraphVector.graph_depth(G2):
+                raise TypeError(f"Different depth of two graphs. Can not compute scalar product")
+            ## The step with "root" is done first and we start recursion with the first non-root vertex
+            edge1 = G1.out_edges("root")[0]; edge2 = G2.out_edges("root")[0]
+            val1 = GraphVector.t2c(edge1); val2 = GraphVector.t2c(edge2, True)
+            result = val1*val2*GraphVector._graph_scalar(G1, edge1[1], G2, edge2[1])
+
+            GraphVector.__GRAPH_SCALAR_CACHE[key] = ((G1,G2), result)
+        else:
+            GraphVector.__GRAPH_SCALAR_CACHE_hits += 1
+
+        (g1,g2), result = GraphVector.__GRAPH_SCALAR_CACHE[key]
+        if (G1,G2) == (g1,g2): return result
+        else: return result.conjugate()
     
     @staticmethod
     def t2c(edge, conjugate=False) -> cdouble:
         to_parse = edge.attr["tooltip"]
         transformations = [
             ("π", "pi"),
+            ("^ℯ", "E**"),
             ("ℯ", "*E**"),
             ("ipi ", "I*pi*"),
             ("ipi", "I*pi"),
@@ -307,7 +347,7 @@ class GraphVector:
             if other == 0:
                 return self
             return NotImplemented
-        return GraphVector(*self.to_list(), *other.to_list())
+        return GraphVector(self, other)
     
     def __radd__(self, other: GraphVector) -> GraphVector:
         return self.__add__(other)
@@ -373,18 +413,18 @@ def clue_reduction(name: str,
         It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``. It uses
         method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [clue @ {name}] Computing CLUE reduction for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [clue @ {name}] Computing CLUE reduction for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
     try: 
         true_size = experiment.correct_size()
     except:
         true_size = None
 
-    print(f"%%% [clue @ {name}] Creating the full system to apply CLUE", flush=True)
+    print(datetime.now(), f"%%% [clue @ {name}] Creating the full system to apply CLUE", flush=True)
     system = FODESystem.LinearSystem(experiment.matrix(), lumping_subspace=NumericalSubspace)
     obs = generate_observable(experiment, *args, **kwds)
     
-    print(f"%%% [clue @ {name}] Computing the lumped system...", flush=True)
+    print(datetime.now(), f"%%% [clue @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -392,15 +432,15 @@ def clue_reduction(name: str,
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [clue @ {name}] Timeout reached for execution", flush=True)
+        print(datetime.now(), f"%%% [clue @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [clue @ {name}] Checking correct size (if possible)", flush=True)
+    print(datetime.now(), f"%%% [clue @ {name}] Checking correct size (if possible)", flush=True)
     if true_size != None and ctime < inf:
         if true_size != lumped.size:
-            print(f"%%% [clue @ {name}] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {true_size}\n%%% \t* Got: {lumped.size}\n%%% \t* Experiment: {experiment}", flush=True)
+            print(datetime.now(), f"%%% [clue @ {name}] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {true_size}\n%%% \t* Got: {lumped.size}\n%%% \t* Experiment: {experiment}", flush=True)
     result_file.writerow(generate_data(experiment, lumped.size/system.size, ctime, memory))
 
     return ctime
@@ -426,37 +466,34 @@ def ddsim_reduction(name: str,
         It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``. It uses
         method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [ddsim @ {name}] Computing DDSIM reduction for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [ddsim @ {name}] Computing DDSIM reduction for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
     try: 
         true_size = experiment.correct_size()
     except:
         true_size = 2**experiment.size()
 
-    print(f"%%% [ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush=True)
-    U, par = experiment.quantum()
-    if par != None: U = U.bind_parameters({par: 1/(1000*true_size)})
-
-    circuit = loop(U, true_size, generate_observable(experiment, *args, **kwds), True)
-    backend = DDSIMProvider().get_backend("qasm_simulator")
+    print(datetime.now(), f"%%% [ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush=True)
+    circuit, par = experiment.quantum()
+    if par != None: circuit = circuit.bind_parameters({par: 1/(1000*true_size)})
     
-    print(f"%%% [ddsim @ {name}] Computing the simulation of the circuit...", flush=True)
+    print(datetime.now(), f"%%% [ddsim @ {name}] Computing the reductio using DDSIM...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
             ctime = process_time()
             ## Executing the circuit one time
-            job = execute(circuit, backend, shots=1)
-            job.result()
+            L = CLUE_circuit(circuit, generate_observable(experiment, *args, **kwds), store = f"{name}_{args}")
+            _ = CLUE_reduced(circuit, L)
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [ddsim @ {name}] Timeout reached for execution", flush=True)
+        print(datetime.now(), f"%%% [ddsim @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
     memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [ddsim @ {name}] Storing the data...", flush=True)
-    result_file.writerow(generate_data(experiment, true_size/2**experiment.size(), ctime, memory))
+    print(datetime.now(), f"%%% [ddsim @ {name}] Storing the data...", flush=True)
+    result_file.writerow(generate_data(experiment, len(L)/2**experiment.size(), ctime, memory))
 
     return ctime
 
@@ -484,10 +521,10 @@ def direct_reduction(name: str,
         It stores the execution time of the lumping plus the reduction ratio. It stores the result on ``result_file``. It uses
         method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [direct @ {name}] Computing Direct CLUE reduction for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [direct @ {name}] Computing Direct CLUE reduction for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
     
-    print(f"%%% [direct @ {name}] Computing the lumped system...", flush=True)
+    print(datetime.now(), f"%%% [direct @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -495,12 +532,12 @@ def direct_reduction(name: str,
             L, _ = experiment.direct()
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [direct @ {name}] Timeout reached for execution", flush=True)
+        print(datetime.now(), f"%%% [direct @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
     memory = tracemalloc.get_traced_memory()[1]/(2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [direct @ {name}] Storing the data...", flush=True)
+    print(datetime.now(), f"%%% [direct @ {name}] Storing the data...", flush=True)
     result_file.writerow(generate_data(experiment, L.nrows/L.ncols, ctime, memory))
 
     return ctime
@@ -529,7 +566,7 @@ def clue_iteration(name: str,
 
         It stores the result on ``result_file``. It uses method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [full-clue @ {name}] Computing CLUE iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [full-clue @ {name}] Computing CLUE iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
     
     try: 
@@ -537,11 +574,11 @@ def clue_iteration(name: str,
     except:
         true_size = None
 
-    print(f"%%% [full-clue @ {name}] Creating the full system to apply CLUE", flush=True)
+    print(datetime.now(), f"%%% [full-clue @ {name}] Creating the full system to apply CLUE", flush=True)
     system = FODESystem.LinearSystem(experiment.matrix(), lumping_subspace=NumericalSubspace)
     obs = generate_observable(experiment, *args, **kwds)
     
-    print(f"%%% [full-clue @ {name}] Computing the lumped system...", flush=True)
+    print(datetime.now(), f"%%% [full-clue @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -550,27 +587,27 @@ def clue_iteration(name: str,
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
             lump_time = process_time()-lump_time
 
-            print(f"%%% [full-clue @ {name}] Checking correct size (if possible)", flush=True)
+            print(datetime.now(), f"%%% [full-clue @ {name}] Checking correct size (if possible)", flush=True)
             if true_size != None:
                 if true_size != lumped.size:
-                    print(f"%%% [clue @ {name}] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {true_size}\n%%% \t* Got: {lumped.size}\n%%% \t* Experiment: {experiment}", flush=True)
+                    print(datetime.now(), f"%%% [clue @ {name}] ERROR!! Found weird dimension in lumping -- \n%%% \t* Expected: {true_size}\n%%% \t* Got: {lumped.size}\n%%% \t* Experiment: {experiment}", flush=True)
 
-            print(f"%%% [full-clue @ {name}] Getting the reduced U_P", flush=True)
+            print(datetime.now(), f"%%% [full-clue @ {name}] Getting the reduced U_P", flush=True)
             U_P = lumped.construct_matrices("polynomial")[0].to_numpy(dtype=cdouble)
-            print(f"%%% [full-clue @ {name}] Getting the reduced U_B", flush=True)
+            print(datetime.now(), f"%%% [full-clue @ {name}] Getting the reduced U_B", flush=True)
             try:
                 U_B = experiment.matrix_B(U_P)
             except:
-                print(f"%%% [full-clue @ {name}] No reduced U_B: going to identity", flush=True)
+                print(datetime.now(), f"%%% [full-clue @ {name}] No reduced U_B: going to identity", flush=True)
                 U_B = eye(U_P.shape[0])
             
-            print(f"%%% [full-clue @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
+            print(datetime.now(), f"%%% [full-clue @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
             U = matmul(U_P, U_B)
             it_time = process_time()
             _ = matrix_power(U, iterations)
             it_time = process_time() - it_time
     except TimeoutError:
-        print(f"%%% [full-clue @ {name}] Timeout reached for execution", flush=True)
+        print(datetime.now(), f"%%% [full-clue @ {name}] Timeout reached for execution", flush=True)
         lump_time = inf
         it_time = inf
     finally:
@@ -603,10 +640,10 @@ def ddsim_iteration(name: str,
 
         It stores the result on ``result_file``. It uses method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [full-ddsim @ {name}] Computing DDSIM iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [full-ddsim @ {name}] Computing DDSIM iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
 
-    print(f"%%% [full-ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
+    print(datetime.now(), f"%%% [full-ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
     U_P, par = experiment.quantum()
     if par != None: U_P = U_P.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
     try:
@@ -618,7 +655,7 @@ def ddsim_iteration(name: str,
     circuit = loop(U_B, iterations, generate_observable(experiment, *args, **kwds), True)
     backend = DDSIMProvider().get_backend("qasm_simulator")
     
-    print(f"%%% [full-ddsim @ {name}] Computing the simulation of the circuit...", flush = True)
+    print(datetime.now(), f"%%% [full-ddsim @ {name}] Computing the simulation of the circuit...", flush = True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -628,12 +665,12 @@ def ddsim_iteration(name: str,
             job.result()
             ctime = process_time()-ctime
     except TimeoutError:
-        print(f"%%% [full-ddsim @ {name}] Timeout reached for execution", flush = True)
+        print(datetime.now(), f"%%% [full-ddsim @ {name}] Timeout reached for execution", flush = True)
         ctime = inf
     memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
     tracemalloc.stop()
 
-    print(f"%%% [full-ddsim @ {name}] Storing the data...", flush = True)
+    print(datetime.now(), f"%%% [full-ddsim @ {name}] Storing the data...", flush = True)
     result_file.writerow(generate_data(experiment, iterations, ctime, memory))
 
     return ctime
@@ -662,10 +699,10 @@ def direct_iteration(name: str,
 
         It stores the result on ``result_file``. It uses method ``generate_data`` to format the CSV output.
     '''
-    print(f"%%% [full-direct @ {name}] Computing Direct CLUE iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
+    print(datetime.now(), f"%%% [full-direct @ {name}] Computing Direct CLUE iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
     
-    print(f"%%% [full-direct @ {name}] Computing the lumped system...", flush=True)
+    print(datetime.now(), f"%%% [full-direct @ {name}] Computing the lumped system...", flush=True)
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
@@ -673,22 +710,22 @@ def direct_iteration(name: str,
             _, U = experiment.direct()
             lump_time = process_time()-lump_time
 
-            print(f"%%% [full-direct @ {name}] Getting the reduced U_P", flush=True)
+            print(datetime.now(), f"%%% [full-direct @ {name}] Getting the reduced U_P", flush=True)
             U_P = U.to_numpy(dtype=cdouble)
-            print(f"%%% [full-direct @ {name}] Getting the reduced U_B", flush=True)
+            print(datetime.now(), f"%%% [full-direct @ {name}] Getting the reduced U_B", flush=True)
             try:
                 U_B = experiment.matrix_B(U_P)
             except:
-                print(f"%%% [full-direct @ {name}] No reduced U_B: going to identity", flush=True)
+                print(datetime.now(), f"%%% [full-direct @ {name}] No reduced U_B: going to identity", flush=True)
                 U_B = eye(U_P.shape[0])
             
-            print(f"%%% [full-direct @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
+            print(datetime.now(), f"%%% [full-direct @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
             U = matmul(U_P, U_B)
             it_time = process_time()
             _ = matrix_power(U, iterations)
             it_time = process_time() - it_time
     except TimeoutError:
-        print(f"%%% [full-direct @ {name}] Timeout reached for execution", flush=True)
+        print(datetime.now(), f"%%% [full-direct @ {name}] Timeout reached for execution", flush=True)
         lump_time = inf 
         it_time = inf
     finally:
@@ -800,7 +837,7 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
                 rem_timeout = timeout
                 try:
                     for i,observable in enumerate(obs_to_use):
-                        print(f"### ++ Starting execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)})")
+                        print(datetime.now(), f"### ++ Starting execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)})")
                         if not ("full" in ttype): # No iterations are required
                             used_time = script(*(script_args + [size] + ([observable] if observables != None else [])), timeout=rem_timeout, **kwds)
                             rem_timeout = get_rem_timeout(rem_timeout, used_time)
@@ -808,12 +845,12 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
                         else:
                             used_time = 0
                             for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
-                                print(f"    ++++ Case with {it} iterations.")
+                                print(datetime.now(), f"    ++++ Case with {it} iterations.")
                                 it_used_time = script(*(script_args + [it, size] + ([observable] if observables != None else [])), timeout=rem_timeout, **kwds)
                                 rem_timeout = get_rem_timeout(rem_timeout, it_used_time)
                                 used_time += it_used_time
                             result_file.flush()
-                        print(f"### -- Finished execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)}): took {used_time} s.")
+                        print(datetime.now(), f"### -- Finished execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)}): took {used_time} s.")
                         if rem_timeout != None:
                             rem_timeout -= used_time
                             if rem_timeout < 0:
@@ -821,4 +858,4 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
                             else:
                                 rem_timeout = ceil(rem_timeout)
                 except TimeoutError:
-                    print(f"### -- Finished execution {execution}/{repeats} ({size=}): reached Timeout.")
+                    print(datetime.now(), f"### -- Finished execution {execution}/{repeats} ({size=}): reached Timeout.")

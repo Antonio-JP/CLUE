@@ -101,12 +101,19 @@ def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple
         example.observable = obs
         obs = SparseVector.from_list((2**size)*[1])
     else:
-        raise ValueError(f"%%% [clue @ {example.name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+        raise ValueError(f"%%% [clue @ {example.name}] The observable (given {obs=}) must be an integer between 0 and {2**size-1} or a string containing 'H'")
     return tuple([obs])
 
 def generate_observable_ddsim(example: QuantumBenchmark, size: int, obs) -> bool:
-    example.observable = obs
-    return obs == "H"
+    size = example.size()
+    if isinstance(obs, int) and obs >= 0 and obs < 2**size:
+        example.observable = obs
+    elif isinstance(obs, str) and "H" in obs:
+        example.observable = obs
+        obs = True
+    else:
+        raise ValueError(f"%%% [ddsim @ {example.name}] The observable (given {obs=}) must be an integer between 0 and {2**size-1} or a string containing 'H'")
+    return obs
 
 ### SCRIPT ARGUMENT PROCCESS METHOD
 def get_benchmark_args(*argv) -> tuple[str, list[Any]]:
