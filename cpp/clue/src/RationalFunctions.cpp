@@ -105,3 +105,20 @@ bool Monomial::operator==(const Monomial other) {
     }
     return true; // all checks were successful
 }
+
+int Monomial::degree() {
+    int degree = 0;
+    for (pair<const int, int> ppair : this->degrees) {
+        degree += ppair.second;
+    }
+
+    return degree;    
+}
+
+int Monomial::degree(int variable) {
+    map<int,int>::const_iterator search = this->degrees.find(variable);
+    if (search != this->degrees.end()) {
+        return search->second;
+    }
+    return 0;
+}

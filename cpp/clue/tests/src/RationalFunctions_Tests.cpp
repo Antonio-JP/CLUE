@@ -63,11 +63,24 @@ void Monomial_equality() {
     if (!(prod == gcd * lcm)) {throw std::runtime_error("Error in equality: " + prod.to_string(varnames) + " vs " + (gcd * lcm).to_string(varnames)); }
 }
 
+void Monomial_degree() {
+    // Testing the method degrees
+    Monomial mon1 = Monomial({2,5,0,0,1}), mon2 = Monomial({1,7,3,0,0});
+
+    if (mon1.degree() != 8) { throw std::runtime_error("Error in degrees: expected 8 but got " + to_string(mon1.degree())); }
+    if (mon2.degree() != 11) { throw std::runtime_error("Error in degrees: expected 11 but got " + to_string(mon2.degree())); }
+    if (mon1.degree(0) != 2) { throw std::runtime_error("Error in degrees with variable: expected 2 but got " + to_string(mon1.degree(0))); }
+    if (mon1.degree(1) != 5) { throw std::runtime_error("Error in degrees with variable: expected 5 but got " + to_string(mon1.degree(1))); }
+    if (mon1.degree(2) != 0) { throw std::runtime_error("Error in degrees with variable: expected 0 but got " + to_string(mon1.degree(2))); }
+    if (mon1.degree(10) != 0) { throw std::runtime_error("Error in degrees with variable: expected 0 but got " + to_string(mon1.degree(10))); }
+}
+
 int main() {
     Monomial_creation();
     Monomial_creation_errors();
     Monomial_operation();
     Monomial_equality();
+    Monomial_degree();
 
     return 0;
 }
