@@ -1,7 +1,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include "RationalFunctions.h"
+#include "RationalFunctions.hpp"
 
 void Monomial_creation() {
     map<int,int> map_in = {{0, 5}, {2, 1}};

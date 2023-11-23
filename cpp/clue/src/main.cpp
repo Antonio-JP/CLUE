@@ -1,5 +1,5 @@
 #include <iostream>
-#include "RationalFunctions.h"
+#include "RationalFunctions.hpp"
 
 using namespace std;
 

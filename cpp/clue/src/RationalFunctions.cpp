@@ -1,4 +1,4 @@
-#include "RationalFunctions.h"
+#include "RationalFunctions.hpp"
 
 /* Generic init method for Monomials */
 void Monomial::init(map<int,int> degrees) {
