@@ -4,10 +4,7 @@
 using namespace std;
 
 int main(int, char**) {
-    QQSparseVector dim1 = QQSparseVector(1);
+    QQSparseVector u = QQSparseVector({QQ(1),QQ(),QQ(),QQ(2)});
 
-    if (dim1.dimension() != 1) {
-        cout << "Found an error on dimension?" << endl;
-    }
-    cout << "Got a dimension " << dim1.dimension() << " vector. Really?" << endl;
+    cout << "My vector density: " << u.coeff_to_string(QQ(4,2)) << endl;
 }

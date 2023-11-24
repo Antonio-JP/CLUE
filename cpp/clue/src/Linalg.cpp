@@ -1,6 +1,5 @@
 #include <cmath>
 #include "Linalg.hpp"
-#include <iostream>
 
 /*******************************************************************************************************************
  * 
@@ -16,7 +15,6 @@ SparseVector<T>::SparseVector(int dim) {
     }
 
     this->dim = dim;
-    cout << "Setting up dimension: " << this->dim << "|| Got dimension: " << this->dimension();
 }
 
 /*******************************************************************************************************************/
@@ -154,11 +152,31 @@ void SparseVector<T>::conjugate_in()  {
 /*******************************************************************************************************************/
 /* VIRTUAL METHODS */
 float QQSparseVector::norm() {
-    rational<int> squared_norm = this->inner_product(*this);
+    QQ squared_norm = this->inner_product(*this);
     return sqrt(squared_norm.numerator() / (float) squared_norm.denominator());
 }
+QQSparseVector& QQSparseVector::normalize() {
+    static QQSparseVector normalized = QQSparseVector(*this);
+    normalized.normalize_in();
 
-string QQSparseVector::coeff_to_string(rational<int> element) {
+    return normalized;
+}
+void QQSparseVector::normalize_in() {
+    if (this->is_zero()) { return; } // Nothing to do
+
+    int gcd_n, gcd_d;
+    map<int,QQ>::iterator iterator = this->nonzero.begin();
+    gcd_n = iterator->second.numerator(); gcd_d = iterator->second.denominator();
+    iterator++;
+    while (iterator != this->nonzero.end()) {
+        gcd_n = gcd(gcd_n, iterator->second.numerator());
+        gcd_d = gcd(gcd_d, iterator->second.denominator());
+        iterator++;
+    }
+
+    this->operator*=(QQ(gcd_d, gcd_n));
+}
+string QQSparseVector::coeff_to_string(QQ element) {
     string output = std::to_string(element.numerator());
     if (element.denominator() != 1 && element.numerator() != 0) {
         output += "/" + std::to_string(element.denominator());
@@ -173,7 +191,7 @@ QQSparseVector QQSparseVector::operator+(QQSparseVector& other) {
     return new_vector;
 }
 QQSparseVector QQSparseVector::operator-() { /* unary minus: just negation of object */
-    QQSparseVector result = QQSparseVector((*this) * rational<int>(-1));
+    QQSparseVector result = QQSparseVector((*this) * QQ(-1));
     return result;
 }
 QQSparseVector QQSparseVector::operator-(QQSparseVector& other) {
@@ -181,8 +199,8 @@ QQSparseVector QQSparseVector::operator-(QQSparseVector& other) {
     new_vector -= other;
     return new_vector;
 }
-QQSparseVector QQSparseVector::operator*(rational<int> other) { // Scalar product by a constant
-    if (other == rational<int>(0)) {
+QQSparseVector QQSparseVector::operator*(QQ other) { // Scalar product by a constant
+    if (other == QQ(0)) {
         return QQSparseVector(this->dimension());
     }
     // If the coefficient is not zero
@@ -199,10 +217,23 @@ QQSparseVector QQSparseVector::operator*(rational<int> other) { // Scalar produc
 /*******************************************************************************************************************/
 /* VIRTUAL METHODS */
 float CCSparseVector::norm()  {
-    complex<double> squared_norm = this->inner_product(*this);
+    CC squared_norm = this->inner_product(*this);
     return (float) sqrt(squared_norm.real());
 }
-string CCSparseVector::coeff_to_string(complex<double> element) {
+CCSparseVector& CCSparseVector::normalize() {
+    static CCSparseVector normalized = CCSparseVector(*this);
+    normalized.normalize_in();
+
+    return normalized;
+}
+void CCSparseVector::normalize_in() {
+    /* In CC, we divide the coefficients by the norm */
+    float norm = this->norm();
+    CC c_norm = CC((double)(1/norm));
+
+    this->operator*=(c_norm);
+}
+string CCSparseVector::coeff_to_string(CC element) {
     if (element.real() == (double) 0 && element.imag() == (double) 0) {
         return "0";
     } else if (element.real() == (double) 0) {
@@ -210,6 +241,9 @@ string CCSparseVector::coeff_to_string(complex<double> element) {
     } else if (element.imag() == (double) 0) {
         return std::to_string(element.real());
     } else {
+        if (element.imag() < (double) 0) {
+            return std::to_string(element.real()) + " - " + std::to_string(-element.imag()) + "*i";
+        }
         return std::to_string(element.real()) + " + " + std::to_string(element.imag()) + "*i";
     }
 }
@@ -221,7 +255,7 @@ CCSparseVector CCSparseVector::operator+(CCSparseVector& other) {
     return new_vector;
 }
 CCSparseVector CCSparseVector::operator-() { /* unary minus: just negation of object */
-    CCSparseVector result = CCSparseVector((*this) * complex<double>(-1));
+    CCSparseVector result = CCSparseVector((*this) * CC(-1));
     return result;
 }
 CCSparseVector CCSparseVector::operator-(CCSparseVector& other) {
@@ -229,8 +263,8 @@ CCSparseVector CCSparseVector::operator-(CCSparseVector& other) {
     new_vector -= other;
     return new_vector;
 }
-CCSparseVector CCSparseVector::operator*(complex<double> other) { // Scalar product by a constant
-    if (other == complex<double>(0)) {
+CCSparseVector CCSparseVector::operator*(CC other) { // Scalar product by a constant
+    if (other == CC(0)) {
         return CCSparseVector(this->dimension());
     }
     // If the coefficient is not zero
@@ -244,6 +278,6 @@ CCSparseVector CCSparseVector::conjugate() { /* Conjugate the vector and return 
     return output;
 }
         
-template class SparseVector<rational<int>>;
-template class SparseVector<complex<double>>;
+template class SparseVector<QQ>;
+template class SparseVector<CC>;
 

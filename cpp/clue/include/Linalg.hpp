@@ -43,7 +43,7 @@ class SparseVector {
         int dimension() { return this->dim; }
         int nonzero_count() { return this->nonzero.size(); }
         int first_nonzero() { return this->nonzero.begin()->first; }
-        unordered_set<int>::const_iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
+        unordered_set<int>::iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
         float density() { return this->nonzero_count() / (float)this->dim; }
 
         bool is_zero() { return this->nonzero_count() == 0; }
@@ -53,6 +53,8 @@ class SparseVector {
 
         /* Abstract methods */
         virtual float norm() = 0;
+        virtual SparseVector<T>& normalize() = 0;
+        virtual void normalize_in() = 0;
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
@@ -68,6 +70,7 @@ class SparseVector {
         void operator*=(T);
         T operator[](int index) { return this->get_value(index); }
         bool operator==(SparseVector<T>&);
+        bool operator!=(SparseVector<T>& other) { return !((*this) == other); }
         void conjugate_in(); /* Conjugate the vector inplace */
 
         virtual T conjugate_coeff(T coeff) = 0;
@@ -92,37 +95,45 @@ class SparseVector {
         virtual string coeff_to_string(T element) = 0;
 };
 
-class QQSparseVector : public SparseVector<rational<int>> {
+using QQ = rational<int>;
+
+class QQSparseVector : public SparseVector<QQ> {
     public:
-        using SparseVector<rational<int>>::SparseVector;
+        using SparseVector<QQ>::SparseVector;
 
         /* VIRTUAL METHODS */
         float norm();
-        rational<int> conjugate_coeff(rational<int> coeff) { return coeff; }
-        string coeff_to_string(rational<int> element);
+        QQSparseVector& normalize();
+        void normalize_in();
+        QQ conjugate_coeff(QQ coeff) { return coeff; }
+        string coeff_to_string(QQ element);
 
         /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
         QQSparseVector operator+(QQSparseVector&);
         QQSparseVector operator-(); /* unary minus: just negation of object */
         QQSparseVector operator-(QQSparseVector&); 
-        QQSparseVector operator*(rational<int>); 
+        QQSparseVector operator*(QQ); 
         QQSparseVector conjugate() { return (*this); } // No conjugation in a rational vector
 };
 
-class CCSparseVector : public SparseVector<complex<double>> {
+using CC = complex<double>;
+
+class CCSparseVector : public SparseVector<CC> {
     public:
-        using SparseVector<complex<double>>::SparseVector;
+        using SparseVector<CC>::SparseVector;
         
         /* VIRTUAL METHODS */
         float norm();
-        complex<double> conjugate_coeff(complex<double> coeff) { return complex<double>(coeff.real(), -coeff.imag()); }
-        string coeff_to_string(complex<double> element);
+        CCSparseVector& normalize();
+        void normalize_in();
+        CC conjugate_coeff(CC coeff) { return CC(coeff.real(), -coeff.imag()); }
+        string coeff_to_string(CC element);
         
         /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
         CCSparseVector operator+(CCSparseVector&);
         CCSparseVector operator-(); /* unary minus: just negation of object */
         CCSparseVector operator-(CCSparseVector&); 
-        CCSparseVector operator*(complex<double>); 
+        CCSparseVector operator*(CC); 
         CCSparseVector conjugate();
 };
 
