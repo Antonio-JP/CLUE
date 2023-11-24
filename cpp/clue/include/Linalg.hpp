@@ -13,6 +13,7 @@
 using namespace std;
 using namespace boost;
 
+/*************************************************************************/
 /* Class for vector */
 template <typename T>
 class SparseVector {
@@ -135,6 +136,34 @@ class CCSparseVector : public SparseVector<CC> {
         CCSparseVector operator-(CCSparseVector&); 
         CCSparseVector operator*(CC); 
         CCSparseVector conjugate();
+};
+
+
+/*************************************************************************/
+
+
+/*************************************************************************/
+/* Class for Subspace */
+class CCSubspace {
+    private:
+        vector<CCSparseVector> basis;
+        int dim;
+        float max_error;
+    public:
+        CCSubspace(int ambient_dimension, float max_error = 1e-6) { this->dim = ambient_dimension; this->max_error = max_error; }
+
+        /*********************************************************************/
+        /* ATTRIBUTE/PROPERTIES */
+        int ambient_dimension() { return this->dim; }
+        int dimension() { return this->basis.size(); }
+        vector<float> densities();
+
+        /*********************************************************************/
+        /* GETTING/SETTING DATA METHODS */
+        void reduce_vector(CCSparseVector*);
+        bool contains(CCSparseVector&);
+        CCSparseVector find_in(CCSparseVector&);
+        bool absorb_new_vector(CCSparseVector&);
 };
 
 #endif
