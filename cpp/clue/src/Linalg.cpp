@@ -1,6 +1,14 @@
 #include <cmath>
 #include "Linalg.hpp"
+#include <iostream>
 
+/*******************************************************************************************************************
+ * 
+ * ABSTRACT CLASS FOR SPARSE VECTOR
+ * 
+********************************************************************************************************************/
+/*******************************************************************************************************************/
+/* CONSTRUCTORS */
 template <typename T>
 SparseVector<T>::SparseVector(int dim) {
     if (dim <= 0) {
@@ -8,12 +16,15 @@ SparseVector<T>::SparseVector(int dim) {
     }
 
     this->dim = dim;
+    cout << "Setting up dimension: " << this->dim << "|| Got dimension: " << this->dimension();
 }
 
+/*******************************************************************************************************************/
+/* ATTRIBUTE/PROPERTIES */
 template <typename T>
-void SparseVector<T>::reduce(T coef, SparseVector<T>& other) { // method that computes inplace this - coef*other
+void SparseVector<T>::reduce(T coeff, SparseVector<T>& other) { // method that computes inplace this - coeff*other
     for (pair<int, T> ppair : other.nonzero) {
-        T value = coef*ppair.second; // Coefficient coming from arguments
+        T value = coeff*ppair.second; // Coefficient coming from arguments
         // We check if the key is in "this"
         typename map<int,T>::const_iterator search = this->nonzero.find(ppair.first);
         if (search != this->nonzero.end()) { 
@@ -37,16 +48,14 @@ T SparseVector<T>::inner_product(SparseVector<T>& other) {
     }
 
     T total;
-    // First we conjugate the other vector
-    SparseVector<T> other_conj = other.conjugate();
     // Now we go through the intersection adding the products
     for (pair<int,T> this_pair : this->nonzero) {
         int key = this_pair.first;
         
         // We look for "key" in "other"
-        typename map<int,T>::const_iterator search = other_conj.nonzero.find(key); 
-        if (search != other_conj.nonzero.end()) {
-            total += search->second;
+        typename map<int,T>::const_iterator search = other.nonzero.find(key); 
+        if (search != other.nonzero.end()) {
+            total += this_pair.second * this->conjugate_coeff(search->second);
         }
     }
     return total;
@@ -59,20 +68,37 @@ T SparseVector<T>::get_value(int index) {
         throw std::invalid_argument("The index must be valid for the current vector dimension.");
     }
     // We look if "index" is in the "nonzero" map
-    typename map<int,T>::const_iterator search = this->nonzero.find(index);
-    if (search != this->nonzero.end()) { //Found
-        return search->second;
+    if (this->nonzero_indices.find(index) != this->nonzero_indices.end()) { // This search is O(1)
+        return this->nonzero[index]; // We do a new search of O(log(N))
     }
-    // Else, we know it is zero
+
     return (T) 0;
 }
 
 template <typename T>
-SparseVector<T> SparseVector<T>::operator+(SparseVector<T>& other) {
-    SparseVector<T> new_vector = SparseVector<T>(*this);
-    new_vector += other;
-    return new_vector;
+void SparseVector<T>::set_value(int index, T value)  {
+    if (value == (T) 0) {
+        if (this->nonzero_indices.find(index) != this->nonzero_indices.end()) { // This search is O(1)
+            this->nonzero.erase(index);
+            this->nonzero_indices.erase(index);
+        }
+    } else {
+        this->nonzero[index] = value;
+        this->nonzero_indices.insert(index);
+    }
 }
+
+template <typename T>
+vector<T> SparseVector<T>::to_list() { 
+    vector<T> dense;
+    for (int i = 0; i < this->dim; i++) {
+        dense[i] = (*this)[i];
+    }
+    return dense;
+}
+
+/*******************************************************************************************************************/
+/* ARITHMETIC/OPERATOR METHODS */
 template <typename T>
 void SparseVector<T>::operator+=(SparseVector<T>& other) {
     // We update the values of this using the data in 
@@ -83,17 +109,6 @@ void SparseVector<T>::operator+=(SparseVector<T>& other) {
     return;
 }
 template <typename T>
-SparseVector<T> SparseVector<T>::operator-() { /* unary minus: just negation of object */
-    SparseVector<T> result = SparseVector<T>((*this) * ((T)-1));
-    return result;
-}
-template <typename T>
-SparseVector<T> SparseVector<T>::operator-(SparseVector<T>& other) {
-    SparseVector<T> new_vector = SparseVector<T>(*this);
-    new_vector -= other;
-    return new_vector;
-}
-template <typename T>
 void SparseVector<T>::operator-=(SparseVector<T>& other) {
     // We update the values of this using the data in 
     for (pair<int, T> ppair : other.nonzero) {
@@ -101,16 +116,6 @@ void SparseVector<T>::operator-=(SparseVector<T>& other) {
         this->set_value(index, (*this)[index] - ppair.second);
     }
     return;
-}
-template <typename T>
-SparseVector<T> SparseVector<T>::operator*(T other) { // Scalar product by a constant
-    if (other == ((T) 0)) {
-        return SparseVector<T>(this->dim);
-    }
-    // If the coefficient is not zero
-    SparseVector<T> output = SparseVector<T>(*this); // We copy "this" and use in-place operations
-    output *= other;
-    return output;
 }
 template <typename T>
 void SparseVector<T>::operator*=(T other) {
@@ -133,13 +138,112 @@ bool SparseVector<T>::operator==(SparseVector<T>& other) {
     }
     return true; // All elements are equal
 }
-
 template <typename T>
-SparseVector<T> SparseVector<T>::conjugate() { /* Conjugate the vector and return the new structure */
-    SparseVector<T> output = SparseVector<T>(*this);
+void SparseVector<T>::conjugate_in()  {
+    for (pair<int,T> ppair : this->nonzero) {
+        this->set_value(ppair.first, this->conjugate_coeff(ppair.second));
+    }
+}
+
+
+/*******************************************************************************************************************
+ * 
+ * CLASS QQ-SPARSE VECTOR
+ * 
+********************************************************************************************************************/
+/*******************************************************************************************************************/
+/* VIRTUAL METHODS */
+float QQSparseVector::norm() {
+    rational<int> squared_norm = this->inner_product(*this);
+    return sqrt(squared_norm.numerator() / (float) squared_norm.denominator());
+}
+
+string QQSparseVector::coeff_to_string(rational<int> element) {
+    string output = std::to_string(element.numerator());
+    if (element.denominator() != 1 && element.numerator() != 0) {
+        output += "/" + std::to_string(element.denominator());
+    }
+    return output;
+}
+/*******************************************************************************************************************/
+/* ARITHMETIC METHODS */
+QQSparseVector QQSparseVector::operator+(QQSparseVector& other) {
+    QQSparseVector new_vector = QQSparseVector(*this);
+    new_vector += other;
+    return new_vector;
+}
+QQSparseVector QQSparseVector::operator-() { /* unary minus: just negation of object */
+    QQSparseVector result = QQSparseVector((*this) * rational<int>(-1));
+    return result;
+}
+QQSparseVector QQSparseVector::operator-(QQSparseVector& other) {
+    QQSparseVector new_vector = QQSparseVector(*this);
+    new_vector -= other;
+    return new_vector;
+}
+QQSparseVector QQSparseVector::operator*(rational<int> other) { // Scalar product by a constant
+    if (other == rational<int>(0)) {
+        return QQSparseVector(this->dimension());
+    }
+    // If the coefficient is not zero
+    QQSparseVector output = QQSparseVector(*this); // We copy "this" and use in-place operations
+    output *= other;
+    return output;
+}
+
+/*******************************************************************************************************************
+ * 
+ * CLASS CC-SPARSE VECTOR
+ * 
+********************************************************************************************************************/
+/*******************************************************************************************************************/
+/* VIRTUAL METHODS */
+float CCSparseVector::norm()  {
+    complex<double> squared_norm = this->inner_product(*this);
+    return (float) sqrt(squared_norm.real());
+}
+string CCSparseVector::coeff_to_string(complex<double> element) {
+    if (element.real() == (double) 0 && element.imag() == (double) 0) {
+        return "0";
+    } else if (element.real() == (double) 0) {
+        return std::to_string(element.imag()) + "*i";
+    } else if (element.imag() == (double) 0) {
+        return std::to_string(element.real());
+    } else {
+        return std::to_string(element.real()) + " + " + std::to_string(element.imag()) + "*i";
+    }
+}
+/*******************************************************************************************************************/
+/* ARITHMETIC METHODS */
+CCSparseVector CCSparseVector::operator+(CCSparseVector& other) {
+    CCSparseVector new_vector = CCSparseVector(*this);
+    new_vector += other;
+    return new_vector;
+}
+CCSparseVector CCSparseVector::operator-() { /* unary minus: just negation of object */
+    CCSparseVector result = CCSparseVector((*this) * complex<double>(-1));
+    return result;
+}
+CCSparseVector CCSparseVector::operator-(CCSparseVector& other) {
+    CCSparseVector new_vector = CCSparseVector(*this);
+    new_vector -= other;
+    return new_vector;
+}
+CCSparseVector CCSparseVector::operator*(complex<double> other) { // Scalar product by a constant
+    if (other == complex<double>(0)) {
+        return CCSparseVector(this->dimension());
+    }
+    // If the coefficient is not zero
+    CCSparseVector output = CCSparseVector(*this); // We copy "this" and use in-place operations
+    output *= other;
+    return output;
+}
+CCSparseVector CCSparseVector::conjugate() { /* Conjugate the vector and return the new structure */
+    CCSparseVector output = CCSparseVector(*this);
     output.conjugate_in();
     return output;
 }
         
 template class SparseVector<rational<int>>;
 template class SparseVector<complex<double>>;
+

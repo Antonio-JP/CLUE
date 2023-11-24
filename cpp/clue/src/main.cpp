@@ -1,15 +1,13 @@
 #include <iostream>
-#include "RationalFunctions.hpp"
+#include "Linalg.hpp"
 
 using namespace std;
 
-string say_hello(){
-    return "Hello, from clue!\n";
-}
-
 int main(int, char**) {
-    vector<int> degrees = {5, 4, 3, 0, 1};
-    Monomial mon = Monomial(degrees);
-    vector<string> varnames = {"x", "y", "z", "a", "b"};
-    cout << "My monomial: " << mon.to_string(varnames) << endl;;
+    QQSparseVector dim1 = QQSparseVector(1);
+
+    if (dim1.dimension() != 1) {
+        cout << "Found an error on dimension?" << endl;
+    }
+    cout << "Got a dimension " << dim1.dimension() << " vector. Really?" << endl;
 }

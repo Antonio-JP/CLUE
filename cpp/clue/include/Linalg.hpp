@@ -2,6 +2,7 @@
 #define CLUE_LA_H
 
 #include <map>
+#include <unordered_set>
 #include <vector>
 #include <complex>
 #include <sstream>
@@ -12,11 +13,12 @@
 using namespace std;
 using namespace boost;
 
-/* Class for vector spaces and vectors */
+/* Class for vector */
 template <typename T>
 class SparseVector {
     private:
         int dim;
+        unordered_set<int> nonzero_indices;
     protected:
         map<int, T> nonzero;
     public:
@@ -30,7 +32,7 @@ class SparseVector {
                 }
             }
         }
-        SparseVector(SparseVector<T>& sparse_vector) : SparseVector(sparse_vector.dim) {
+        SparseVector(const SparseVector<T>& sparse_vector) : SparseVector(sparse_vector.dim) {
             for (pair<int, T> ppair : sparse_vector.nonzero) {
                 this->set_value(ppair.first, ppair.second);
             }
@@ -38,57 +40,43 @@ class SparseVector {
         
         /*********************************************************************/
         /* ATTRIBUTE/PROPERTIES */
+        int dimension() { return this->dim; }
         int nonzero_count() { return this->nonzero.size(); }
         int first_nonzero() { return this->nonzero.begin()->first; }
-        float density() { return (float)this->nonzero_count() / (float)this->dim; }
+        unordered_set<int>::const_iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
+        float density() { return this->nonzero_count() / (float)this->dim; }
 
         bool is_zero() { return this->nonzero_count() == 0; }
         
-        void reduce(T coef, SparseVector<T>& other); // method that computes inplace this - coef*other
+        void reduce(T coeff, SparseVector<T>& other); // method that computes inplace this - coeff*other
         T inner_product(SparseVector<T>&);
-        virtual float norm() { throw std::logic_error("Method 'norm' not implemented"); }
+
+        /* Abstract methods */
+        virtual float norm() = 0;
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
         T get_value(int index);
-        void set_value(int index, T value) {
-            if (value == (T) 0) {
-                typename map<int,T>::const_iterator search = this->nonzero.find(index);
-                if (search != this->nonzero.end()) {
-                    this->nonzero.erase(index);
-                }
-            } else {
-                this->nonzero[index] = value;
-            }
-        }
+        void set_value(int index, T value);
 
-        vector<T> to_list() { 
-            vector<T> dense;
-            for (int i = 0; i < this->dim; i++) {
-                dense[i] = (*this)[i];
-            }
-            return dense;
-        }
+        vector<T> to_list();
 
         /*********************************************************************/
         /* ARITHMETIC/OPERATOR METHODS */
-        SparseVector<T> operator+(SparseVector<T>&);
         void operator+=(SparseVector<T>&);
-        SparseVector<T> operator-(); /* unary minus: just negation of object */
-        SparseVector<T> operator-(SparseVector<T>&);
         void operator-=(SparseVector<T>&);
-        SparseVector<T> operator*(T);
         void operator*=(T);
         T operator[](int index) { return this->get_value(index); }
         bool operator==(SparseVector<T>&);
+        void conjugate_in(); /* Conjugate the vector inplace */
 
-        SparseVector<T> conjugate(); /* Conjugate the vector and return the new structure */
-        virtual void conjugate_in() { return; } /* Conjugate the vector inplace */
+        virtual T conjugate_coeff(T coeff) = 0;
+        /* Abstract methods */
         
         /*********************************************************************/
         /* REPRESENTATION METHODS */
         string to_string() {
-            stringstream output = stringstream("(");
+            stringstream output; output << "(";
             if (this->dim > 0) {
                 output << this->coeff_to_string((*this)[0]);
                 for (int i = 1; i < this->dim; i++) {
@@ -100,62 +88,42 @@ class SparseVector {
             return output.str();
         }
 
-        virtual string coeff_to_string(T element) { throw std::logic_error("Method 'coeff_to_string' not implemented"); }
+        /* Abstract methods */
+        virtual string coeff_to_string(T element) = 0;
 };
 
 class QQSparseVector : public SparseVector<rational<int>> {
     public:
-        QQSparseVector(int dim) : SparseVector(dim) { };
+        using SparseVector<rational<int>>::SparseVector;
 
-        string coeff_to_string(rational<int> element) {
-            string output = std::to_string(element.numerator());
-            if (element.denominator() != 1) {
-                output += "/" + std::to_string(element.denominator());
-            }
-            return output;
-        }
+        /* VIRTUAL METHODS */
+        float norm();
+        rational<int> conjugate_coeff(rational<int> coeff) { return coeff; }
+        string coeff_to_string(rational<int> element);
 
-        float norm() {
-            rational<int> squared_norm = this->inner_product(*this);
-            return sqrt(squared_norm.numerator() / (float) squared_norm.denominator());
-        }
+        /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
+        QQSparseVector operator+(QQSparseVector&);
+        QQSparseVector operator-(); /* unary minus: just negation of object */
+        QQSparseVector operator-(QQSparseVector&); 
+        QQSparseVector operator*(rational<int>); 
+        QQSparseVector conjugate() { return (*this); } // No conjugation in a rational vector
 };
 
 class CCSparseVector : public SparseVector<complex<double>> {
     public:
-        // using SparseVector<complex<double>>::SparseVector;
-
-        void conjugate_in() {
-            for (pair<int,complex<double>> ppair : this->nonzero) {
-                this->set_value(ppair.first, complex<double>(ppair.second.real(), -ppair.second.imag()));
-            }
-        }
-
-        string coeff_to_string(complex<double> element) {
-            if (element.real() == (double) 0 && element.imag() == (double) 0) {
-                return "0";
-            } else if (element.real() == (double) 0) {
-                return std::to_string(element.imag()) + "*i";
-            } else if (element.imag() == (double) 0) {
-                return std::to_string(element.real());
-            } else {
-                return std::to_string(element.real()) + " + " + std::to_string(element.imag()) + "*i";
-            }
-        }
-
-        float norm() {
-            complex<double> squared_norm = this->inner_product(*this);
-            return (float) sqrt(squared_norm.real());
-        }
+        using SparseVector<complex<double>>::SparseVector;
+        
+        /* VIRTUAL METHODS */
+        float norm();
+        complex<double> conjugate_coeff(complex<double> coeff) { return complex<double>(coeff.real(), -coeff.imag()); }
+        string coeff_to_string(complex<double> element);
+        
+        /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
+        CCSparseVector operator+(CCSparseVector&);
+        CCSparseVector operator-(); /* unary minus: just negation of object */
+        CCSparseVector operator-(CCSparseVector&); 
+        CCSparseVector operator*(complex<double>); 
+        CCSparseVector conjugate();
 };
-
-// template <typename T>
-// class SparseRowMatrix {
-//     private:
-
-//     public:
-
-//     protected:
-// };
 
 #endif
