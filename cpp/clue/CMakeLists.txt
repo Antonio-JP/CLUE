@@ -24,7 +24,7 @@ file(GLOB all_SRCS
 )
 
 # Defining executable
-add_executable(CLUE src/main.cpp src/RationalFunctions.cpp src/Linalg.cpp)
+add_executable(CLUE src/main.cpp src/RationalFunctions.cpp src/Linalg_Vector.cpp)
 target_link_libraries(CLUE PUBLIC ${Boost_LIBRARIES})
 
 ## Code for Testing
