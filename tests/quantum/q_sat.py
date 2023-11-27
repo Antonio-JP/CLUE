@@ -203,7 +203,7 @@ class SATFormula(set[Clause], Experiment):
     @staticmethod
     def parse(formula) -> SATFormula:
         return SATFormula(
-            [
+            *[
                 Clause.parse(clause) 
                 for clause in (prt.strip() for prt in formula.strip().removeprefix("[").removesuffix("]").split("^")) 
                 if len(clause) > 0
