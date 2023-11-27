@@ -1,4 +1,7 @@
+
+#include <queue>
 #include <vector>
+#include <iostream>
 
 #include "Linalg.hpp"
 
@@ -14,6 +17,15 @@ vector<float> CCSubspace::densities() {
 
     for (int i = 0; i < this->dimension(); i++) {
         result[i] = this->basis[i].density();
+    }
+
+    return result;
+}
+vector<float> CCSubspace::norms() {
+    vector<float> result = vector<float>(this->dimension());
+
+    for (int i = 0; i < this->dimension(); i++) {
+        result[i] = this->basis[i].norm();
     }
 
     return result;
@@ -54,12 +66,67 @@ CCSparseVector CCSubspace::find_in(CCSparseVector& vector) {
  * This guarantees some other properties of the basis.
 */
 bool CCSubspace::absorb_new_vector(CCSparseVector& vector) {
-    CCSparseVector copy = CCSparseVector(vector);
-
-    this->reduce_vector(&copy); // We reduce the vector
-    if (! this->contains(copy)) {
-        this->basis[this->dimension()] = copy;
+    this->reduce_vector(&vector); // We reduce the vector
+    if (! this->contains(vector)) {
+        cout << "Adding new element with norm " << vector.norm() << endl;
+        vector.normalize_in();
+        this->basis.push_back(vector);
         return true;
+    } else {
+        cout << "Found an element inside: " << vector.norm() << endl;
     }
     return false;
+}
+
+/** 
+ * Method that computes the minimal invariant subspace under some matrices.
+ * 
+ * Given a vector space `V` (given by `this`) and a set of matrices `(M_i)_i`, this method computes the minimal 
+ * extension of `V` (say `W`) that is invariant under every matrix `M_i`, i.e., for every `v \in W`, `M_i v \in W`.
+ * 
+ * A matrix is a vector of vectors. In this case, we will use a ``std::vector`` of ``CCSparseVector`` as a row 
+ * representation of the matrix. Hence, the multiplication `M_i v` can be done via inner products of the rows of `M_i`
+ * with the vector `v` (which will also be defined with a CCSparseVector).
+ * 
+ * This method extends in-place the current subspace we are working with. This method returns the new dimension of the 
+ * vector space.
+*/
+int CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices) {
+    // We create a queue with the first round we need to check
+    queue<CCSparseVector> to_process;
+
+    for (CCSparseVector current : this->basis) {
+        for (vector<CCSparseVector> matrix : matrices) {
+            // We do multiplication matrix*current
+            CCSparseVector result = CCSparseVector(matrix.size()); // Dimension is number of rows of the matrix
+            for (int i = 0; i < result.dimension(); i++) {
+                result.set_value(i, matrix[i].inner_product(current));
+            }
+            // We add this vector to the queue
+            to_process.push(result);
+        }
+    }
+
+    //We now iterate on the queue until this is empty
+    while ((!to_process.empty()) && (this->dimension() < this->ambient_dimension())) {
+        cout << "Starting computation of minimal invariant with " << to_process.size() << " vectors. " << endl;
+        CCSparseVector current = to_process.front(); to_process.pop(); // We take the first element
+        
+        cout << "Current vector: " << current.norm() << endl;
+        bool absorved = this->absorb_new_vector(current);
+        cout << "Was absorved: " << absorved << endl;
+        if (absorved) { // We have increased the dimension, we need to add new vectors
+            for (vector<CCSparseVector> matrix : matrices) {
+                // We do multiplication matrix*current
+                CCSparseVector result = CCSparseVector(matrix.size()); // Dimension is number of rows of the matrix
+                for (int i = 0; i < result.dimension(); i++) {
+                    result.set_value(i, matrix[i].inner_product(current));
+                }
+                // We add this vector to the queue
+                to_process.push(result);
+            } 
+        }
+    }
+
+    return this->dimension();
 }

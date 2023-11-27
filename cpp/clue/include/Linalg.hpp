@@ -146,10 +146,10 @@ class CCSparseVector : public SparseVector<CC> {
 /* Class for Subspace */
 class CCSubspace {
     private:
-        vector<CCSparseVector> basis;
         int dim;
         float max_error;
     public:
+        vector<CCSparseVector> basis; // Temporary: move to private
         CCSubspace(int ambient_dimension, float max_error = 1e-6) { this->dim = ambient_dimension; this->max_error = max_error; }
 
         /*********************************************************************/
@@ -157,6 +157,7 @@ class CCSubspace {
         int ambient_dimension() { return this->dim; }
         int dimension() { return this->basis.size(); }
         vector<float> densities();
+        vector<float> norms();
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
@@ -164,6 +165,10 @@ class CCSubspace {
         bool contains(CCSparseVector&);
         CCSparseVector find_in(CCSparseVector&);
         bool absorb_new_vector(CCSparseVector&);
+
+        /*********************************************************************/
+        /* COMPUTATIONAL METHODS */
+        int minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
 };
 
 #endif
