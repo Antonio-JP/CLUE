@@ -24,8 +24,8 @@ int run_example_QAOA(int n, int * values) {
     cout << "Found a reduction of size: " << lumping.dimension() << endl;    
     cout << "Norms of the vectors in lumping: " << endl;
     cout << "[";
-    vector<float> lumping_norms = lumping.norms();
-    for (float fl : lumping_norms) {
+    vector<double> lumping_norms = lumping.norms();
+    for (double fl : lumping_norms) {
         cout << fl << ", ";
     }
     cout << "]" << endl;
@@ -46,7 +46,7 @@ int run_example_QAOA(int n, int * values) {
             inner[i][j] = lumping.basis[i].inner_product(lumping.basis[j]);
         }
     }
-
+    
     cout << "Inner product matrix:" << endl;
     cout << "-----------------------------------------------------------------------------------" << endl;
     for (int i = 0; i < lumping.dimension(); i++) {
@@ -249,10 +249,10 @@ int main(int, char**) {
     // QQSparseVector u = QQSparseVector({QQ(1),QQ(),QQ(),QQ(2)});
 
     // cout << "My vector density: " << u.coeff_to_string(QQ(4,2)) << endl;
-    // example_QAOA_10_1(); // Got 9
-    example_QAOA_10_2(); // Got 7
-    // example_QAOA_10_3(); // Got 11
-    // example_QAOA_10_4(); // Got 12
+    example_QAOA_10_1(); // Got 8
+    // example_QAOA_10_2(); // Got 7
+    // example_QAOA_10_3(); // Got 10
+    // example_QAOA_10_4(); // Got 11
 
     // example_QAOA_4_1(); // Got 4
     // example_QAOA_4_2(); // Got 4

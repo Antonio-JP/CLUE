@@ -151,9 +151,9 @@ void SparseVector<T>::conjugate_in()  {
 ********************************************************************************************************************/
 /*******************************************************************************************************************/
 /* VIRTUAL METHODS */
-float QQSparseVector::norm() {
+double QQSparseVector::norm() {
     QQ squared_norm = this->inner_product(*this);
-    return sqrt(squared_norm.numerator() / (float) squared_norm.denominator());
+    return sqrt(squared_norm.numerator() / (double) squared_norm.denominator());
 }
 QQSparseVector& QQSparseVector::normalize() {
     static QQSparseVector normalized = QQSparseVector(*this);
@@ -216,9 +216,9 @@ QQSparseVector QQSparseVector::operator*(QQ other) { // Scalar product by a cons
 ********************************************************************************************************************/
 /*******************************************************************************************************************/
 /* VIRTUAL METHODS */
-float CCSparseVector::norm()  {
+double CCSparseVector::norm()  {
     CC squared_norm = this->inner_product(*this);
-    return (float) sqrt(squared_norm.real());
+    return sqrt(squared_norm.real());
 }
 CCSparseVector& CCSparseVector::normalize() {
     static CCSparseVector normalized = CCSparseVector(*this);
@@ -228,7 +228,7 @@ CCSparseVector& CCSparseVector::normalize() {
 }
 void CCSparseVector::normalize_in() {
     /* In CC, we divide the coefficients by the norm */
-    float norm = this->norm();
+    double norm = this->norm();
     CC c_norm = CC((double)(1/norm));
 
     this->operator*=(c_norm);

@@ -1,9 +1,8 @@
+#include "Linalg.hpp"
 
 #include <queue>
 #include <vector>
 #include <iostream>
-
-#include "Linalg.hpp"
 
 /*******************************************************************************************************************
  * 
@@ -12,8 +11,8 @@
 ********************************************************************************************************************/
 /*********************************************************************/
 /* ATTRIBUTE/PROPERTIES */
-vector<float> CCSubspace::densities() {
-    vector<float> result = vector<float>(this->dimension());
+vector<double> CCSubspace::densities() {
+    vector<double> result = vector<double>(this->dimension());
 
     for (int i = 0; i < this->dimension(); i++) {
         result[i] = this->basis[i].density();
@@ -21,8 +20,8 @@ vector<float> CCSubspace::densities() {
 
     return result;
 }
-vector<float> CCSubspace::norms() {
-    vector<float> result = vector<float>(this->dimension());
+vector<double> CCSubspace::norms() {
+    vector<double> result = vector<double>(this->dimension());
 
     for (int i = 0; i < this->dimension(); i++) {
         result[i] = this->basis[i].norm();

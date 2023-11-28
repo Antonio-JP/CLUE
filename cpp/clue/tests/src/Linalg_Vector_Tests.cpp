@@ -56,11 +56,11 @@ void SV_QQ_TrueSparse() {
     u.set_value(0, QQ(1)); u.set_value(5, QQ(2,5));
 
     
-    if (u.density() != (float).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
-    if (v.density() != (float) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
+    if (u.density() != (double).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (v.density() != (double) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
 
     u.set_value(0, QQ()); // Removes the element 0
-    if (u.density() != (float).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (u.density() != (double).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
 
     if (u[0] != QQ()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
     if (u[2] != QQ()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
@@ -155,11 +155,11 @@ void SV_CC_TrueSparse() {
     u.set_value(0, CC(1)); u.set_value(5, CC(2,5));
 
     
-    if (u.density() != (float).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
-    if (v.density() != (float) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
+    if (u.density() != (double).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (v.density() != (double) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
 
     u.set_value(0, CC()); // Removes the element 0
-    if (u.density() != (float).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (u.density() != (double).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
 
     if (u[0] != CC()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
     if (u[2] != CC()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }

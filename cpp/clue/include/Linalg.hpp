@@ -45,7 +45,7 @@ class SparseVector {
         int nonzero_count() { return this->nonzero.size(); }
         int first_nonzero() { return this->nonzero.begin()->first; }
         unordered_set<int>::iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
-        float density() { return this->nonzero_count() / (float)this->dim; }
+        double density() { return this->nonzero_count() / (double)this->dim; }
 
         bool is_zero() { return this->nonzero_count() == 0; }
         
@@ -53,7 +53,7 @@ class SparseVector {
         T inner_product(SparseVector<T>&);
 
         /* Abstract methods */
-        virtual float norm() = 0;
+        virtual double norm() = 0;
         virtual SparseVector<T>& normalize() = 0;
         virtual void normalize_in() = 0;
 
@@ -103,7 +103,7 @@ class QQSparseVector : public SparseVector<QQ> {
         using SparseVector<QQ>::SparseVector;
 
         /* VIRTUAL METHODS */
-        float norm();
+        double norm();
         QQSparseVector& normalize();
         void normalize_in();
         QQ conjugate_coeff(QQ coeff) { return coeff; }
@@ -124,7 +124,7 @@ class CCSparseVector : public SparseVector<CC> {
         using SparseVector<CC>::SparseVector;
         
         /* VIRTUAL METHODS */
-        float norm();
+        double norm();
         CCSparseVector& normalize();
         void normalize_in();
         CC conjugate_coeff(CC coeff) { return CC(coeff.real(), -coeff.imag()); }
@@ -147,17 +147,17 @@ class CCSparseVector : public SparseVector<CC> {
 class CCSubspace {
     private:
         int dim;
-        float max_error;
+        double max_error;
     public:
         vector<CCSparseVector> basis; // Temporary: move to private
-        CCSubspace(int ambient_dimension, float max_error = 1e-6) { this->dim = ambient_dimension; this->max_error = max_error; }
+        CCSubspace(int ambient_dimension, double max_error = 1e-6) { this->dim = ambient_dimension; this->max_error = max_error; }
 
         /*********************************************************************/
         /* ATTRIBUTE/PROPERTIES */
         int ambient_dimension() { return this->dim; }
         int dimension() { return this->basis.size(); }
-        vector<float> densities();
-        vector<float> norms();
+        vector<double> densities();
+        vector<double> norms();
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
