@@ -43,6 +43,7 @@ file(GLOB all_SRCS
 )
 add_executable(CLUE_QMAIN src/main.cpp src/RationalFunctions.cpp src/Linalg_Vector.cpp src/Linalg_Subspace.cpp)
 target_link_libraries(CLUE_QMAIN PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(CLUE_QMAIN PUBLIC MQT::ddsim)
 
 ## Code for Testing
 option(BUILD_CLUE_TESTS "Also build tests for the CLUE project" ON)

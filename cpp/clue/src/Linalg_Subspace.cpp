@@ -112,9 +112,9 @@ int CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices
         CCSparseVector current = to_process.front(); to_process.pop(); // We take the first element
         
         cout << "Current vector: " << current.norm() << endl;
-        bool absorved = this->absorb_new_vector(current);
-        cout << "Was absorved: " << absorved << endl;
-        if (absorved) { // We have increased the dimension, we need to add new vectors
+        bool absorbed = this->absorb_new_vector(current);
+        cout << "Was absorbed: " << absorbed << endl;
+        if (absorbed) { // We have increased the dimension, we need to add new vectors
             for (vector<CCSparseVector> matrix : matrices) {
                 // We do multiplication matrix*current
                 CCSparseVector result = CCSparseVector(matrix.size()); // Dimension is number of rows of the matrix

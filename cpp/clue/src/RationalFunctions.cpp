@@ -50,7 +50,8 @@ Monomial Monomial::operator*(const Monomial other) {
         int key = ppair.first;
         int degree = ppair.second;
 
-        if (map<int,int>::const_iterator search = final_dict.find(key); search != final_dict.end()) {
+        map<int,int>::const_iterator search = final_dict.find(key); 
+        if (search != final_dict.end()) {
             final_dict[key] = search->second + degree;
         } else {
             final_dict[key] = degree;
@@ -67,7 +68,8 @@ Monomial Monomial::gcd(const Monomial other) {
         int key = this_pair.first;
         int degree = this_pair.second;
 
-        if (map<int,int>::const_iterator search = other.degrees.find(key); search != other.degrees.end()) {
+        map<int,int>::const_iterator search = other.degrees.find(key);
+        if (search != other.degrees.end()) {
             final_dict[key] = min(degree, search->second);
         }
     }
@@ -86,7 +88,8 @@ Monomial Monomial::lcm(const Monomial other) {
         int key = ppair.first;
         int degree = ppair.second;
 
-        if (map<int,int>::const_iterator search = final_dict.find(key); search != final_dict.end()) {
+        map<int,int>::const_iterator search = final_dict.find(key);
+        if (search != final_dict.end()) {
             final_dict[key] = max(search->second, degree);
         } else {
             final_dict[key] = degree;
