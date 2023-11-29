@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include "Types.hpp"
+#include "CircuitSimulator.hpp"
 
 using namespace std;
 using namespace clue;
@@ -39,6 +40,7 @@ class SparseVector {
             }
         }
 
+        virtual SparseVector<T>& operator=(const SparseVector<T>&) = default;
         virtual ~SparseVector() = default;
         
         /*********************************************************************/
@@ -81,7 +83,7 @@ class SparseVector {
         
         /*********************************************************************/
         /* REPRESENTATION METHODS */
-        string to_string() {
+        std::string to_string() {
             stringstream output; output << "(";
             if (this->dim > 0) {
                 output << this->coeff_to_string((*this)[0]);
@@ -95,20 +97,21 @@ class SparseVector {
         }
 
         /* Abstract methods */
-        virtual string coeff_to_string(T element) = 0;
+        virtual std::string coeff_to_string(T element) = 0;
 };
 
 
 class QQSparseVector : public SparseVector<QQ> {
     public:
         using SparseVector<QQ>::SparseVector;
+        using SparseVector<QQ>::operator=;
 
         /* VIRTUAL METHODS */
         double norm();
         QQSparseVector& normalize();
         void normalize_in();
         QQ conjugate_coeff(QQ coeff) { return coeff; }
-        string coeff_to_string(QQ element);
+        std::string coeff_to_string(QQ element);
 
         /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
         QQSparseVector operator+(QQSparseVector&);
@@ -116,19 +119,21 @@ class QQSparseVector : public SparseVector<QQ> {
         QQSparseVector operator-(QQSparseVector&); 
         QQSparseVector operator*(QQ); 
         QQSparseVector conjugate() { return (*this); } // No conjugation in a rational vector
+        // QQSparseVector& operator=(const QQSparseVector&) = default;
 };
 
 
 class CCSparseVector : public SparseVector<CC> {
     public:
         using SparseVector<CC>::SparseVector;
+        using SparseVector<CC>::operator=;
         
         /* VIRTUAL METHODS */
         double norm();
         CCSparseVector& normalize();
         void normalize_in();
         CC conjugate_coeff(CC coeff) { return CC(coeff.real(), -coeff.imag()); }
-        string coeff_to_string(CC element);
+        std::string coeff_to_string(CC element);
         
         /* ARITHMETIC METHODS THAT RETURN AN OBJECT */
         CCSparseVector operator+(CCSparseVector&);
@@ -136,6 +141,7 @@ class CCSparseVector : public SparseVector<CC> {
         CCSparseVector operator-(CCSparseVector&); 
         CCSparseVector operator*(CC); 
         CCSparseVector conjugate();
+        // CCSparseVector& operator=(const CCSparseVector&) = default;
 };
 
 
@@ -158,6 +164,33 @@ class CCSubspace {
         luint ambient_dimension() { return this->dim; }
         luint dimension() { return this->basis.size(); }
         vector<double> densities();
+        vector<double> norms();
+
+        /*********************************************************************/
+        /* GETTING/SETTING DATA METHODS */
+        void reduce_vector(CCSparseVector*);
+        bool contains(CCSparseVector&);
+        CCSparseVector find_in(CCSparseVector&);
+        bool absorb_new_vector(CCSparseVector&);
+
+        /*********************************************************************/
+        /* COMPUTATIONAL METHODS */
+        luint minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
+};
+
+class DDSubspace {
+    private:
+        luint dim;
+        double max_error;
+    public:
+        vector<CCSparseVector> basis; // Temporary: move to private
+        DDSubspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
+        DDSubspace(luint ambient_dimension) : DDSubspace(ambient_dimension, 1e-6) { }
+
+        /*********************************************************************/
+        /* ATTRIBUTE/PROPERTIES */
+        luint ambient_dimension() { return this->dim; }
+        luint dimension() { return this->basis.size(); }
         vector<double> norms();
 
         /*********************************************************************/
