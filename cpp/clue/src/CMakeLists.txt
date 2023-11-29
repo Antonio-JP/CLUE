@@ -7,6 +7,7 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/extern/mqt-ddsim" "extern/mqt-ddsim"
 
 add_library(
     ${PROJECT_NAME}
+    ${PROJECT_SOURCE_DIR}/include/Types.hpp
     ${PROJECT_SOURCE_DIR}/include/Linalg.hpp
     ${PROJECT_SOURCE_DIR}/include/RationalFunctions.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/RationalFunctions.cpp

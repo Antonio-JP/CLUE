@@ -165,8 +165,8 @@ void QQSparseVector::normalize_in() {
     gcd_n = iterator->second.numerator(); gcd_d = iterator->second.denominator();
     iterator++;
     while (iterator != this->nonzero.end()) {
-        gcd_n = gcd(gcd_n, iterator->second.numerator());
-        gcd_d = gcd(gcd_d, iterator->second.denominator());
+        gcd_n = boost::gcd(gcd_n, iterator->second.numerator());
+        gcd_d = boost::gcd(gcd_d, iterator->second.denominator());
         iterator++;
     }
 

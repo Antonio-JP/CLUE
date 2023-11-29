@@ -4,14 +4,12 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
-#include <complex>
 #include <sstream>
 #include <string>
-#include <boost/rational.hpp>
-
+#include "Types.hpp"
 
 using namespace std;
-using namespace boost;
+using namespace clue;
 
 typedef long unsigned int luint;
 
@@ -100,7 +98,6 @@ class SparseVector {
         virtual string coeff_to_string(T element) = 0;
 };
 
-using QQ = rational<int>;
 
 class QQSparseVector : public SparseVector<QQ> {
     public:
@@ -121,7 +118,6 @@ class QQSparseVector : public SparseVector<QQ> {
         QQSparseVector conjugate() { return (*this); } // No conjugation in a rational vector
 };
 
-using CC = complex<double>;
 
 class CCSparseVector : public SparseVector<CC> {
     public:
