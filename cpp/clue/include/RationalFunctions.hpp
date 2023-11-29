@@ -4,6 +4,7 @@
 #include <map>
 #include <list>
 #include <string>
+#include <vector>
 #include <boost/rational.hpp>
 
 using namespace std;

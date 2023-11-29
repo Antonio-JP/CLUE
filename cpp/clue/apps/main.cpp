@@ -68,7 +68,7 @@ luint run_example_QAOA(int n, int * values) {
     return lumping.dimension();
 }
 
-int example_QAOA_10_1() { // Should be 8?
+luint example_QAOA_10_1() { // Should be 8?
     // We create the matrix for the formula
     // (-x_5 v x_2 v x_7) ^ (x_0 v x_9 v -x_6) ^ (-x_4 v x_5) ^ (x_1 v -x_2 v x_7) ^ (x_9 v -x_5 v x_2) ^ (x_6 v x_7 v -x_3) ^ (-x_0 v x_4 v -x_3) ^ 
     // (-x_1 v x_6 v -x_2) ^ (x_9 v -x_2 v x_4) ^ (x_6 v -x_9 v x_8) ^ (x_3 v x_1 v -x_5) ^ (x_3 v x_4 v -x_8) ^ (-x_4 v -x_5 v -x_7) ^ (x_3 v -x_9 v x_4) ^ 
@@ -109,7 +109,7 @@ int example_QAOA_10_1() { // Should be 8?
 
     return run_example_QAOA(n, values);
 }
-int example_QAOA_10_2() { // Should be 7?
+luint example_QAOA_10_2() { // Should be 7?
     // We create the matrix for the formula
     // (x_1 v -x_7 v -x_6) ^ (x_6 v -x_2 v -x_0) ^ (x_3 v -x_1) ^ (x_1 v x_2 v -x_0) ^ (-x_1 v x_0) ^ (x_0 v -x_5 v -x_2) ^ (x_3 v -x_4 v x_8) ^ 
     // (x_7 v x_2 v -x_3) ^ (-x_9 v -x_4 v -x_7) ^ (x_0 v x_5 v -x_6) ^ (-x_4 v -x_7 v -x_0) ^ (-x_5 v x_9 v -x_2) ^ (-x_4 v -x_3) ^ (x_0 v x_6 v -x_5)
@@ -148,7 +148,7 @@ int example_QAOA_10_2() { // Should be 7?
 
     return run_example_QAOA(n, values);
 }
-int example_QAOA_10_3() { // Should be 10?
+luint example_QAOA_10_3() { // Should be 10?
     // We create the matrix for the formula
     // (-x_0 v -x_2 v x_8) ^ (-x_1 v -x_9 v x_8) ^ (x_3 v -x_2 v x_7) ^ (x_8 v -x_6 v -x_0) ^ (x_6 v -x_5 v x_8) ^ (-x_0 v -x_9 v -x_6) ^ 
     // (x_1 v -x_2 v x_8) ^ (x_1 v x_2) ^ (-x_9 v -x_4 v x_5) ^ (-x_1 v x_5 v -x_6) ^ (-x_1 v -x_5 v -x_0) ^ (-x_2 v x_7 v -x_0) ^ 
@@ -193,7 +193,7 @@ int example_QAOA_10_3() { // Should be 10?
 
     return run_example_QAOA(n, values);
 }
-int example_QAOA_10_4() { // Should be 11?
+luint example_QAOA_10_4() { // Should be 11?
     // We create the matrix for the formula
     // (x_0 v x_6 v -x_8) ^ (-x_9 v -x_5) ^ (-x_1 v x_6 v x_0) ^ (x_6 v -x_7 v x_4) ^ (x_4 v -x_3 v x_8) ^ (-x_9 v -x_4 v x_7) ^ (x_7 v x_5 v -x_6) ^ 
     // (x_1 v -x_2 v x_7) ^ (x_3 v x_5) ^ (x_0 v -x_7 v x_8) ^ (-x_7 v x_2) ^ (x_3 v x_1) ^ (-x_9 v x_1 v -x_3) ^ (x_3 v x_1 v -x_5) ^ (x_7 v -x_0) ^ 
@@ -236,7 +236,7 @@ int example_QAOA_10_4() { // Should be 11?
     return run_example_QAOA(n, values);
 }
 
-int example_QAOA_4_1() { // Should be 4?
+luint example_QAOA_4_1() { // Should be 4?
     // We create the matrix for the formula
     // (x_3 v -x_2) ^ (-x_2 v -x_0) ^ (x_0 v -x_2) ^ (-x_1 v -x_3 v -x_0) ^ (x_3 v x_2) ^ (x_1 v x_2) ^ (x_0 v x_2 v -x_3) ^ (x_1 v -x_0) ^ (x_3 v -x_1 v x_0) ^ (x_0 v -x_2 v x_3)
     int n = 4;
@@ -244,7 +244,7 @@ int example_QAOA_4_1() { // Should be 4?
 
     return run_example_QAOA(n, values);
 }
-int example_QAOA_4_2() { // Should be 4?
+luint example_QAOA_4_2() { // Should be 4?
     // We create the matrix for the formula
     // (x_2 v -x_0) ^ (x_3 v -x_2 v x_0) ^ (-x_1 v -x_3 v -x_0) ^ (x_0 v -x_2 v -x_3) ^ (x_0 v x_1 v x_3) ^ (x_3 v -x_2 v -x_0) ^ (-x_1 v -x_0 v -x_3)
     int n = 4;
@@ -264,4 +264,5 @@ int main(int, char**) {
 
     // example_QAOA_4_1(); // Got 4
     // example_QAOA_4_2(); // Got 4
+    return 0;
 }

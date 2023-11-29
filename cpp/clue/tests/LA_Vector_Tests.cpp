@@ -18,7 +18,7 @@ void SV_QQ_Creation() {
     QQSparseVector from_vector = QQSparseVector(input);
     if (from_vector.to_string() != "(1, 2, 3)") { throw std::runtime_error("Error creating a vector (from vector) : " + from_vector.to_string()); }
 
-    QQSparseVector from_SV = QQSparseVector(from_vector);
+    QQSparseVector from_SV = from_vector;
     if (from_SV.to_string() != "(1, 2, 3)") { throw std::runtime_error("Error creating a vector (from vector) : " + from_vector.to_string()); }
 }
 
@@ -56,11 +56,11 @@ void SV_QQ_TrueSparse() {
     u.set_value(0, QQ(1)); u.set_value(5, QQ(2,5));
 
     
-    if (u.density() != (double).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
-    if (v.density() != (double) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
+    if (u.density() != .2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (v.density() != .0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
 
     u.set_value(0, QQ()); // Removes the element 0
-    if (u.density() != (double).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (u.density() != .1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
 
     if (u[0] != QQ()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
     if (u[2] != QQ()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
@@ -109,7 +109,7 @@ void SV_CC_Creation() {
     CCSparseVector from_vector = CCSparseVector(input);
     if (from_vector.to_string() != "(1.000000, 2.000000, 3.000000)") { throw std::runtime_error("Error creating a vector (from vector) : " + from_vector.to_string()); }
 
-    CCSparseVector from_SV = CCSparseVector(from_vector);
+    CCSparseVector from_SV = from_vector;
     if (from_SV.to_string() != "(1.000000, 2.000000, 3.000000)") { throw std::runtime_error("Error creating a vector (from vector) : " + from_vector.to_string()); }
 
     CCSparseVector complex_vector = CCSparseVector({CC(1,1), CC(2,-1), CC(3), CC(5,-2)});
@@ -155,11 +155,11 @@ void SV_CC_TrueSparse() {
     u.set_value(0, CC(1)); u.set_value(5, CC(2,5));
 
     
-    if (u.density() != (double).2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
-    if (v.density() != (double) 0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
+    if (u.density() != .2) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (v.density() != .0) { throw std::runtime_error("Error in the density : " + to_string(v.density())); }
 
     u.set_value(0, CC()); // Removes the element 0
-    if (u.density() != (double).1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
+    if (u.density() != .1) { throw std::runtime_error("Error in the density : " + to_string(u.density())); }
 
     if (u[0] != CC()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
     if (u[2] != CC()) { throw std::runtime_error("Error getting a non-given value : " + u.to_string());  }
@@ -189,7 +189,7 @@ void SV_CC_InnerProduct() {
 void SV_CC_Normalize() {
     CCSparseVector u = CCSparseVector({CC(2,3),CC(10,9),CC(14,27)});
     CCSparseVector normalized = u.normalize();
-    CCSparseVector true_normalized = u*(CC((double) 1/u.norm()));
+    CCSparseVector true_normalized = u*(CC(1/u.norm()));
 
     if ((normalized - true_normalized).norm() > 1e-8) { throw std::runtime_error("Error in CC normalization: " + (normalized-true_normalized).to_string()); }
 
