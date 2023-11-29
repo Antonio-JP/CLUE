@@ -14,7 +14,7 @@
 vector<double> CCSubspace::densities() {
     vector<double> result = vector<double>(this->dimension());
 
-    for (int i = 0; i < this->dimension(); i++) {
+    for (luint i = 0; i < this->dimension(); i++) {
         result[i] = this->basis[i].density();
     }
 
@@ -23,7 +23,7 @@ vector<double> CCSubspace::densities() {
 vector<double> CCSubspace::norms() {
     vector<double> result = vector<double>(this->dimension());
 
-    for (int i = 0; i < this->dimension(); i++) {
+    for (luint i = 0; i < this->dimension(); i++) {
         result[i] = this->basis[i].norm();
     }
 
@@ -34,14 +34,14 @@ vector<double> CCSubspace::norms() {
 /* GETTING/SETTING DATA METHODS */
 void CCSubspace::reduce_vector(CCSparseVector* vector) {
     /* Method that reduced a vector according to 'this' in-place. */
-    for (int i = 0; i < this->dimension(); i++) {
+    for (luint i = 0; i < this->dimension(); i++) {
         CCSparseVector to_rem = this->basis[i] * this->basis[i].inner_product(*vector);
         vector->operator-=(to_rem);
     }
 }
 bool CCSubspace::contains(CCSparseVector& vector) {
     /* Returns whether a vector is in the space or not */
-    CCSparseVector copy = CCSparseVector(vector);
+    CCSparseVector copy = vector;
     this->reduce_vector(&copy);
     return copy.norm() < this->max_error;
 }
@@ -50,7 +50,7 @@ CCSparseVector CCSubspace::find_in(CCSparseVector& vector) {
     /* Returns a vector representing the coordinates of vector in "this"*/
     if (! this->contains(vector)) { throw std::logic_error("The vector is not in the space"); }
     CCSparseVector result = CCSparseVector(this->dimension());
-    for (int i = 0; i < this->dimension(); i++) {
+    for (luint i = 0; i < this->dimension(); i++) {
         result.set_value(i, this->basis[i].inner_product(vector));
     }
 
@@ -90,7 +90,7 @@ bool CCSubspace::absorb_new_vector(CCSparseVector& vector) {
  * This method extends in-place the current subspace we are working with. This method returns the new dimension of the 
  * vector space.
 */
-int CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices) {
+luint CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices) {
     // We create a queue with the first round we need to check
     queue<CCSparseVector> to_process;
 
@@ -98,7 +98,7 @@ int CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices
         for (vector<CCSparseVector> matrix : matrices) {
             // We do multiplication matrix*current
             CCSparseVector result = CCSparseVector(matrix.size()); // Dimension is number of rows of the matrix
-            for (int i = 0; i < result.dimension(); i++) {
+            for (luint i = 0; i < result.dimension(); i++) {
                 result.set_value(i, matrix[i].inner_product(current));
             }
             // We add this vector to the queue
@@ -118,7 +118,7 @@ int CCSubspace::minimal_invariant_space(vector<vector<CCSparseVector>>& matrices
             for (vector<CCSparseVector> matrix : matrices) {
                 // We do multiplication matrix*current
                 CCSparseVector result = CCSparseVector(matrix.size()); // Dimension is number of rows of the matrix
-                for (int i = 0; i < result.dimension(); i++) {
+                for (luint i = 0; i < result.dimension(); i++) {
                     result.set_value(i, matrix[i].inner_product(current));
                 }
                 // We add this vector to the queue

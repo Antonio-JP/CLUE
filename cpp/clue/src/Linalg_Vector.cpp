@@ -9,7 +9,7 @@
 /*******************************************************************************************************************/
 /* CONSTRUCTORS */
 template <typename T>
-SparseVector<T>::SparseVector(int dim) {
+SparseVector<T>::SparseVector(luint dim) {
     if (dim <= 0) {
         throw std::invalid_argument("Vectors of non-positive dimension do not exist");
     }
@@ -21,15 +21,15 @@ SparseVector<T>::SparseVector(int dim) {
 /* ATTRIBUTE/PROPERTIES */
 template <typename T>
 void SparseVector<T>::reduce(T coeff, SparseVector<T>& other) { // method that computes inplace this - coeff*other
-    for (pair<int, T> ppair : other.nonzero) {
+    for (pair<luint, T> ppair : other.nonzero) {
         T value = coeff*ppair.second; // Coefficient coming from arguments
         // We check if the key is in "this"
-        typename map<int,T>::const_iterator search = this->nonzero.find(ppair.first);
+        typename map<luint,T>::const_iterator search = this->nonzero.find(ppair.first);
         if (search != this->nonzero.end()) { 
             // We compute the new value for this input
             value += search->second;
 
-            if (value == (T)0) { // If the value becomes zero we remove it
+            if (value == T(0)) { // If the value becomes zero we remove it
                 this->nonzero.erase(ppair.first);
                 continue;
             }
@@ -47,11 +47,11 @@ T SparseVector<T>::inner_product(SparseVector<T>& other) {
 
     T total;
     // Now we go through the intersection adding the products
-    for (pair<int,T> this_pair : this->nonzero) {
-        int key = this_pair.first;
+    for (pair<luint,T> this_pair : this->nonzero) {
+        luint key = this_pair.first;
         
         // We look for "key" in "other"
-        typename map<int,T>::const_iterator search = other.nonzero.find(key); 
+        typename map<luint,T>::const_iterator search = other.nonzero.find(key); 
         if (search != other.nonzero.end()) {
             total += this_pair.second * this->conjugate_coeff(search->second);
         }
@@ -60,9 +60,9 @@ T SparseVector<T>::inner_product(SparseVector<T>& other) {
 }
 
 template <typename T>
-T SparseVector<T>::get_value(int index) {
+T SparseVector<T>::get_value(luint index) {
     // We check the index fit into the current dimension
-    if (index < 0 || index >= this->dim) {
+    if (index >= this->dim) {
         throw std::invalid_argument("The index must be valid for the current vector dimension.");
     }
     // We look if "index" is in the "nonzero" map
@@ -70,12 +70,12 @@ T SparseVector<T>::get_value(int index) {
         return this->nonzero[index]; // We do a new search of O(log(N))
     }
 
-    return (T) 0;
+    return T(0);
 }
 
 template <typename T>
-void SparseVector<T>::set_value(int index, T value)  {
-    if (value == (T) 0) {
+void SparseVector<T>::set_value(luint index, T value)  {
+    if (value == T(0)) {
         if (this->nonzero_indices.find(index) != this->nonzero_indices.end()) { // This search is O(1)
             this->nonzero.erase(index);
             this->nonzero_indices.erase(index);
@@ -89,7 +89,7 @@ void SparseVector<T>::set_value(int index, T value)  {
 template <typename T>
 vector<T> SparseVector<T>::to_list() { 
     vector<T> dense;
-    for (int i = 0; i < this->dim; i++) {
+    for (luint i = 0; i < this->dim; i++) {
         dense[i] = (*this)[i];
     }
     return dense;
@@ -100,8 +100,8 @@ vector<T> SparseVector<T>::to_list() {
 template <typename T>
 void SparseVector<T>::operator+=(SparseVector<T>& other) {
     // We update the values of this using the data in 
-    for (pair<int, T> ppair : other.nonzero) {
-        int index = ppair.first;
+    for (pair<luint, T> ppair : other.nonzero) {
+        luint index = ppair.first;
         this->set_value(index, (*this)[index] + ppair.second);
     }
     return;
@@ -109,18 +109,18 @@ void SparseVector<T>::operator+=(SparseVector<T>& other) {
 template <typename T>
 void SparseVector<T>::operator-=(SparseVector<T>& other) {
     // We update the values of this using the data in 
-    for (pair<int, T> ppair : other.nonzero) {
-        int index = ppair.first;
+    for (pair<luint, T> ppair : other.nonzero) {
+        luint index = ppair.first;
         this->set_value(index, (*this)[index] - ppair.second);
     }
     return;
 }
 template <typename T>
 void SparseVector<T>::operator*=(T other) {
-    if (other == ((T) 0)) {
+    if (other == T(0)) {
         this->nonzero.clear();
     } else { // We know that other != 0, hence we only need to multiply things in the nonzero map
-        for (pair<int,T> ppair : this->nonzero) {
+        for (pair<luint,T> ppair : this->nonzero) {
             this->nonzero[ppair.first] = ppair.second * other;
         }
     }
@@ -128,8 +128,8 @@ void SparseVector<T>::operator*=(T other) {
 template <typename T>
 bool SparseVector<T>::operator==(SparseVector<T>& other) {
     if (this->nonzero_count() != other.nonzero_count()) { return false; } // The number of non-zeros is different
-    for (pair<int, T> ppair : this->nonzero) {
-        typename map<int,T>::const_iterator search = other.nonzero.find(ppair.first);
+    for (pair<luint, T> ppair : this->nonzero) {
+        typename map<luint,T>::const_iterator search = other.nonzero.find(ppair.first);
         if (search == other.nonzero.end()) { return false; } // Found something zero in other that is not zero in self
 
         if (ppair.second != search->second) { return false; } // Found a different element
@@ -138,7 +138,7 @@ bool SparseVector<T>::operator==(SparseVector<T>& other) {
 }
 template <typename T>
 void SparseVector<T>::conjugate_in()  {
-    for (pair<int,T> ppair : this->nonzero) {
+    for (pair<luint,T> ppair : this->nonzero) {
         this->set_value(ppair.first, this->conjugate_coeff(ppair.second));
     }
 }
@@ -165,7 +165,7 @@ void QQSparseVector::normalize_in() {
     if (this->is_zero()) { return; } // Nothing to do
 
     int gcd_n, gcd_d;
-    map<int,QQ>::iterator iterator = this->nonzero.begin();
+    map<luint,QQ>::iterator iterator = this->nonzero.begin();
     gcd_n = iterator->second.numerator(); gcd_d = iterator->second.denominator();
     iterator++;
     while (iterator != this->nonzero.end()) {

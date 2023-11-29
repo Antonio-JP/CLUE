@@ -13,39 +13,43 @@
 using namespace std;
 using namespace boost;
 
+typedef long unsigned int luint;
+
 /*************************************************************************/
 /* Class for vector */
 template <typename T>
 class SparseVector {
     private:
-        int dim;
-        unordered_set<int> nonzero_indices;
+        luint dim;
+        unordered_set<luint> nonzero_indices;
     protected:
-        map<int, T> nonzero;
+        map<luint, T> nonzero;
     public:
         /*********************************************************************/
         /* CONSTRUCTORS */
-        SparseVector(int dim);
+        SparseVector(luint dim);
         SparseVector(vector<T> dense_vector) : SparseVector(dense_vector.size()) {
-            for (int i = 0; i < this->dim; i++) {
-                if (dense_vector[i] != (T)0) {
+            for (luint i = 0; i < this->dim; i++) {
+                if (dense_vector[i] != T(0)) {
                     this->set_value(i, dense_vector[i]);
                 }
             }
         }
         SparseVector(const SparseVector<T>& sparse_vector) : SparseVector(sparse_vector.dim) {
-            for (pair<int, T> ppair : sparse_vector.nonzero) {
+            for (pair<luint, T> ppair : sparse_vector.nonzero) {
                 this->set_value(ppair.first, ppair.second);
             }
         }
+
+        virtual ~SparseVector() = default;
         
         /*********************************************************************/
         /* ATTRIBUTE/PROPERTIES */
-        int dimension() { return this->dim; }
-        int nonzero_count() { return this->nonzero.size(); }
-        int first_nonzero() { return this->nonzero.begin()->first; }
-        unordered_set<int>::iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
-        double density() { return this->nonzero_count() / (double)this->dim; }
+        luint dimension() { return this->dim; }
+        luint nonzero_count() { return this->nonzero.size(); }
+        luint first_nonzero() { return this->nonzero.begin()->first; }
+        unordered_set<luint>::iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
+        double density() { return static_cast<double>(this->nonzero_count()) / static_cast<double>(this->dim); }
 
         bool is_zero() { return this->nonzero_count() == 0; }
         
@@ -59,8 +63,8 @@ class SparseVector {
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
-        T get_value(int index);
-        void set_value(int index, T value);
+        T get_value(luint index);
+        void set_value(luint index, T value);
 
         vector<T> to_list();
 
@@ -69,7 +73,7 @@ class SparseVector {
         void operator+=(SparseVector<T>&);
         void operator-=(SparseVector<T>&);
         void operator*=(T);
-        T operator[](int index) { return this->get_value(index); }
+        T operator[](luint index) { return this->get_value(index); }
         bool operator==(SparseVector<T>&);
         bool operator!=(SparseVector<T>& other) { return !((*this) == other); }
         void conjugate_in(); /* Conjugate the vector inplace */
@@ -83,7 +87,7 @@ class SparseVector {
             stringstream output; output << "(";
             if (this->dim > 0) {
                 output << this->coeff_to_string((*this)[0]);
-                for (int i = 1; i < this->dim; i++) {
+                for (luint i = 1; i < this->dim; i++) {
                     output << ", " << this->coeff_to_string((*this)[i]);
                 }
             }
@@ -146,16 +150,17 @@ class CCSparseVector : public SparseVector<CC> {
 /* Class for Subspace */
 class CCSubspace {
     private:
-        int dim;
+        luint dim;
         double max_error;
     public:
         vector<CCSparseVector> basis; // Temporary: move to private
-        CCSubspace(int ambient_dimension, double max_error = 1e-6) { this->dim = ambient_dimension; this->max_error = max_error; }
+        CCSubspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
+        CCSubspace(luint ambient_dimension) : CCSubspace(ambient_dimension, 1e-6) { }
 
         /*********************************************************************/
         /* ATTRIBUTE/PROPERTIES */
-        int ambient_dimension() { return this->dim; }
-        int dimension() { return this->basis.size(); }
+        luint ambient_dimension() { return this->dim; }
+        luint dimension() { return this->basis.size(); }
         vector<double> densities();
         vector<double> norms();
 
@@ -168,7 +173,7 @@ class CCSubspace {
 
         /*********************************************************************/
         /* COMPUTATIONAL METHODS */
-        int minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
+        luint minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
 };
 
 #endif
