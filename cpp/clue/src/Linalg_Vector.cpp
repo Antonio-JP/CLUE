@@ -9,12 +9,8 @@
 /*******************************************************************************************************************/
 /* CONSTRUCTORS */
 template <typename T>
-SparseVector<T>::SparseVector(luint dim) {
-    if (dim <= 0) {
-        throw std::invalid_argument("Vectors of non-positive dimension do not exist");
-    }
-
-    this->dim = dim;
+SparseVector<T>::SparseVector(luint dimension) {
+    this->dim = dimension;
 }
 
 /*******************************************************************************************************************/
@@ -153,10 +149,10 @@ void SparseVector<T>::conjugate_in()  {
 /* VIRTUAL METHODS */
 double QQSparseVector::norm() {
     QQ squared_norm = this->inner_product(*this);
-    return sqrt(squared_norm.numerator() / (double) squared_norm.denominator());
+    return sqrt(squared_norm.numerator() / static_cast<double>(squared_norm.denominator()));
 }
 QQSparseVector& QQSparseVector::normalize() {
-    static QQSparseVector normalized = QQSparseVector(*this);
+    static QQSparseVector normalized = *this;
     normalized.normalize_in();
 
     return normalized;
@@ -186,16 +182,15 @@ string QQSparseVector::coeff_to_string(QQ element) {
 /*******************************************************************************************************************/
 /* ARITHMETIC METHODS */
 QQSparseVector QQSparseVector::operator+(QQSparseVector& other) {
-    QQSparseVector new_vector = QQSparseVector(*this);
+    QQSparseVector new_vector = (*this);
     new_vector += other;
     return new_vector;
 }
 QQSparseVector QQSparseVector::operator-() { /* unary minus: just negation of object */
-    QQSparseVector result = QQSparseVector((*this) * QQ(-1));
-    return result;
+    return ((*this) * QQ(-1));
 }
 QQSparseVector QQSparseVector::operator-(QQSparseVector& other) {
-    QQSparseVector new_vector = QQSparseVector(*this);
+    QQSparseVector new_vector = (*this);
     new_vector -= other;
     return new_vector;
 }
@@ -204,7 +199,7 @@ QQSparseVector QQSparseVector::operator*(QQ other) { // Scalar product by a cons
         return QQSparseVector(this->dimension());
     }
     // If the coefficient is not zero
-    QQSparseVector output = QQSparseVector(*this); // We copy "this" and use in-place operations
+    QQSparseVector output = (*this); // We copy "this" and use in-place operations
     output *= other;
     return output;
 }
@@ -221,7 +216,7 @@ double CCSparseVector::norm()  {
     return sqrt(squared_norm.real());
 }
 CCSparseVector& CCSparseVector::normalize() {
-    static CCSparseVector normalized = CCSparseVector(*this);
+    static CCSparseVector normalized = (*this);
     normalized.normalize_in();
 
     return normalized;
@@ -229,19 +224,19 @@ CCSparseVector& CCSparseVector::normalize() {
 void CCSparseVector::normalize_in() {
     /* In CC, we divide the coefficients by the norm */
     double norm = this->norm();
-    CC c_norm = CC((double)(1/norm));
+    CC c_norm = CC(1/norm);
 
     this->operator*=(c_norm);
 }
 string CCSparseVector::coeff_to_string(CC element) {
-    if (element.real() == (double) 0 && element.imag() == (double) 0) {
+    if (element.real() == static_cast<double>(0) && element.imag() == static_cast<double>(0)) {
         return "0";
-    } else if (element.real() == (double) 0) {
+    } else if (element.real() == static_cast<double>(0)) {
         return std::to_string(element.imag()) + "*i";
-    } else if (element.imag() == (double) 0) {
+    } else if (element.imag() == static_cast<double>(0)) {
         return std::to_string(element.real());
     } else {
-        if (element.imag() < (double) 0) {
+        if (element.imag() < static_cast<double>(0)) {
             return std::to_string(element.real()) + " - " + std::to_string(-element.imag()) + "*i";
         }
         return std::to_string(element.real()) + " + " + std::to_string(element.imag()) + "*i";
@@ -250,16 +245,15 @@ string CCSparseVector::coeff_to_string(CC element) {
 /*******************************************************************************************************************/
 /* ARITHMETIC METHODS */
 CCSparseVector CCSparseVector::operator+(CCSparseVector& other) {
-    CCSparseVector new_vector = CCSparseVector(*this);
+    CCSparseVector new_vector = (*this);
     new_vector += other;
     return new_vector;
 }
 CCSparseVector CCSparseVector::operator-() { /* unary minus: just negation of object */
-    CCSparseVector result = CCSparseVector((*this) * CC(-1));
-    return result;
+    return ((*this) * CC(-1));
 }
 CCSparseVector CCSparseVector::operator-(CCSparseVector& other) {
-    CCSparseVector new_vector = CCSparseVector(*this);
+    CCSparseVector new_vector = (*this);
     new_vector -= other;
     return new_vector;
 }
@@ -268,12 +262,12 @@ CCSparseVector CCSparseVector::operator*(CC other) { // Scalar product by a cons
         return CCSparseVector(this->dimension());
     }
     // If the coefficient is not zero
-    CCSparseVector output = CCSparseVector(*this); // We copy "this" and use in-place operations
+    CCSparseVector output = (*this); // We copy "this" and use in-place operations
     output *= other;
     return output;
 }
 CCSparseVector CCSparseVector::conjugate() { /* Conjugate the vector and return the new structure */
-    CCSparseVector output = CCSparseVector(*this);
+    CCSparseVector output = (*this);
     output.conjugate_in();
     return output;
 }

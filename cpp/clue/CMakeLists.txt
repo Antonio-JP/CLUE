@@ -28,26 +28,8 @@ link_directories(${Boost_LIBRARY_DIRS})
 # Including my own libraries
 add_subdirectory(src)
 
-# Defining executable
-# include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
-include_directories(
-        ${PROJECT_SOURCE_DIR}/include
-#         ${PROJECT_SOURCE_DIR}/src
-)
-
-file(GLOB all_SRCS
-        "${PROJECT_SOURCE_DIR}/include/*.h"
-        "${PROJECT_SOURCE_DIR}/include/*.hpp"
-        "${PROJECT_SOURCE_DIR}/src/*.cpp"
-        "${PROJECT_SOURCE_DIR}/src/*.c"
-)
-add_executable(CLUE_QMAIN src/main.cpp src/RationalFunctions.cpp src/Linalg_Vector.cpp src/Linalg_Subspace.cpp)
-target_link_libraries(CLUE_QMAIN PUBLIC ${Boost_LIBRARIES})
-target_link_libraries(CLUE_QMAIN PUBLIC MQT::ddsim)
-
 ## Code for Testing
-option(BUILD_CLUE_TESTS "Also build tests for the CLUE project" ON)
-if(BUILD_MQT_DDSIM_TESTS)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
         include(CTest) # We include CTest which is part of CMake
 
         # We check if this is the main file since we don't usually want users of the library to execute tests
@@ -59,5 +41,5 @@ endif()
 
 # If this is the main build, build possible applications
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-#   add_subdirectory(apps)
+  add_subdirectory(apps)
 endif()
