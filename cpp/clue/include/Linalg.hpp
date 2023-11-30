@@ -2,15 +2,18 @@
 #define CLUE_LA_H
 
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <sstream>
 #include <string>
 #include "Types.hpp"
-#include "CircuitSimulator.hpp"
+#include "dd/Node.hpp"
+#include "dd/Package.hpp"
 
 using namespace std;
 using namespace clue;
+// using CC = clue::CC;
 
 typedef long unsigned int luint;
 
@@ -100,7 +103,6 @@ class SparseVector {
         virtual std::string coeff_to_string(T element) = 0;
 };
 
-
 class QQSparseVector : public SparseVector<QQ> {
     public:
         using SparseVector<QQ>::SparseVector;
@@ -121,7 +123,6 @@ class QQSparseVector : public SparseVector<QQ> {
         QQSparseVector conjugate() { return (*this); } // No conjugation in a rational vector
         // QQSparseVector& operator=(const QQSparseVector&) = default;
 };
-
 
 class CCSparseVector : public SparseVector<CC> {
     public:
@@ -146,7 +147,38 @@ class CCSparseVector : public SparseVector<CC> {
 
 
 /*************************************************************************/
+class DDVector {
+    private:
+        luint qbits;
+        unordered_map<dd::vEdge, CC> components;
+        static std::unique_ptr<dd::Package<>> get_dd_package(luint nQbits) { return std::make_unique<dd::Package<>>(nQbits); }
 
+    public:
+        DDVector(luint nQbits) { this->qbits = nQbits; }
+        DDVector(luint nQbits, unordered_map<dd::vEdge, CC> parts);
+        DDVector(luint nQbits, vector<dd::vEdge> parts);
+        DDVector(luint nQbits, dd::vEdge& part) : DDVector(nQbits, vector<dd::vEdge>({part})) { }
+        DDVector(const DDVector &);
+        ~DDVector() = default;
+
+        CC inner_product(DDVector&);
+        CC inner_product(dd::vEdge& vector);
+
+        double norm();
+        DDVector& conjugate();
+        DDVector& normalize();
+        void normalize_in();
+
+        DDVector apply_circuit(const dd::mEdge&);
+
+        DDVector operator+(const DDVector& other);
+        DDVector operator-();
+        DDVector operator-(const DDVector& other);
+        DDVector operator*(CC& to_scale);
+        void operator+=(const DDVector& other);
+        void operator-=(const DDVector& other);
+        void operator*=(CC& to_scale);
+};
 
 /*************************************************************************/
 /* Class for Subspace */
@@ -183,7 +215,7 @@ class DDSubspace {
         luint dim;
         double max_error;
     public:
-        vector<CCSparseVector> basis; // Temporary: move to private
+        vector<DDVector> basis; // Temporary: move to private
         DDSubspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
         DDSubspace(luint ambient_dimension) : DDSubspace(ambient_dimension, 1e-6) { }
 
@@ -195,14 +227,14 @@ class DDSubspace {
 
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
-        void reduce_vector(CCSparseVector*);
-        bool contains(CCSparseVector&);
-        CCSparseVector find_in(CCSparseVector&);
-        bool absorb_new_vector(CCSparseVector&);
+        void reduce_vector(DDVector*);
+        bool contains(DDVector&);
+        CCSparseVector find_in(DDVector&);
+        bool absorb_new_vector(DDVector&);
 
         /*********************************************************************/
         /* COMPUTATIONAL METHODS */
-        luint minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
+        luint minimal_invariant_space(vector<dd::mEdge>& circuits);
 };
 
 #endif

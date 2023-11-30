@@ -34,6 +34,7 @@ vector<double> CCSubspace::norms() {
 /* GETTING/SETTING DATA METHODS */
 void CCSubspace::reduce_vector(CCSparseVector* vector) {
     /* Method that reduced a vector according to 'this' in-place. */
+    /* This method does a MGS reduction of a vector, becoming numericaly stable*/
     for (luint i = 0; i < this->dimension(); i++) {
         CCSparseVector to_rem = this->basis[i] * this->basis[i].inner_product(*vector);
         vector->operator-=(to_rem);
