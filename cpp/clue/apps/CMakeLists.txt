@@ -7,3 +7,4 @@ macro(ADD_APP_EXECUTABLE runname)
 endmacro()
 
 ADD_APP_EXECUTABLE(main)
+ADD_APP_EXECUTABLE(main_DD)

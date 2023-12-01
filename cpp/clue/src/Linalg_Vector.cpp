@@ -1,6 +1,21 @@
 #include <cmath>
 #include "Linalg.hpp"
 
+string CC_to_string(CC& number) {
+    if (number.real() == static_cast<double>(0) && number.imag() == static_cast<double>(0)) {
+        return "0";
+    } else if (number.real() == static_cast<double>(0)) {
+        return std::to_string(number.imag()) + "*i";
+    } else if (number.imag() == static_cast<double>(0)) {
+        return std::to_string(number.real());
+    } else {
+        if (number.imag() < static_cast<double>(0)) {
+            return std::to_string(number.real()) + " - " + std::to_string(-number.imag()) + "*i";
+        }
+        return std::to_string(number.real()) + " + " + std::to_string(number.imag()) + "*i";
+    }
+}
+
 /*******************************************************************************************************************
  * 
  * ABSTRACT CLASS FOR SPARSE VECTOR
@@ -229,18 +244,7 @@ void CCSparseVector::normalize_in() {
     this->operator*=(c_norm);
 }
 string CCSparseVector::coeff_to_string(CC element) {
-    if (element.real() == static_cast<double>(0) && element.imag() == static_cast<double>(0)) {
-        return "0";
-    } else if (element.real() == static_cast<double>(0)) {
-        return std::to_string(element.imag()) + "*i";
-    } else if (element.imag() == static_cast<double>(0)) {
-        return std::to_string(element.real());
-    } else {
-        if (element.imag() < static_cast<double>(0)) {
-            return std::to_string(element.real()) + " - " + std::to_string(-element.imag()) + "*i";
-        }
-        return std::to_string(element.real()) + " + " + std::to_string(element.imag()) + "*i";
-    }
+    return CC_to_string(element);
 }
 /*******************************************************************************************************************/
 /* ARITHMETIC METHODS */

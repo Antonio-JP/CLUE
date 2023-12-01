@@ -3,6 +3,24 @@
 #include "dd/ComplexValue.hpp"
 #include "dd/Package.hpp"
 
+CacheDDPackage* CacheDDPackage::singleton_ = nullptr;
+CacheDDPackage* CacheDDPackage::GetInstance() {
+    if(singleton_==nullptr) {
+        singleton_ = new CacheDDPackage();
+    }
+
+    return singleton_;
+}
+dd::Package<>* CacheDDPackage::get_dd_package(luint nQbits) {
+    if (this->cache.count(nQbits) == 0) {
+        this->cache[nQbits] = new dd::Package<>(nQbits);
+    }
+
+    return this->cache[nQbits];
+}
+dd::Package<> * dd_package(luint nQbits) {
+    return CacheDDPackage::GetInstance()->get_dd_package(nQbits);
+}
 /******************************************************************************************************************/
 DDVector::DDVector(luint nQbits, unordered_map<dd::vEdge, CC> parts) : DDVector(nQbits) {
     for (std::pair<dd::vEdge,CC> part : parts) {
@@ -24,7 +42,7 @@ DDVector::DDVector(const DDVector& other) : DDVector(other.qbits) {
 
 CC DDVector::inner_product(DDVector& vector) {
     CC result = CC(0);
-    std::unique_ptr<dd::Package<>> package = DDVector::get_dd_package(this->qbits);
+    dd::Package<> * package = dd_package(this->qbits);
     for (std::pair<dd::vEdge,CC> this_part : this->components) {
         for (std::pair<dd::vEdge,CC> other_part : vector.components) {
             dd::ComplexValue value = package->innerProduct(this_part.first, other_part.first);
@@ -60,7 +78,7 @@ void DDVector::normalize_in() {
 }
 
 DDVector DDVector::apply_circuit(const dd::mEdge& circuit) {
-    std::unique_ptr<dd::Package<>> package = DDVector::get_dd_package(this->qbits);
+    dd::Package<> * package = dd_package(this->qbits);
 
     unordered_map<dd::vEdge, CC> new_parts;
     for (std::pair<dd::vEdge, CC> pair : this->components) {

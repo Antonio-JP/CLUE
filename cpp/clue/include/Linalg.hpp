@@ -13,9 +13,30 @@
 
 using namespace std;
 using namespace clue;
-// using CC = clue::CC;
 
 typedef long unsigned int luint;
+
+string CC_to_string(CC& number);
+
+class CacheDDPackage {
+    protected:
+        /* Private constructor */
+        CacheDDPackage() = default;
+        static CacheDDPackage* singleton_;
+        unordered_map<luint, dd::Package<>*> cache;
+    public:
+        /* Removing cloning and assignment methods */
+        CacheDDPackage(CacheDDPackage &) = delete;
+        CacheDDPackage& operator=(const CacheDDPackage &) = delete;
+        ~CacheDDPackage() = default;
+
+        /* Method for getting instance */
+        static CacheDDPackage* GetInstance();
+
+        /* Logic of the Cache */
+        dd::Package<>* get_dd_package(luint nQbits);
+};
+dd::Package<> * dd_package(luint nQbits);
 
 /*************************************************************************/
 /* Class for vector */
@@ -151,7 +172,6 @@ class DDVector {
     private:
         luint qbits;
         unordered_map<dd::vEdge, CC> components;
-        static std::unique_ptr<dd::Package<>> get_dd_package(luint nQbits) { return std::make_unique<dd::Package<>>(nQbits); }
 
     public:
         DDVector(luint nQbits) { this->qbits = nQbits; }
