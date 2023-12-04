@@ -42,9 +42,7 @@ void CCSubspace::reduce_vector(CCSparseVector* vector) {
 }
 bool CCSubspace::contains(CCSparseVector& vector) {
     /* Returns whether a vector is in the space or not */
-    CCSparseVector copy = vector;
-    this->reduce_vector(&copy);
-    return copy.norm() < this->max_error;
+    return vector.norm() < this->max_error;
 }
 
 CCSparseVector CCSubspace::find_in(CCSparseVector& vector) {

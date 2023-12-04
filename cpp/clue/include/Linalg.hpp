@@ -198,6 +198,9 @@ class DDVector {
         void operator+=(const DDVector& other);
         void operator-=(const DDVector& other);
         void operator*=(CC& to_scale);
+
+        string to_string();
+        friend std::ostream& operator<<(std::ostream&, DDVector&);
 };
 
 /*************************************************************************/
@@ -255,6 +258,7 @@ class DDSubspace {
         /*********************************************************************/
         /* COMPUTATIONAL METHODS */
         luint minimal_invariant_space(vector<dd::mEdge>& circuits);
+        dd::CMat reduced_matrix(dd::mEdge& circuit);
 };
 
 #endif

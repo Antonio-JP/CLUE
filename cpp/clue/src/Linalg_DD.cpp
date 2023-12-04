@@ -139,6 +139,23 @@ void DDVector::operator*=(CC& to_scale) {
     }
 }
 
+string DDVector::to_string() {
+    stringstream stream;
+    stream << "Vector of dimension " << static_cast<luint>(pow(2, this->qbits)) << " with " << this->components.size() << " components (total norm: " << this->norm() << ")" << endl;
+    for (std::pair<dd::vEdge, CC> pair : this->components) {
+        stream << "\t (" << CC_to_string(pair.second) << ") * [";
+        for (CC coeff : pair.first.getVector()) {
+            stream << CC_to_string(coeff) << ", ";
+        }
+        stream << "]";
+    }
+    return stream.str();
+}
+
+std::ostream& operator<<(ostream& stream, DDVector& vector) {
+    stream << vector.to_string();
+    return stream;
+}
 
 /******************************************************************************************************************/
 /*********************************************************************/
@@ -158,19 +175,19 @@ vector<double> DDSubspace::norms() {
 void DDSubspace::reduce_vector(DDVector* vector) {
     /* Method that reduced a vector according to 'this' in-place. */
     /* This method does a MGS reduction of a vector, becoming numericaly stable*/
+    cout << "--------------------- Reducing a vector: " << vector->norm();
     for (luint i = 0; i < this->dimension(); i++) {
         DDVector bas = this->basis[i]; // Copy of the basis vector
         CC to_scale = bas.inner_product(*vector); // Inner product
         bas.operator*=(to_scale); // We scale
         vector->operator-=(bas); // We remove
     }
+    cout << " --> " << vector->norm() << endl;
 }
 
 bool DDSubspace::contains(DDVector& vector) {
     /* Returns whether a vector is in the space or not */
-    DDVector copy = vector;
-    this->reduce_vector(&copy);
-    return copy.norm() < this->max_error;
+    return vector.norm() < this->max_error;
 }
 
 CCSparseVector DDSubspace::find_in(DDVector& vector) {
@@ -194,7 +211,6 @@ CCSparseVector DDSubspace::find_in(DDVector& vector) {
 bool DDSubspace::absorb_new_vector(DDVector& vector) {
     this->reduce_vector(&vector); // We reduce the vector
     if (! this->contains(vector)) {
-        cout << "Adding new element with norm " << vector.norm() << endl;
         vector.normalize_in();
         this->basis.push_back(vector);
         return true;
@@ -251,4 +267,21 @@ luint DDSubspace::minimal_invariant_space(vector<dd::mEdge>& circuits) {
     }
 
     return this->dimension();
+}
+
+dd::CMat DDSubspace::reduced_matrix(dd::mEdge& circuit) {
+    vector<DDVector> ULd;
+    for (luint i = 0; i < this->dimension(); i++) {
+        ULd.push_back(this->basis[i].apply_circuit(circuit));
+    }
+
+    dd::CMat result = dd::CMat(this->dimension());
+    for (luint i = 0; i < this->dimension(); i++) {
+        result[i] = dd::CVec(this->dimension());
+        for (luint j = 0; j < this->dimension(); j++) {
+            result[i][j] = this->basis[i].inner_product(ULd[j]); // TODO: Careful with the conjugation: is it there?
+        }
+    }
+
+    return result;
 }
