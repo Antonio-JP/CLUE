@@ -1,8 +1,92 @@
 #include <iostream>
+#include <bits/stdc++.h>
 #include "Linalg.hpp"
 
 
 using namespace std;
+
+string VectorToString(dd::CVec& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.size()) {
+        stream << CC_to_string(vector[0]);
+        for (luint i = 1; i < vector.size(); i++) {
+            stream << ", " << CC_to_string(vector[i]);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
+
+string MatrixToString(dd::CMat& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (dd::CVec row : matrix) {
+        stream << "\t" << VectorToString(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
+
+bool is_squared(dd::CMat& M) {
+    if (M.size()) {
+        return M.size() == M[0].size();
+    }
+    return true;
+}
+
+dd::CMat identity(luint size) {
+    dd::CMat result = dd::CMat(size);
+    for (luint i = 0; i < size; i++) {
+        result[i] = dd::CVec(size);
+        result[i][i] = CC(1);
+    }
+    return result;
+}
+
+dd::CMat matrix_prod(dd::CMat& A, dd::CMat& B) {
+    if (A[0].size() != B.size()) {
+        throw logic_error("The dimensions do not match!");
+    }
+    dd::CMat result = dd::CMat(A.size());
+    for (luint i = 0; i < A.size(); i++) {
+        result[i] = dd::CVec(B[0].size()); // Number of columns of B
+        for (luint j = 0; j < B[0].size(); j++) {
+            for (luint k = 0; k < B.size(); k++) {
+                result[i][j] += A[i][k]*B[k][i];
+            }
+        }
+    }
+    return result;
+}
+
+dd::CMat Power(dd::CMat& M, int t) {
+    if (! is_squared(M)) {
+        throw logic_error("The matrix must be square");
+    }
+    dd::CMat R, I = identity(M.size()), B;
+    int i;
+    if(t & 1) {        //Handle odd values of t (this saves a multiplication later)
+        R = M;
+        t = t & ~1;    //Clear the least significant bit of t
+    } else {
+        R = I;
+    }
+    i=1;
+    B=M;                //B will always be M^i, where i is a power of 2
+    while (t!=0) {
+        i = i*2;         //Advance i to the next power of 2
+        B = matrix_prod(B,B);         //B was M^(i/2) and is now M^i
+
+        if(t & i) {       //i is of the form 2^j. Is the j-th bit of t set?
+            R = matrix_prod(R,B);      //Multiply the result with B=A^i
+            t = t & ~i;   //Clear the j-th bit of t
+        }
+    }
+
+    return R;
+}
 
 dd::CMat read_matrix(string filename) {
     std::ifstream myfile; myfile.open(filename);
@@ -28,8 +112,8 @@ dd::CMat read_matrix(string filename) {
 dd::CVec starting_Grover(luint nQbits) {
     luint N = static_cast<luint>(pow(2, nQbits)), N2 = N/2;
     dd::CVec output = dd::CVec(N);
-    for (luint i = 0; i < N2; i++) {
-        output[i] = CC(1);
+    for (luint i = N2; i < N; i++) {
+        output[i] = CC(1/sqrt(N2));
     }
 
     return output;
@@ -38,19 +122,22 @@ dd::CVec starting_phi(luint nQbits) {
     luint N = static_cast<luint>(pow(2, nQbits));
     dd::CVec output = dd::CVec(N);
     for (luint i = 0; i < N; i++) {
-        output[i] = CC(1);
+        output[i] = CC(1/sqrt(N));
     }
 
     return output;
 }
 
 luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
+    clock_t start = clock();
     cout << "Translating from dense to DD..." << endl;
     dd::Package<> * package = dd_package(nQbits);
     dd::vEdge starting_DD = package->makeStateFromVector(starting);
     dd::mEdge circuit = package->makeDDFromMatrix(U);
     vector<dd::mEdge> circuits = {circuit};
     luint N = static_cast<luint>(pow(static_cast<luint>(2), nQbits));
+
+    clock_t reading = clock();
 
     cout << "Creating the starting subspace..." << endl;
     DDSubspace lumping = DDSubspace(N);
@@ -59,45 +146,47 @@ luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
 
     cout << "Computing the lumping..." << endl;
     lumping.minimal_invariant_space(circuits);
+    dd::CMat Uhat = lumping.reduced_matrix(circuit);
 
-    cout << "Found a reduction of size: " << lumping.dimension() << endl;    
-    cout << "Norms of the vectors in lumping: " << endl;
-    cout << "[";
-    vector<double> lumping_norms = lumping.norms();
-    for (double fl : lumping_norms) {
-        cout << fl << ", ";
-    }
-    cout << "]" << endl;
+    clock_t time_lumping = clock();
 
-    CC **inner = NULL;
-    inner = static_cast<CC**>(calloc(sizeof(CC *), lumping.dimension()));
+    Power(Uhat, static_cast<int>(floor(pow(2., static_cast<double>(nQbits)/2.))));
+
+    clock_t simulating = clock();
+
+    dd::CMat inner = dd::CMat(lumping.dimension());
     for (luint i = 0; i < lumping.dimension(); i++) {
-        inner[i] = static_cast<CC *>(calloc(sizeof(CC),lumping.dimension()));
+        inner[i] = dd::CVec(lumping.dimension());
         for (luint j = 0; j < lumping.dimension(); j++) {
             inner[i][j] = lumping.basis[i].inner_product(lumping.basis[j]);
         }
     }
     
     cout << "Inner product matrix:" << endl;
-    cout << "-----------------------------------------------------------------------------------" << endl;
-    for (luint i = 0; i < lumping.dimension(); i++) {
-        for (luint j = 0; j <lumping.dimension(); j++) {
-            cout << CC_to_string(inner[i][j]) << ",\t";
-        }
-        cout << endl;
-    }
-    cout << "-----------------------------------------------------------------------------------" << endl;
-
-    // Freeing memory
-    for (luint i = 0; i < lumping.dimension(); i++) {
-        free(inner[i]);
-    }
-    free(inner);
+    cout << "-----------------------------------------------------------------------------------" << 
+            endl << 
+            MatrixToString(inner) << 
+            "-----------------------------------------------------------------------------------" << 
+            endl;
+    
+    cout << "Reduced matrix:" << endl;
+    cout << "-----------------------------------------------------------------------------------" << 
+            endl << 
+            MatrixToString(Uhat) << 
+            "-----------------------------------------------------------------------------------" << 
+            endl;
+    
+    clock_t end = clock();
+    // Counting the time spent in the function
+    cout << "Total time execution:\t" << (double(end - start) / double(CLOCKS_PER_SEC)) << endl;
+    cout << "Total time reading:\t" << (double(reading - start) / double(CLOCKS_PER_SEC)) << endl;
+    cout << "Total time lumping:\t" << (double(time_lumping - reading) / double(CLOCKS_PER_SEC)) << endl;
+    cout << "Total time simulating:\t" << (double(simulating - time_lumping) / double(CLOCKS_PER_SEC)) << endl;
 
     return lumping.dimension();
 }
 
-luint example_Grover_1() { // Should be 2 or 3?
+luint example_Grover_1() { // Should be 2
     //Toffoli of size 10
     cout << "Reading the data and creating the basic structures..." << endl;
     luint nQbits = 11;
@@ -110,11 +199,21 @@ luint example_Grover_1() { // Should be 2 or 3?
     return run_example(nQbits, initial, U);
 }
 
-int main(int, char**) {
+luint example_Grover_2() { // Should be 2
+    //Toffoli of size 3
+    cout << "Reading the data and creating the basic structures..." << endl;
+    luint nQbits = 4;
+    dd::CVec initial = starting_Grover(nQbits);
+    dd::CMat U = read_matrix("../../../../tests/quantum/Grover-4.txt");
 
-    if(dd_package(5) != dd_package(5)) {
-        return -1;
-    }
+    cout << "Created a vector of size " << initial.size() << endl;
+    cout << "Creating a matrix of size (" << U.size() << "," << U[0].size() << ")" << endl;
+
+    return run_example(nQbits, initial, U);
+}
+
+int main(int, char**) {
     example_Grover_1(); // Got
+    // example_Grover_2(); // Got 2
     return 0;
 }
