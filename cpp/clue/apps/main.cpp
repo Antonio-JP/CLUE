@@ -16,7 +16,7 @@ luint run_example_QAOA(int n, int * values) {
 
     cout << "Creating the starting subspace..." << endl;
     CCSubspace lumping = CCSubspace(N);
-    lumping.absorb_new_vector(phi);
+    lumping.absorb_new_vector(&phi);
     cout << "Computing the lumping..." << endl;
 
     lumping.minimal_invariant_space(matrices);
@@ -34,7 +34,7 @@ luint run_example_QAOA(int n, int * values) {
     cout << "-----------------------------------------------------------------------------------" << endl;
     for (luint i = 0; i < min(lumping.dimension(), static_cast<luint>(20)); i++) {
         for (luint j = 0; j < min(N, static_cast<luint>(10)); j++) {
-            cout << lumping.basis[i][j] << ",";
+            cout << lumping.basis[i]->get_value(j) << ",";
         }
         cout << "..." << endl;
     }
@@ -45,7 +45,7 @@ luint run_example_QAOA(int n, int * values) {
     for (luint i = 0; i < lumping.dimension(); i++) {
         inner[i] = static_cast<CC *>(calloc(sizeof(CC),lumping.dimension()));
         for (luint j = 0; j < lumping.dimension(); j++) {
-            inner[i][j] = lumping.basis[i].inner_product(lumping.basis[j]);
+            inner[i][j] = lumping.basis[i]->inner_product(*lumping.basis[j]);
         }
     }
     
@@ -257,12 +257,12 @@ int main(int, char**) {
     // QQSparseVector u = QQSparseVector({QQ(1),QQ(),QQ(),QQ(2)});
 
     // cout << "My vector density: " << u.coeff_to_string(QQ(4,2)) << endl;
-    example_QAOA_10_1(); // Got 8
+    // example_QAOA_10_1(); // Got 8
     // example_QAOA_10_2(); // Got 7
     // example_QAOA_10_3(); // Got 10
     // example_QAOA_10_4(); // Got 11
 
-    // example_QAOA_4_1(); // Got 4
+    example_QAOA_4_1(); // Got 4
     // example_QAOA_4_2(); // Got 4
     return 0;
 }

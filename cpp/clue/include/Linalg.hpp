@@ -73,6 +73,7 @@ class SparseVector {
         luint nonzero_count() { return this->nonzero.size(); }
         luint first_nonzero() { return this->nonzero.begin()->first; }
         unordered_set<luint>::iterator nonzero_iterator() { return this->nonzero_indices.begin(); }
+        unordered_set<luint>::iterator nonzero_iterator_end() { return this->nonzero_indices.end(); }
         double density() { return static_cast<double>(this->nonzero_count()) / static_cast<double>(this->dim); }
 
         bool is_zero() { return this->nonzero_count() == 0; }
@@ -205,32 +206,61 @@ class DDVector {
 
 /*************************************************************************/
 /* Class for Subspace */
-class CCSubspace {
-    private:
-        luint dim;
-        double max_error;
+template <typename V, typename M, typename C>
+class Subspace {
+    protected:
+        luint dim; // Ambient dimension of the vector space
+        double max_error; // Maximal error allow for vectors to be in the space (0 indicates exact algorithms)
+
+        /* Operations required for public methods */
+        virtual double norm(V*) = 0; // Compute the norm of a vector from its pointer
+        virtual C coeff(double) = 0; // Compute the norm of a vector from its pointer
+        virtual V* apply(V*, M&) = 0; // Compute the application of M to V (i.e., M*V)
+        virtual V* scale(V*, C) = 0; // Scales a vector using a complex number
+        virtual V* add(V*, V*) = 0; // Compute the addition of two vectors
+        virtual C inner_product(V*, V*) = 0; // Compute the inner product of two vectors
+        virtual V* conjugate(V*) = 0; // Conjugate a vector
+        virtual ~Subspace() { for (V* vector : this->basis) {delete vector; } }
+
     public:
-        vector<CCSparseVector> basis; // Temporary: move to private
-        CCSubspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
-        CCSubspace(luint ambient_dimension) : CCSubspace(ambient_dimension, 1e-6) { }
+        vector<V*> basis; // Basis of the subspace
+        
+        /*********************************************************************/
+        /* Constructors for Subspaces */
+        Subspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
+        Subspace(luint ambient_dimension) : Subspace<V,M,C>(ambient_dimension, 1e-6) { }
+        
 
         /*********************************************************************/
         /* ATTRIBUTE/PROPERTIES */
         luint ambient_dimension() { return this->dim; }
         luint dimension() { return this->basis.size(); }
-        vector<double> densities();
         vector<double> norms();
-
+        
         /*********************************************************************/
         /* GETTING/SETTING DATA METHODS */
-        void reduce_vector(CCSparseVector*);
-        bool contains(CCSparseVector&);
-        CCSparseVector find_in(CCSparseVector&);
-        bool absorb_new_vector(CCSparseVector&);
-
+        V* reduce_vector(V*); // Takes the pointer to a vector and return the reduction of the vector w.r.t. this
+        bool contains(V*); // Check whether a vector is in this or not
+        bool absorb_new_vector(V*); // Absorbs a new vector to the space, leaving it still if the vector is in.
+        
         /*********************************************************************/
         /* COMPUTATIONAL METHODS */
-        luint minimal_invariant_space(vector<vector<CCSparseVector>>& matrices);
+        luint minimal_invariant_space(vector<M>&);
+        vector<vector<C>> reduced_matrix(M&);
+};
+
+class CCSubspace : public Subspace<CCSparseVector, vector<CCSparseVector>, CC> {
+    protected:
+        double norm(CCSparseVector*); // Compute the norm of a vector from its pointer
+        CC coeff(double); // Compute the norm of a vector from its pointer
+        CCSparseVector* apply(CCSparseVector*, vector<CCSparseVector>&); // Compute the application of M to V (i.e., M*V)
+        CCSparseVector* scale(CCSparseVector*, CC); // Scales a vector using a complex number
+        CCSparseVector* add(CCSparseVector*, CCSparseVector*); // Compute the addition of two vectors
+        CC inner_product(CCSparseVector*, CCSparseVector*); // Compute the inner product of two vectors
+        CCSparseVector* conjugate(CCSparseVector*); // Conjugate a vector
+    
+    public:
+        using Subspace<CCSparseVector, vector<CCSparseVector>, CC>::Subspace;
 };
 
 class DDSubspace {
@@ -260,5 +290,35 @@ class DDSubspace {
         luint minimal_invariant_space(vector<dd::mEdge>& circuits);
         dd::CMat reduced_matrix(dd::mEdge& circuit);
 };
+
+// class FullDDSubspace {
+//     private:
+//         luint qbits;
+//         luint dim;
+//         double max_error;
+//     public:
+//         vector<dd::vEdge> basis; // Temporary: move to private
+//         FullDDSubspace(luint nQbits, double error) { this->qbits = nQbits; this->dim = static_cast<luint>(pow(2, nQbits)); this->max_error = error; }
+//         FullDDSubspace(luint nQbits) : FullDDSubspace(nQbits, 1e-6) { }
+
+//         /*********************************************************************/
+//         /* ATTRIBUTE/PROPERTIES */
+//         luint ambient_dimension() { return this->dim; }
+//         luint dimension() { return this->basis.size(); }
+//         vector<double> norms();
+
+//         /*********************************************************************/
+//         /* GETTING/SETTING DATA METHODS */
+//         dd::vEdge reduce_vector(dd::vEdge&);
+//         bool contains(dd::vEdge&);
+//         CCSparseVector find_in(dd::vEdge&);
+//         bool absorb_new_vector(dd::vEdge&);
+
+//         /*********************************************************************/
+//         /* COMPUTATIONAL METHODS */
+//         luint minimal_invariant_space(vector<dd::mEdge>& circuits);
+//         dd::CMat reduced_matrix(dd::mEdge& circuit);
+// };
+
 
 #endif
