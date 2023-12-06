@@ -1,7 +1,10 @@
 #include "Linalg.hpp"
 
+#include <memory>
+
 #include "dd/ComplexValue.hpp"
 #include "dd/Package.hpp"
+#include "dd/Simulation.hpp"
 
 CacheDDPackage* CacheDDPackage::singleton_ = nullptr;
 CacheDDPackage* CacheDDPackage::GetInstance() {
@@ -20,6 +23,78 @@ dd::Package<>* CacheDDPackage::get_dd_package(luint nQbits) {
 }
 dd::Package<> * dd_package(luint nQbits) {
     return CacheDDPackage::GetInstance()->get_dd_package(nQbits);
+}
+
+string vector_to_string(dd::CVec& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.size()) {
+        stream << CC_to_string(vector[0]);
+        for (luint i = 1; i < vector.size(); i++) {
+            stream << ", " << CC_to_string(vector[i]);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
+string vector_to_string(vector<dd::ComplexValue>& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.size()) {
+        stream << CC_to_string(vector[0]);
+        for (luint i = 1; i < vector.size(); i++) {
+            stream << ", " << CC_to_string(vector[i]);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
+string vector_to_string(vector<dd::Complex>& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.size()) {
+        stream << CC_to_string(vector[0]);
+        for (luint i = 1; i < vector.size(); i++) {
+            stream << ", " << CC_to_string(vector[i]);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
+
+string matrix_to_string(dd::CMat& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (dd::CVec row : matrix) {
+        stream << "\t" << vector_to_string(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
+string matrix_to_string(vector<vector<dd::ComplexValue>>& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (vector<dd::ComplexValue> row : matrix) {
+        stream << "\t" << vector_to_string(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
+string matrix_to_string(vector<vector<dd::Complex>>& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (vector<dd::Complex> row : matrix) {
+        stream << "\t" << vector_to_string(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
+
+dd::vEdge& conjugate_edge(dd::vEdge& v, unique_ptr<dd::Package<>>& package) {
+    return v;
 }
 /******************************************************************************************************************/
 DDVector::DDVector(luint nQbits, unordered_map<dd::vEdge, CC> parts) : DDVector(nQbits) {
@@ -42,11 +117,12 @@ DDVector::DDVector(const DDVector& other) : DDVector(other.qbits) {
 
 CC DDVector::inner_product(DDVector& vector) {
     CC result = CC(0);
-    dd::Package<> * package = dd_package(this->qbits);
+    std::unique_ptr<dd::Package<>> package(dd_package(this->qbits));
+
     for (std::pair<dd::vEdge,CC> this_part : this->components) {
         for (std::pair<dd::vEdge,CC> other_part : vector.components) {
-            dd::ComplexValue value = package->innerProduct(this_part.first, other_part.first);
-            result += (this_part.second*other_part.second)*CC(value.r, value.i);
+            dd::ComplexValue value = package->innerProduct(this_part.first, conjugate_edge(other_part.first, package));
+            result += (this_part.second*CC(other_part.second.real(), -other_part.second.imag()))*CC(value.r, value.i);
         }
     }
     return result;
@@ -70,8 +146,15 @@ DDVector& DDVector::conjugate() {
     return copy;
 }
 void DDVector::conjugate_in() {
+    std::unordered_map<dd::vEdge, CC> new_components;
+    std::unique_ptr<dd::Package<>> package(dd_package(this->nQbits()));
     for (std::pair<dd::vEdge, CC> ppair : this->components) {
-        this->components[ppair.first] = CC(ppair.second.real(), -ppair.second.imag());
+        dd::vEdge conj_edge = conjugate_edge(ppair.first, package);
+        new_components[conj_edge] = CC(ppair.second.real(), -ppair.second.imag());
+    }
+    this->components.clear();
+    for (std::pair<dd::vEdge, CC> ppair : new_components) {
+        this->components[ppair.first] = ppair.second;
     }
 }
 DDVector& DDVector::normalize() {
@@ -166,6 +249,7 @@ std::ostream& operator<<(ostream& stream, DDVector& vector) {
 }
 
 /******************************************************************************************************************/
+// DDSubspace
 // Virtual methods
 double DDSubspace::norm(DDVector* vector) {
     return vector->norm();
@@ -199,4 +283,34 @@ DDVector* DDSubspace::conjugate(DDVector* v) {
     result->conjugate_in();
 
     return result;
+}
+
+/******************************************************************************************************************/
+// FullDDSubspace
+double FullDDSubspace::norm(dd::vEdge* v) {
+    return sqrt(this->package->innerProduct(*v, *v).r);
+}
+dd::ComplexValue FullDDSubspace::coeff(double c) {
+    return dd::ComplexValue(c);
+}
+dd::vEdge* FullDDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
+    static dd::vEdge output = dd::simulate<>(&M, *v, this->package);
+    return &output;
+}
+dd::vEdge* FullDDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
+    dd::Complex new_value = this->package->cn.lookup(c * dd::ComplexValue(v->w));
+    dd::vEdge* output = new dd::vEdge{v->p, new_value}; // Creating the edge with the new weight
+    return output;
+}
+dd::vEdge* FullDDSubspace::add(dd::vEdge* u, dd::vEdge* v) {
+    static dd::vEdge result = this->package->add(*u, *v);
+    return &result;
+}
+dd::ComplexValue FullDDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
+    dd::vEdge v_conj = conjugate_edge(*v, this->package);
+    return this->package->innerProduct(*u, v_conj);
+}
+dd::vEdge* FullDDSubspace::conjugate(dd::vEdge* v) {
+    static dd::vEdge conj = conjugate_edge(*v, this->package);
+    return &conj;
 }

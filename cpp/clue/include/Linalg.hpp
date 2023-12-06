@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include "Types.hpp"
+#include "QuantumComputation.hpp"
 #include "dd/Node.hpp"
 #include "dd/Package.hpp"
 
@@ -19,6 +20,14 @@ typedef long unsigned int luint;
 string CC_to_string(CC& number);
 string CC_to_string(dd::ComplexValue& number);
 string CC_to_string(dd::Complex& number);
+
+string vector_to_string(dd::CVec& vector);
+string vector_to_string(vector<dd::ComplexValue>& vector);
+string vector_to_string(vector<dd::Complex>& vector);
+
+string matrix_to_string(dd::CMat&);
+string matrix_to_string(vector<vector<dd::ComplexValue>>&);
+string matrix_to_string(vector<vector<dd::Complex>>&);
 
 class CacheDDPackage {
     protected:
@@ -224,6 +233,8 @@ class Subspace {
         virtual V* add(V*, V*) = 0; // Compute the addition of two vectors
         virtual C inner_product(V*, V*) = 0; // Compute the inner product of two vectors
         virtual V* conjugate(V*) = 0; // Conjugate a vector
+        virtual void free_vector(V* vector) { delete vector; }
+        virtual string print_vector(V* vector) = 0;
         virtual ~Subspace() { for (V* vector : this->basis) {delete vector; } }
 
     public:
@@ -262,6 +273,7 @@ class CCSubspace : public Subspace<CCSparseVector, vector<CCSparseVector>, CC> {
         CCSparseVector* add(CCSparseVector*, CCSparseVector*); // Compute the addition of two vectors
         CC inner_product(CCSparseVector*, CCSparseVector*); // Compute the inner product of two vectors
         CCSparseVector* conjugate(CCSparseVector*); // Conjugate a vector
+        string print_vector(CCSparseVector* vector) { return vector->to_string(); }
     
     public:
         using Subspace<CCSparseVector, vector<CCSparseVector>, CC>::Subspace;
@@ -276,39 +288,34 @@ class DDSubspace : public Subspace<DDVector, dd::mEdge, dd::ComplexValue> {
         DDVector* add(DDVector*, DDVector*); // Compute the addition of two vectors
         dd::ComplexValue inner_product(DDVector*, DDVector*); // Compute the inner product of two vectors
         DDVector* conjugate(DDVector*); // Conjugate a vector
+        string print_vector(DDVector* vector) { return vector->to_string(); }
     
     public:
         using Subspace<DDVector, dd::mEdge, dd::ComplexValue>::Subspace;
 };
 
-// class FullDDSubspace {
-//     private:
-//         luint qbits;
-//         luint dim;
-//         double max_error;
-//     public:
-//         vector<dd::vEdge> basis; // Temporary: move to private
-//         FullDDSubspace(luint nQbits, double error) { this->qbits = nQbits; this->dim = static_cast<luint>(pow(2, nQbits)); this->max_error = error; }
-//         FullDDSubspace(luint nQbits) : FullDDSubspace(nQbits, 1e-6) { }
+class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
+    protected:
+        luint nQbits;
+        std::unique_ptr<dd::Package<>> package;
 
-//         /*********************************************************************/
-//         /* ATTRIBUTE/PROPERTIES */
-//         luint ambient_dimension() { return this->dim; }
-//         luint dimension() { return this->basis.size(); }
-//         vector<double> norms();
-
-//         /*********************************************************************/
-//         /* GETTING/SETTING DATA METHODS */
-//         dd::vEdge reduce_vector(dd::vEdge&);
-//         bool contains(dd::vEdge&);
-//         CCSparseVector find_in(dd::vEdge&);
-//         bool absorb_new_vector(dd::vEdge&);
-
-//         /*********************************************************************/
-//         /* COMPUTATIONAL METHODS */
-//         luint minimal_invariant_space(vector<dd::mEdge>& circuits);
-//         dd::CMat reduced_matrix(dd::mEdge& circuit);
-// };
-
+        double norm(dd::vEdge*); // Compute the norm of a vector from its pointer
+        dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
+        dd::vEdge* apply(dd::vEdge*, qc::QuantumComputation&); // Compute the application of M to V (i.e., M*V)
+        dd::vEdge* scale(dd::vEdge*, dd::ComplexValue); // Scales a vector using a complex number
+        dd::vEdge* add(dd::vEdge*, dd::vEdge*); // Compute the addition of two vectors
+        dd::ComplexValue inner_product(dd::vEdge*, dd::vEdge*); // Compute the inner product of two vectors
+        dd::vEdge* conjugate(dd::vEdge*); // Conjugate a vector
+        void free_vector(dd::vEdge*) { return; }
+        string print_vector(dd::vEdge* vector) { dd::CVec v = vector->getVector(); return vector_to_string(v); }
+    
+    public:
+        FullDDSubspace(luint qbits, double error) : 
+            Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>(static_cast<luint>(pow(2, qbits)), error) { 
+                this->nQbits = qbits; 
+                this->package = std::unique_ptr<dd::Package<>>(dd_package(qbits));
+        }
+        FullDDSubspace(luint qbits) : FullDDSubspace(qbits, 1e-6) { }
+};
 
 #endif

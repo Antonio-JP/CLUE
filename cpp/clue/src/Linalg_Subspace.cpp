@@ -26,14 +26,17 @@ vector<double> Subspace<V,M,C>::norms() {
 /* GETTING/SETTING DATA METHODS */
 template <typename V, typename M, typename C>
 V* Subspace<V,M,C>::reduce_vector(V* vector) {
-    V* result = this->scale(vector, this->coeff(1.)); // We copyt the input vector
+    V* result = this->scale(vector, this->coeff(1.)); // We copy the input vector
+
+    cout << "\t\tReducing vector using " << this->dimension() << " vectors:" << endl;
     
     /* This method does a MGS reduction of a vector, becoming numericaly stable*/
     for (luint i = 0; i < this->dimension(); i++) {
         V* to_rem = this->scale(this->basis[i], this->inner_product(this->basis[i], vector)*this->coeff(-1.));
         V* aux = this->add(result, to_rem);
-        delete result; result = aux;
+        this->free_vector(result); result = aux;
     }
+    cout << "\t\t\t" << this->print_vector(vector) << "\n\t\t\t->\n\t\t\t" << this->print_vector(result) << endl;
 
     return result;
 }
@@ -42,21 +45,26 @@ template <typename V, typename M, typename C>
 bool Subspace<V,M,C>::contains(V* vector) {
     V* reduced = this->reduce_vector(vector);
     bool result = this->norm(reduced) <= this->max_error;
-    delete reduced; //Removing memory for reduced vector
+    this->free_vector(reduced); //Removing memory for reduced vector
     return result;
 }
 
 template <typename V, typename M, typename C>
 bool Subspace<V,M,C>::absorb_new_vector(V* vector) {
+    cout << "\t Trying to absorb a new vector:" << endl << "\t\t" << this->print_vector(vector) << endl;
     V* reduced = this->reduce_vector(vector);
+    cout << "\t\tReduced:\n\t\t" << this->print_vector(reduced) << endl;
+    cout << "\t\tNorm: " << this->norm(reduced) << endl;
     bool result = false;
     if (this->norm(reduced) > this->max_error) {
-        this->basis.push_back(this->scale(reduced, this->coeff(1/this->norm(reduced))));
+        V* to_add = this->scale(reduced, this->coeff(1/this->norm(reduced)));
+        cout << "\t\tScaled:\n\t\t" << this->print_vector(to_add) << endl;
+        this->basis.push_back(to_add);
         result = true;
     } else {
-        cout << "Found an element inside: " << vector->norm() << endl;
+        cout << "Found an element inside: " << this->norm(vector) << endl;
     }
-    delete reduced; //Removing memory for reduced vector
+    this->free_vector(reduced); //Removing memory for reduced vector
     return result;
 }
 
@@ -68,9 +76,14 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
     queue<V*> to_process;
 
     for (V* current : this->basis) {
+        cout << "Element of the basis: " << endl << this->print_vector(current) << endl;
+        cout << "Generated:" << endl;
         for (M matrix : matrices) {
             // We do multiplication matrix*current
             V* result = this->apply(current, matrix);
+            cout << "\t[-] " << this->print_vector(result) << endl; 
+            V* conj = this->conjugate(result);
+            cout << "\t[C] " << this->print_vector(conj) << endl; 
             // We add this vector to the queue
             to_process.push(result);
         }
@@ -78,27 +91,32 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
 
     //We now iterate on the queue until this is empty
     while ((!to_process.empty()) && (this->dimension() < this->ambient_dimension())) {
-        cout << "Starting computation of minimal invariant with " << to_process.size() << " vectors. " << endl;
+        cout << "Remaining vectors: " << to_process.size() << endl;
         V* current = to_process.front(); to_process.pop(); // We take the first element
         
-        cout << "Current vector: " << this->norm(current) << endl;
+
+        cout << this->print_vector(current) << endl;
         bool absorbed = this->absorb_new_vector(current);
         cout << "Was absorbed: " << absorbed << endl;
+        // We release the memory for the processed vector
+        this->free_vector(current);
         if (absorbed) { // We have increased the dimension, we need to add new vectors
+            current = this->basis[this->dimension()-1];
+            cout << "Added vector:\n\t[+] " << this->print_vector(current) << endl;
+            cout << "Generated:" << endl;
             for (M matrix : matrices) {
                 // We do multiplication matrix*current
                 V* result = this->apply(current, matrix);
+                cout << "\t[-] " << this->print_vector(result) << endl; 
                 // We add this vector to the queue
                 to_process.push(result);
             } 
         }
-        // We release the memory for the processed vector
-        delete current;
     }
     // We release the memory if any vector remains on the queue
     while (!to_process.empty()) {
         V* current = to_process.front(); to_process.pop();
-        delete current;
+        this->free_vector(current);
     }
 
     // We return the new dimension of the subspace
@@ -114,7 +132,9 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
         for (luint j = 0; j < this->dimension(); j++) {
             result[i][j] = this->inner_product(this->basis[i], Uld);
         }
-        delete Uld; delete conj; // Freeing memory in the loop
+        // Freeing memory if needed
+        this->free_vector(Uld); 
+        this->free_vector(conj); // Freeing memory in the loop
     }
 
     return result;
@@ -122,6 +142,7 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
 
 template class Subspace<CCSparseVector, vector<CCSparseVector>, CC>;
 template class Subspace<DDVector, dd::mEdge, dd::ComplexValue>;
+template class Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>;
 
 /*******************************************************************************************************************
  * 

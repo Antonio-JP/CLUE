@@ -5,52 +5,6 @@
 
 using namespace std;
 
-string VectorToString(vector<dd::ComplexValue>& vector) {
-    stringstream stream;
-    stream << "[";
-    if (vector.size()) {
-        stream << CC_to_string(vector[0]);
-        for (luint i = 1; i < vector.size(); i++) {
-            stream << ", " << CC_to_string(vector[i]);
-        }
-    }
-    stream << "]";
-
-    return stream.str();
-}
-string VectorToString(dd::CVec& vector) {
-    stringstream stream;
-    stream << "[";
-    if (vector.size()) {
-        stream << CC_to_string(vector[0]);
-        for (luint i = 1; i < vector.size(); i++) {
-            stream << ", " << CC_to_string(vector[i]);
-        }
-    }
-    stream << "]";
-
-    return stream.str();
-}
-
-string MatrixToString(vector<vector<dd::ComplexValue>>& matrix) {
-    stringstream stream;
-    stream << "[" << endl;
-    for (vector<dd::ComplexValue> row : matrix) {
-        stream << "\t" << VectorToString(row) << endl;
-    }
-    stream << "]" << endl;
-    return stream.str();
-}
-string MatrixToString(dd::CMat& matrix) {
-    stringstream stream;
-    stream << "[" << endl;
-    for (dd::CVec row : matrix) {
-        stream << "\t" << VectorToString(row) << endl;
-    }
-    stream << "]" << endl;
-    return stream.str();
-}
-
 bool is_squared(vector<vector<dd::ComplexValue>>& M) {
     if (M.size()) {
         return M.size() == M[0].size();
@@ -187,14 +141,14 @@ luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
     cout << "Inner product matrix:" << endl;
     cout << "-----------------------------------------------------------------------------------" << 
             endl << 
-            MatrixToString(inner) << 
+            matrix_to_string(inner) << 
             "-----------------------------------------------------------------------------------" << 
             endl;
     
     cout << "Reduced matrix:" << endl;
     cout << "-----------------------------------------------------------------------------------" << 
             endl << 
-            MatrixToString(Uhat) << 
+            matrix_to_string(Uhat) << 
             "-----------------------------------------------------------------------------------" << 
             endl;
     
