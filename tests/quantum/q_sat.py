@@ -332,11 +332,11 @@ class SATFormula(set[Clause], Experiment):
         n = formula.total_size; m = len(formula)
         name = f"{name}_{n}_{m}"
         final_name = name; i = 0
-        while os.path.exists(os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm")):
+        while os.path.exists(os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm")):
             final_name = f"{name}[{i}]"
             i += 1
-        circuit.qasm(True, os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm"))
-        with open(os.path.join(SCRIPT_DIR, "hamiltonians", f"{final_name}.qasm"), "a+") as f:
+        circuit.qasm(True, os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm"))
+        with open(os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm"), "a+") as f:
             f.write(f"\n\n// True formula: {formula}\n")
             variables = formula.variables
             f.write(f"// Variables appearing: {variables}\n")

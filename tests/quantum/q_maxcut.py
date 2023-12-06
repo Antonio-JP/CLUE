@@ -206,11 +206,11 @@ class UndirectedGraph(defaultdict, Experiment):
 
         name = f"{name}_{len(graph)}_{len(graph.edges)}"
         final_name = name; i = 0
-        while os.path.exists(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm")):
+        while os.path.exists(os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm")):
             final_name = f"{name}_{i}"
             i += 1
-        circuit.qasm(True, os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm"))
-        with open(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.qasm"), "a+") as f:
+        circuit.qasm(True, os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm"))
+        with open(os.path.join(SCRIPT_DIR, "circuits", f"{final_name}.qasm"), "a+") as f:
             f.write(f"\n\n// Description of the graph:\n")
             f.write(f"//\t * Vertices: {graph.vertices}\n")
             f.write(f"//\t * Edges: {graph.edges}\n")
@@ -219,7 +219,7 @@ class UndirectedGraph(defaultdict, Experiment):
             for i in range(len(graph)):
                 f.write(f"//h q[{i}];\n")
             f.write(f"//barrier q;")
-        graph.visualize(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.png"))
+        # graph.visualize(os.path.join(SCRIPT_DIR, "graphs", f"{final_name}.png"))
 
     def __repr__(self):
         return f"(Vertices: {self.vertices}) -- (Edges: {self.edges})"
