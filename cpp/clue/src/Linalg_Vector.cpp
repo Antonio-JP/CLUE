@@ -15,6 +15,14 @@ string CC_to_string(CC& number) {
         return std::to_string(number.real()) + " + " + std::to_string(number.imag()) + "*i";
     }
 }
+string CC_to_string(dd::ComplexValue& number) {
+    CC val = CC(number.r, number.i);
+    return CC_to_string(val);
+}
+string CC_to_string(dd::Complex& number) {
+    dd::ComplexValue val = dd::ComplexValue(number);
+    return CC_to_string(val);
+}
 
 /*******************************************************************************************************************
  * 

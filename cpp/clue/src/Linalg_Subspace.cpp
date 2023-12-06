@@ -30,7 +30,7 @@ V* Subspace<V,M,C>::reduce_vector(V* vector) {
     
     /* This method does a MGS reduction of a vector, becoming numericaly stable*/
     for (luint i = 0; i < this->dimension(); i++) {
-        V* to_rem = this->scale(this->basis[i], -this->inner_product(this->basis[i], vector));
+        V* to_rem = this->scale(this->basis[i], this->inner_product(this->basis[i], vector)*this->coeff(-1.));
         V* aux = this->add(result, to_rem);
         delete result; result = aux;
     }
@@ -120,12 +120,15 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
     return result;
 }
 
+template class Subspace<CCSparseVector, vector<CCSparseVector>, CC>;
+template class Subspace<DDVector, dd::mEdge, dd::ComplexValue>;
+
 /*******************************************************************************************************************
  * 
- * CLASS FOR CC2-SUBSPACE
+ * CLASS FOR CC-SUBSPACE
  * 
 ********************************************************************************************************************/
-template class Subspace<CCSparseVector, vector<CCSparseVector>, CC>;
+
 double CCSubspace::norm(CCSparseVector* vector) {
     return vector->norm();
 }

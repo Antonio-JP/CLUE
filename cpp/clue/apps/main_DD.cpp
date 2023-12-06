@@ -5,6 +5,19 @@
 
 using namespace std;
 
+string VectorToString(vector<dd::ComplexValue>& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.size()) {
+        stream << CC_to_string(vector[0]);
+        for (luint i = 1; i < vector.size(); i++) {
+            stream << ", " << CC_to_string(vector[i]);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
 string VectorToString(dd::CVec& vector) {
     stringstream stream;
     stream << "[";
@@ -19,6 +32,15 @@ string VectorToString(dd::CVec& vector) {
     return stream.str();
 }
 
+string MatrixToString(vector<vector<dd::ComplexValue>>& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (vector<dd::ComplexValue> row : matrix) {
+        stream << "\t" << VectorToString(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
 string MatrixToString(dd::CMat& matrix) {
     stringstream stream;
     stream << "[" << endl;
@@ -29,29 +51,29 @@ string MatrixToString(dd::CMat& matrix) {
     return stream.str();
 }
 
-bool is_squared(dd::CMat& M) {
+bool is_squared(vector<vector<dd::ComplexValue>>& M) {
     if (M.size()) {
         return M.size() == M[0].size();
     }
     return true;
 }
 
-dd::CMat identity(luint size) {
-    dd::CMat result = dd::CMat(size);
+vector<vector<dd::ComplexValue>> identity(luint size) {
+    vector<vector<dd::ComplexValue>> result = vector<vector<dd::ComplexValue>>(size);
     for (luint i = 0; i < size; i++) {
-        result[i] = dd::CVec(size);
-        result[i][i] = CC(1);
+        result[i] = vector<dd::ComplexValue>(size);
+        result[i][i] = dd::ComplexValue(1);
     }
     return result;
 }
 
-dd::CMat matrix_prod(dd::CMat& A, dd::CMat& B) {
+vector<vector<dd::ComplexValue>> matrix_prod(vector<vector<dd::ComplexValue>>& A, vector<vector<dd::ComplexValue>>& B) {
     if (A[0].size() != B.size()) {
         throw logic_error("The dimensions do not match!");
     }
-    dd::CMat result = dd::CMat(A.size());
+    vector<vector<dd::ComplexValue>> result = vector<vector<dd::ComplexValue>>(A.size());
     for (luint i = 0; i < A.size(); i++) {
-        result[i] = dd::CVec(B[0].size()); // Number of columns of B
+        result[i] = vector<dd::ComplexValue>(B[0].size()); // Number of columns of B
         for (luint j = 0; j < B[0].size(); j++) {
             for (luint k = 0; k < B.size(); k++) {
                 result[i][j] += A[i][k]*B[k][i];
@@ -61,11 +83,11 @@ dd::CMat matrix_prod(dd::CMat& A, dd::CMat& B) {
     return result;
 }
 
-dd::CMat Power(dd::CMat& M, int t) {
+vector<vector<dd::ComplexValue>> Power(vector<vector<dd::ComplexValue>>& M, int t) {
     if (! is_squared(M)) {
         throw logic_error("The matrix must be square");
     }
-    dd::CMat R, I = identity(M.size()), B;
+    vector<vector<dd::ComplexValue>> R, I = identity(M.size()), B;
     int i;
     if(t & 1) {        //Handle odd values of t (this saves a multiplication later)
         R = M;
@@ -142,11 +164,11 @@ luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
     cout << "Creating the starting subspace..." << endl;
     DDSubspace lumping = DDSubspace(N);
     DDVector starting_vector = DDVector(nQbits, starting_DD);
-    lumping.absorb_new_vector(starting_vector);
+    lumping.absorb_new_vector(&starting_vector);
 
     cout << "Computing the lumping..." << endl;
     lumping.minimal_invariant_space(circuits);
-    dd::CMat Uhat = lumping.reduced_matrix(circuit);
+    vector<vector<dd::ComplexValue>> Uhat = lumping.reduced_matrix(circuit);
 
     clock_t time_lumping = clock();
 
@@ -158,7 +180,7 @@ luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
     for (luint i = 0; i < lumping.dimension(); i++) {
         inner[i] = dd::CVec(lumping.dimension());
         for (luint j = 0; j < lumping.dimension(); j++) {
-            inner[i][j] = lumping.basis[i].inner_product(lumping.basis[j]);
+            inner[i][j] = lumping.basis[i]->inner_product(*(lumping.basis[j]));
         }
     }
     

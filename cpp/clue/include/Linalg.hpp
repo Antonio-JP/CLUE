@@ -17,6 +17,8 @@ using namespace clue;
 typedef long unsigned int luint;
 
 string CC_to_string(CC& number);
+string CC_to_string(dd::ComplexValue& number);
+string CC_to_string(dd::Complex& number);
 
 class CacheDDPackage {
     protected:
@@ -185,8 +187,10 @@ class DDVector {
         CC inner_product(DDVector&);
         CC inner_product(dd::vEdge& vector);
 
+        luint nQbits() {return this->qbits; }
         double norm();
         DDVector& conjugate();
+        void conjugate_in();
         DDVector& normalize();
         void normalize_in();
 
@@ -263,32 +267,18 @@ class CCSubspace : public Subspace<CCSparseVector, vector<CCSparseVector>, CC> {
         using Subspace<CCSparseVector, vector<CCSparseVector>, CC>::Subspace;
 };
 
-class DDSubspace {
-    private:
-        luint dim;
-        double max_error;
+class DDSubspace : public Subspace<DDVector, dd::mEdge, dd::ComplexValue> {
+    protected:
+        double norm(DDVector*); // Compute the norm of a vector from its pointer
+        dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
+        DDVector* apply(DDVector*, dd::mEdge&); // Compute the application of M to V (i.e., M*V)
+        DDVector* scale(DDVector*, dd::ComplexValue); // Scales a vector using a complex number
+        DDVector* add(DDVector*, DDVector*); // Compute the addition of two vectors
+        dd::ComplexValue inner_product(DDVector*, DDVector*); // Compute the inner product of two vectors
+        DDVector* conjugate(DDVector*); // Conjugate a vector
+    
     public:
-        vector<DDVector> basis; // Temporary: move to private
-        DDSubspace(luint ambient_dimension, double error) { this->dim = ambient_dimension; this->max_error = error; }
-        DDSubspace(luint ambient_dimension) : DDSubspace(ambient_dimension, 1e-6) { }
-
-        /*********************************************************************/
-        /* ATTRIBUTE/PROPERTIES */
-        luint ambient_dimension() { return this->dim; }
-        luint dimension() { return this->basis.size(); }
-        vector<double> norms();
-
-        /*********************************************************************/
-        /* GETTING/SETTING DATA METHODS */
-        void reduce_vector(DDVector*);
-        bool contains(DDVector&);
-        CCSparseVector find_in(DDVector&);
-        bool absorb_new_vector(DDVector&);
-
-        /*********************************************************************/
-        /* COMPUTATIONAL METHODS */
-        luint minimal_invariant_space(vector<dd::mEdge>& circuits);
-        dd::CMat reduced_matrix(dd::mEdge& circuit);
+        using Subspace<DDVector, dd::mEdge, dd::ComplexValue>::Subspace;
 };
 
 // class FullDDSubspace {
