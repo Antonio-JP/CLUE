@@ -18,6 +18,7 @@ double ddsim(string name, luint size, string observable) {
     double read_time = double(a_read - b_read) / double(CLOCKS_PER_SEC);
     dd::Package<>* package = dd_package(size);
     vector<qc::QuantumComputation> circuits = {circuit};
+    cout << "### ++ -- -- Read " << name << endl;
 
     // Creating the initial state
     clock_t b_init = clock();
@@ -58,7 +59,7 @@ double ddsim(string name, luint size, string observable) {
     cout << "### ++ -- \tLumping  : " << lumping_time << endl;
     cout << "### ++ -- \tReducing : " << reducing_time << endl;
     cout << "### ++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-    cout << "### Lumping size: " << lumping.dimension() << endl;
+    cout << "### ++ -- Lumping size: " << lumping.dimension() << endl;
     
     return read_time + init_time + lumping_time + reducing_time;
 }
@@ -93,5 +94,5 @@ int main_script(string name, string type, luint m, luint M, luint repeats, vecto
 }
 
 int main(int, char**) {
-    return main_script("maxcut_3_2", "ddsim", 3, 3, 5, vector<string>({"H"}));;
+    return main_script("maxcut_4_5", "ddsim", 4, 4, 1, vector<string>({"H"}));;
 }

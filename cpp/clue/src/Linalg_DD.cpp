@@ -93,8 +93,54 @@ string matrix_to_string(vector<vector<dd::Complex>>& matrix) {
     return stream.str();
 }
 
-dd::vEdge& conjugate_edge(dd::vEdge& v, unique_ptr<dd::Package<>>& package) {
-    return v;
+dd::vEdge* conjugate_edge(dd::vEdge*, unique_ptr<dd::Package<>>&);
+dd::vNode* conjugate_node(dd::vNode*, unique_ptr<dd::Package<>>&);
+
+dd::vEdge* conjugate_edge(dd::vEdge* v, unique_ptr<dd::Package<>>& package) {
+    dd::vEdge* result = new dd::vEdge{conjugate_node(v->p, package), package->cn.conj(v->w)};
+    return result;
+}
+dd::vNode* conjugate_node(dd::vNode* p, unique_ptr<dd::Package<>>& package) {
+    if (dd::vNode::isTerminal(p)) {
+        return p;
+    }
+
+    // The node is not terminal
+    dd::vNode* result = new dd::vNode();
+    dd::vEdge* zero_out = nullptr;
+    dd::vEdge* one_out = nullptr;
+    
+    // Creating the edges of the new node
+    if (p->e[0].w.approximatelyZero()) { // We create a zero edge
+        zero_out = new dd::vEdge{dd::vNode::getTerminal(), package->cn.lookup(0)};
+    }
+    if (p->e[1].w.approximatelyZero()) { // We create a zero edge
+        one_out = new dd::vEdge{dd::vNode::getTerminal(), package->cn.lookup(0)};
+    }
+
+    if (zero_out == nullptr) { // zero edge was not zero
+        zero_out = conjugate_edge(&p->e[0], package);
+        if (&p->e[0] == &p->e[1]) {
+            one_out = zero_out;
+        }
+    } 
+    if (one_out == nullptr) {
+        one_out = conjugate_edge(&p->e[1], package);
+    }
+
+    dd::vNode* next = nullptr;
+    // Conjugating also the reference if exits
+    if (p->next != nullptr) {
+        next = conjugate_node(p->next, package);
+    }
+
+    // We assign all the elements
+    result->e[0] = *zero_out;
+    result->e[1] = *one_out;
+    result->next = next;
+    result->v = p->v;
+
+    return result;    
 }
 /******************************************************************************************************************/
 DDVector::DDVector(luint nQbits, unordered_map<dd::vEdge, CC> parts) : DDVector(nQbits) {
@@ -121,7 +167,7 @@ CC DDVector::inner_product(DDVector& vector) {
 
     for (std::pair<dd::vEdge,CC> this_part : this->components) {
         for (std::pair<dd::vEdge,CC> other_part : vector.components) {
-            dd::ComplexValue value = package->innerProduct(this_part.first, conjugate_edge(other_part.first, package));
+            dd::ComplexValue value = package->innerProduct(this_part.first, other_part.first);
             result += (this_part.second*CC(other_part.second.real(), -other_part.second.imag()))*CC(value.r, value.i);
         }
     }
@@ -149,8 +195,8 @@ void DDVector::conjugate_in() {
     std::unordered_map<dd::vEdge, CC> new_components;
     std::unique_ptr<dd::Package<>> package(dd_package(this->nQbits()));
     for (std::pair<dd::vEdge, CC> ppair : this->components) {
-        dd::vEdge conj_edge = conjugate_edge(ppair.first, package);
-        new_components[conj_edge] = CC(ppair.second.real(), -ppair.second.imag());
+        dd::vEdge* conj_edge = conjugate_edge(&ppair.first, package);
+        new_components[*conj_edge] = CC(ppair.second.real(), -ppair.second.imag());
     }
     this->components.clear();
     for (std::pair<dd::vEdge, CC> ppair : new_components) {
@@ -294,8 +340,8 @@ dd::ComplexValue FullDDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
 }
 dd::vEdge* FullDDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
-    static dd::vEdge output = dd::simulate<>(&M, *v, this->package);
-    return &output;
+    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, this->package));
+    return result;
 }
 dd::vEdge* FullDDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
     dd::Complex new_value = this->package->cn.lookup(c * dd::ComplexValue(v->w));
@@ -303,14 +349,13 @@ dd::vEdge* FullDDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
     return output;
 }
 dd::vEdge* FullDDSubspace::add(dd::vEdge* u, dd::vEdge* v) {
-    static dd::vEdge result = this->package->add(*u, *v);
-    return &result;
+    dd::vEdge* result = new dd::vEdge(this->package->add(*u, *v));
+    return result;
 }
 dd::ComplexValue FullDDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
-    dd::vEdge v_conj = conjugate_edge(*v, this->package);
-    return this->package->innerProduct(*u, v_conj);
+    return this->package->innerProduct(*u, *v);
 }
 dd::vEdge* FullDDSubspace::conjugate(dd::vEdge* v) {
-    static dd::vEdge conj = conjugate_edge(*v, this->package);
-    return &conj;
+    dd::vEdge* conj = conjugate_edge(v, this->package);
+    return conj;
 }
