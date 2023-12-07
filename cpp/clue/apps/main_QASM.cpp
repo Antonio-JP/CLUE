@@ -93,6 +93,51 @@ int main_script(string name, string type, luint m, luint M, luint repeats, vecto
     return 0;
 }
 
-int main(int, char**) {
-    return main_script("maxcut_4_5", "ddsim", 4, 4, 1, vector<string>({"H"}));;
+enum ArgumentValues {
+    type, min, max, repeats
+};
+
+std::map<std::string, ArgumentValues> create_argument_map() {
+    std::map<std::string, ArgumentValues> m;
+    m["-t"] = ArgumentValues::type;
+    m["-m"] = ArgumentValues::min;
+    m["-M"] = ArgumentValues::max;
+    m["-repeats"] = ArgumentValues::repeats;
+    return m;
+}
+static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argument_map();
+
+int main(int argc, char** argv) {
+    string file = "maxcut_3_2", type = "ddsim";
+    luint m = 0, M = 0, repeats = 1;
+
+    if (argc > 1) {
+        file = argv[1];
+        int i = 2;
+        while (i < argc) {
+            switch (s_mapArgumentValues[argv[i]]) {
+                case ArgumentValues::type:
+                    type = argv[i+1];
+                    i+=2;
+                    break;
+                case ArgumentValues::min:
+                    m = stoul(argv[i+1]);
+                    i+=2;
+                    break;
+                case ArgumentValues::max:
+                    M = stoul(argv[i+1]);
+                    i+=2;
+                    break;
+                case ArgumentValues::repeats:
+                    repeats = stoul(argv[i+1]);
+                    i+=2;
+                    break;        
+                default:
+                    cout << "Error in arguments: found " << argv[i];
+                    return -1;
+            }
+        }
+    }
+
+    return main_script(file, type, m, M, repeats, vector<string>({"H"}));;
 }
