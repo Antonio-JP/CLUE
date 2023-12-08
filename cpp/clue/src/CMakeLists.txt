@@ -5,11 +5,12 @@ set(BUILD_MQT_DDSIM_TESTS
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/mqt-ddsim" "extern/mqt-ddsim"
                  EXCLUDE_FROM_ALL)
 
+
+file(GLOB_RECURSE CLUE_HEADERS ${PROJECT_SOURCE_DIR}/include/*.hpp)
+
 add_library(
     ${PROJECT_NAME}
-    ${PROJECT_SOURCE_DIR}/include/Types.hpp
-    ${PROJECT_SOURCE_DIR}/include/Linalg.hpp
-    ${PROJECT_SOURCE_DIR}/include/RationalFunctions.hpp
+    ${CLUE_HEADERS}
     ${CMAKE_CURRENT_SOURCE_DIR}/RationalFunctions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_Vector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_Subspace.cpp

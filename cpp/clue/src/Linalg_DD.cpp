@@ -93,6 +93,185 @@ string matrix_to_string(vector<vector<dd::Complex>>& matrix) {
     return stream.str();
 }
 
+bool is_square(dd::CMat& A) {
+    luint rows = A.size();
+
+    for (luint i = 0; i < rows; i++) {
+        if (A[i].size() != rows) {
+            return false;
+        }
+    }
+    return true;
+}
+bool is_square(vector<CCSparseVector>& A) {
+    luint rows = A.size();
+
+    for (luint i = 0; i < rows; i++) {
+        if (A[i].dimension() != rows) {
+            return false;
+        }
+    }
+    return true;
+}
+dd::CMat sparse_to_dense(vector<CCSparseVector>& A) {
+    dd::CMat result = dd::CMat(A.size());
+    for (luint i = 0; i < A.size(); i++) {
+        result[i] = dd::CVec(A[i].dimension());
+        std::unordered_set<luint>::iterator it = A[i].nonzero_iterator();
+        while (it != A[i].nonzero_iterator_end()) {
+            result[i][*it] = A[i][*it];
+            it++;
+        }
+    }
+    return result;
+}
+dd::CMat ComplexValue_to_complex(vector<vector<dd::ComplexValue>>& A) {
+    dd::CMat result = dd::CMat(A.size());
+    for (luint i = 0; i < A.size(); i++) {
+        result[i] = dd::CVec(A[i].size());
+        for (luint j = 0; j < A[i].size(); j++) {
+            if(!A[i][j].approximatelyZero()) {
+                result[i][j] = CC(A[i][j].r, A[i][j].i);
+            }
+        }
+    }
+    return result;
+}
+dd::CMat matmul(dd::CMat& A, dd::CMat& B) {
+    luint rowsA = A.size(), rowsB = B.size();
+
+    if (rowsA == 0 || rowsB == 0) { throw logic_error("Matrix without rows?"); }
+    luint colsA = A[0].size(), colsB = B[0].size();
+
+    if (colsA != rowsB) { throw logic_error("Incorrect size of matrices."); }
+
+    // WE ASSUME ALL ELEMENTS IN A AND B HAVE THE SAME SIZE
+    dd::CMat result = dd::CMat(rowsA);
+    for (luint i = 0; i < rowsA; i++) {
+        result[i] = dd::CVec(colsB);
+        for (luint j = 0; j < colsB; j++) {
+            result[i][j] = CC(0);
+            for (luint k = 0; k < colsA; k ++) {
+                result[i][j] += A[i][k]*B[k][j];
+            }
+        }
+    }
+
+    return result;
+}
+dd::CMat matmul(vector<CCSparseVector>& A, dd::CMat& B) {
+    luint rowsA = A.size(), rowsB = B.size();
+
+    if (rowsA == 0 || rowsB == 0) { throw logic_error("Matrix without rows?"); }
+    luint colsA = A[0].dimension(), colsB = B[0].size();
+
+    if (colsA != rowsB) { throw logic_error("Incorrect size of matrices."); }
+
+    // WE ASSUME ALL ELEMENTS IN A AND B HAVE THE SAME SIZE
+    dd::CMat result = dd::CMat(rowsA);
+    for (luint i = 0; i < rowsA; i++) {
+        result[i] = dd::CVec(colsB);
+        for (luint j = 0; j < colsB; j++) {
+            result[i][j] = CC(0);
+
+            unordered_set<luint>::iterator it = A[i].nonzero_iterator();
+            while(it != A[i].nonzero_iterator_end()) {
+                result[i][j] += A[i][*it]*B[*it][j];
+                it++;
+            }
+        }
+    }
+
+    return result;
+}
+dd::CMat matmul(dd::CMat& A, vector<CCSparseVector>& B) {
+    luint rowsA = A.size(), rowsB = B.size();
+
+    if (rowsA == 0 || rowsB == 0) { throw logic_error("Matrix without rows?"); }
+    luint colsA = A[0].size(), colsB = B[0].dimension();
+
+    if (colsA != rowsB) { throw logic_error("Incorrect size of matrices."); }
+
+    // WE ASSUME ALL ELEMENTS IN A AND B HAVE THE SAME SIZE
+    dd::CMat result = dd::CMat(rowsA);
+    for (luint i = 0; i < rowsA; i++) {
+        result[i] = dd::CVec(colsB);
+        for (luint j = 0; j < colsB; j++) {
+            result[i][j] = CC(0);
+            for (luint k = 0; k < colsA; k ++) {
+                result[i][j] += A[i][k]*B[k][j];
+            }
+        }
+    }
+
+    return result;
+}
+dd::CMat matmul(vector<CCSparseVector>& A, vector<CCSparseVector>& B) {
+    luint rowsA = A.size(), rowsB = B.size();
+
+    if (rowsA == 0 || rowsB == 0) { throw logic_error("Matrix without rows?"); }
+    luint colsA = A[0].dimension(), colsB = B[0].dimension();
+
+    if (colsA != rowsB) { throw logic_error("Incorrect size of matrices."); }
+
+    // WE ASSUME ALL ELEMENTS IN A AND B HAVE THE SAME SIZE
+    dd::CMat result = dd::CMat(rowsA);
+    for (luint i = 0; i < rowsA; i++) {
+        result[i] = dd::CVec(colsB);
+        for (luint j = 0; j < colsB; j++) {
+            result[i][j] = CC(0);
+
+            unordered_set<luint>::iterator it = A[i].nonzero_iterator();
+            while(it != A[i].nonzero_iterator_end()) {
+                result[i][j] += A[i][*it]*B[*it][j];
+                it++;
+            }
+        }
+    }
+
+    return result;
+}
+
+dd::CMat identity_matrix(luint size) {
+    dd::CMat result = dd::CMat(size);
+    for (luint i = 0; i < size; i++) {
+        result[i] = dd::CVec(size);
+        result[i][i] = CC(1);
+    }
+    return result;
+}
+
+dd::CMat matrix_power(dd::CMat& M, luint t) {
+    if (! is_square(M)) {
+        throw logic_error("The matrix must be square");
+    }
+    dd::CMat R, B, I = identity_matrix(M.size());
+    int i;
+    if(t & 1) {        //Handle odd values of t (this saves a multiplication later)
+        R = M;
+        t = t & ~1;    //Clear the least significant bit of t
+    } else {
+        R = I;
+    }
+    i=1;
+    B=M;                //B will always be M^i, where i is a power of 2
+    while (t!=0) {
+        i = i*2;         //Advance i to the next power of 2
+        B = matmul(B,B);         //B was M^(i/2) and is now M^i
+
+        if(t & i) {       //i is of the form 2^j. Is the j-th bit of t set?
+            R = matmul(R,B);      //Multiply the result with B=A^i
+            t = t & ~i;   //Clear the j-th bit of t
+        }
+    }
+
+    return R;
+}
+dd::CMat matrix_power(vector<CCSparseVector>& M, luint t) {
+    dd::CMat denseM = sparse_to_dense(M);
+    return matrix_power(denseM, t);
+}
+
 dd::vEdge* conjugate_edge(dd::vEdge*, unique_ptr<dd::Package<>>&);
 dd::vNode* conjugate_node(dd::vNode*, unique_ptr<dd::Package<>>&);
 

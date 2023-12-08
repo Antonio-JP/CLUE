@@ -29,6 +29,20 @@ string matrix_to_string(dd::CMat&);
 string matrix_to_string(vector<vector<dd::ComplexValue>>&);
 string matrix_to_string(vector<vector<dd::Complex>>&);
 
+bool is_square(dd::CMat&);
+bool is_square(vector<CCSparseVector>&);
+dd::CMat sparse_to_dense(vector<CCSparseVector>&);
+dd::CMat ComplexValue_to_complex(vector<vector<dd::ComplexValue>>&);
+
+dd::CMat matmul(dd::CMat&, dd::CMat&);
+dd::CMat matmul(vector<CCSparseVector>&, dd::CMat&);
+dd::CMat matmul(dd::CMat&, vector<CCSparseVector>&);
+dd::CMat matmul(vector<CCSparseVector>&, vector<CCSparseVector>&);
+
+dd::CMat identity_matrix(luint);
+dd::CMat matrix_power(dd::CMat&, luint);
+dd::CMat matrix_power(vector<CCSparseVector>&, luint);
+
 class CacheDDPackage {
     protected:
         /* Private constructor */
