@@ -7,8 +7,8 @@ SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 
 pd.set_option('display.max_rows', 500)
 
-def process_averages(table: str, observable = "all", kappa = "all", skip_kappa = None, remove_outliers: bool = True, without_infinity: bool = False, add_times: bool = False):
-    data = pd.read_csv(os.path.join(SCRIPT_DIR, "results", f"[result]{table}.csv"))
+def process_averages(table: str, observable = "all", kappa = "all", skip_kappa = None, remove_outliers: bool = True, without_infinity: bool = False, add_times: bool = False, cpp: bool = False):
+    data = pd.read_csv(os.path.join(SCRIPT_DIR, "results", f"[result{'-cpp' if cpp else ''}]{table}.csv"))
 
     ## CLEANING THE DATA
     if remove_outliers and len(data) > 20: # we require enough data to remove outliers
@@ -82,6 +82,9 @@ def table2():
         lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
         [red_zero, avg_clue, avg_time_ddsim])
 
+def satcpp():
+    return process_averages("q_sat_clue", remove_outliers=False, add_times=False,cpp=True)
+
 if __name__ == "__main__":
     what = sys.argv[1]
     if what == "table1":
@@ -89,7 +92,7 @@ if __name__ == "__main__":
     elif what == "table2":
         print(table2())
     else:
-        n = 2; observable = "all"; kappa = "all"; skip_kappa = None; remove_outliers = True; without_infinity = False; add_times = False
+        n = 2; observable = "all"; kappa = "all"; skip_kappa = None; remove_outliers = True; without_infinity = False; add_times = False; is_cpp = False
         while n < len(sys.argv):
             if sys.argv[n].startswith("-"):
                 if sys.argv[n].endswith("obs"):
@@ -104,9 +107,13 @@ if __name__ == "__main__":
                     without_infinity = True; n+=1
                 elif sys.argv[n].endswith("add"):
                     add_times = True; n+=1
+                elif sys.argv[n].endswith("cpp"):
+                    is_cpp = True; n+=1
                 else:
                     n += 1
             else:
                 n += 1
 
-        print(process_averages(what, observable=observable, kappa=kappa, skip_kappa=skip_kappa, remove_outliers=remove_outliers, without_infinity=without_infinity, add_times=add_times))
+        print(
+            process_averages(what, observable=observable, kappa=kappa, skip_kappa=skip_kappa, remove_outliers=remove_outliers, without_infinity=without_infinity, add_times=add_times,cpp=is_cpp)
+        )
