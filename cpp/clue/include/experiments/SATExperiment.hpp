@@ -1,4 +1,8 @@
+#ifndef CLUE_EX_SAT
+#define CLUE_EX_SAT
+
 #include "Experiment.hpp"
+#include "boost/dynamic_bitset.hpp"
 
 using namespace std;
 
@@ -18,11 +22,12 @@ class Clause {
 
         /* Method that creates a new Clause with random elements */
         static Clause* random(luint,luint);
+        static Clause* copy(Clause*);
 
         /* Method to evaluate the clause */
         bool is_trivial() { return this->elements_in.size() == 0; }
         /* Method to evaluate the clause */
-        bool eval(vector<bool>);
+        bool eval(boost::dynamic_bitset<>);
 
         /* Return a list of variable sin the clause */
         vector<luint> variables();
@@ -47,23 +52,35 @@ class SATFormula : public Experiment {
     private:
         vector<Clause*> clauses;
         luint max_variables;
+        unordered_map<luint,vector<luint>> possible_values;
 
+        void compute_possible_values();
     public:
         SATFormula(luint nvars, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {this->max_variables = nvars; }
         SATFormula(string, luint, ExperimentType);
         ~SATFormula();
 
+        /* Method to modify a formula by adding a clause */
         luint add_clause(Clause*);
-        static SATFormula* random(luint, luint, bool = true, luint = 3, ExperimentType = ExperimentType::DIRECT);
+        /* Method to create a random formula */
+        static SATFormula* random(luint, luint, bool = true, luint = 3UL, ExperimentType = ExperimentType::DIRECT);
+        /* Method to evaluate the formula */
+        bool eval(boost::dynamic_bitset<>);
+        /* Method to count the truth clauses in  the formula */
+        luint count(boost::dynamic_bitset<>);
+        /* Method to transform the formula into a string */
         string to_string();
 
         /* Virtual methods from Experiment */
         luint size();
         luint correct_size();
+        luint bound_size();
         array<dd::CMat, 2U> direct();
         vector<CCSparseVector> matrix();
         dd::CMat matrix_B(dd::CMat&);
         qc::QuantumComputation quantum();
         qc::QuantumComputation quantum_B();
-        SATFormula& change_exec_type(ExperimentType);
+        SATFormula* change_exec_type(ExperimentType);
 };
+
+#endif

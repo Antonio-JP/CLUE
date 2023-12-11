@@ -174,9 +174,9 @@ double QQSparseVector::norm() {
     QQ squared_norm = this->inner_product(*this);
     return sqrt(squared_norm.numerator() / static_cast<double>(squared_norm.denominator()));
 }
-QQSparseVector& QQSparseVector::normalize() {
-    static QQSparseVector normalized = *this;
-    normalized.normalize_in();
+QQSparseVector* QQSparseVector::normalize() {
+    QQSparseVector* normalized = new QQSparseVector(*this);
+    normalized->normalize_in();
 
     return normalized;
 }
@@ -238,9 +238,9 @@ double CCSparseVector::norm()  {
     CC squared_norm = this->inner_product(*this);
     return sqrt(squared_norm.real());
 }
-CCSparseVector& CCSparseVector::normalize() {
-    static CCSparseVector normalized = (*this);
-    normalized.normalize_in();
+CCSparseVector* CCSparseVector::normalize() {
+    CCSparseVector* normalized = new CCSparseVector(*this);
+    normalized->normalize_in();
 
     return normalized;
 }

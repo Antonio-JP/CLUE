@@ -1,5 +1,6 @@
-#include "Experiment.hpp"
+#include "experiments/Experiment.hpp"
 
+#include <boost/algorithm/string.hpp>
 #include "dd/Simulation.hpp"
 
 // Auxiliar method to convert time clocks into double time
@@ -7,6 +8,34 @@ double time_to_double(clock_t& init, clock_t& end) {
     return (double(end - init) / double(CLOCKS_PER_SEC));
 }
 
+ExperimentType ExperimentType_fromString(string value) {
+    string upper = boost::to_upper_copy<std::string>(value);
+    if (upper == "DDSIM") {
+        return ExperimentType::DDSIM;
+    } else if (upper == "CLUE") {
+        return ExperimentType::CLUE;
+    } else if (upper == "DIRECT") {
+        return ExperimentType::DIRECT;
+    } else if (upper == "DDSIM_ALONE") {
+        return ExperimentType::DDSIM_ALONE;
+    } else {
+        throw logic_error("Unrecognize experiment type from string");
+    }
+}
+string ExperimentType_toString(ExperimentType type) {
+    switch (type) {
+        case ExperimentType::CLUE:
+            return "clue";
+        case ExperimentType::DDSIM:
+            return "ddsim";
+        case ExperimentType::DIRECT:
+            return "direct";
+        case ExperimentType::DDSIM_ALONE:
+            return "full_ddsim";
+        default:
+            throw logic_error("Unrecognized type for experiment");
+    }
+}
 // IMPLEMENTATION OF GENERIC METHODS OF CLASS Experiment
 
 // PROTECTED METHODS
@@ -19,7 +48,7 @@ CCSparseVector Experiment::clue_observable() {
             result.set_value(i, c);
         }
     } else {
-        result.set_value(stoi(this->observable), CC(1));
+        result.set_value(stoul(this->observable), CC(1));
     }
     return result;
 }
@@ -48,25 +77,30 @@ void Experiment::run_clue() {
     cerr << "+++ [clue @ " << this->name << "] Computing CLUE reduction for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [clue @ " << this->name << "] Setting up observable and system..."<< endl;
-    CCSparseVector observable = this->clue_observable();
+    CCSparseVector obs = this->clue_observable();
     vector<CCSparseVector> U = this->matrix();
+    // cerr << "+++ \t" << matrix_to_string(U) << endl;
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [clue @ " << this->name << "] Computing lumping...";
+    cerr << "+++ [clue @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
     CCSubspace lumping = CCSubspace(dimension);
     vector<vector<CCSparseVector>> matrices = {U};
-    lumping.absorb_new_vector(&observable);
+    lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(matrices);
-    cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_P...";
+    cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_P..." << endl;
     dd::CMat Uhat = lumping.reduced_matrix(U);
     clock_t a_lumping = clock();
+    vector<CCSparseVector> L = lumping.lumping_matrix();
+    // cerr << "+++ \tL = " << matrix_to_string(L) << endl;
+    // cerr << "+++ \tUhat = " << matrix_to_string(Uhat) << endl;
 
-    cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_B...";
+    cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_B..." << endl;
     dd::CMat UB = this->matrix_B(Uhat);
+    // cerr << "+++ \tUB   = " << matrix_to_string(UB) << endl;
     dd::CMat U_full = matmul(Uhat, UB);
 
-    cerr << "+++ [clue @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations...";
+    cerr << "+++ [clue @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
     matrix_power(U_full, this->iterations);
     clock_t a_iteration = clock();
@@ -74,10 +108,12 @@ void Experiment::run_clue() {
     clock_t end = clock();
 
     // We store the data
-    this->red_ratio = lumping.dimension() / static_cast<double>(dimension);
+    this->red_ratio = static_cast<double>(lumping.dimension()) / static_cast<double>(dimension);
     this->red_time = time_to_double(b_lumping, a_lumping);
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
+
+    cerr << "+++ [clue @ " << this->name << "] Full execution:\t ((" << this->to_csv() << "))" << endl;
  
     return;
 }
@@ -86,26 +122,26 @@ void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Computing DDSIM reduction for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
-    dd::vEdge observable = this->dd_observable();
+    dd::vEdge obs = this->dd_observable();
     qc::QuantumComputation U = this->quantum();
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping...";
+    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
     FullDDSubspace lumping = FullDDSubspace(dimension);
     vector<qc::QuantumComputation> circuits = {U};
-    lumping.absorb_new_vector(&observable);
+    lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
-    cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_P...";
+    cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_P..." << endl;
     vector<vector<dd::ComplexValue>> or_Uhat = lumping.reduced_matrix(U);
     dd::CMat Uhat = ComplexValue_to_complex(or_Uhat);
     clock_t a_lumping = clock();
 
-    cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_B...";
+    cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_B..." << endl;
     dd::CMat UB = this->matrix_B(Uhat);
     dd::CMat U_full = matmul(Uhat, UB);
 
-    cerr << "+++ [ddsim @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations...";
+    cerr << "+++ [ddsim @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
     matrix_power(U_full, this->iterations);
     clock_t a_iteration = clock();
@@ -113,7 +149,7 @@ void Experiment::run_ddsim() {
     clock_t end = clock();
 
     // We store the data
-    this->red_ratio = lumping.dimension() / static_cast<double>(dimension);
+    this->red_ratio = static_cast<double>(lumping.dimension()) / static_cast<double>(dimension);
     this->red_time = time_to_double(b_lumping, a_lumping);
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
@@ -126,19 +162,19 @@ void Experiment::run_direct() {
     clock_t begin = clock();
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [direct @ " << this->name << "] Computing lumping...";
+    cerr << "+++ [direct @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
     array<dd::CMat, 2U> reduction = this->direct();
     dd::CMat& lumping = reduction[0];
-    cerr << "+++ [direct @ " << this->name << "] Getting the reduced U_P...";
+    cerr << "+++ [direct @ " << this->name << "] Getting the reduced U_P..." << endl;
     dd::CMat& Uhat = reduction[1];
     clock_t a_lumping = clock();
 
-    cerr << "+++ [direct @ " << this->name << "] Getting the reduced U_B...";
+    cerr << "+++ [direct @ " << this->name << "] Getting the reduced U_B..." << endl;
     dd::CMat UB = this->matrix_B(Uhat);
     dd::CMat U_full = matmul(Uhat, UB);
 
-    cerr << "+++ [direct @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations...";
+    cerr << "+++ [direct @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
     matrix_power(U_full, this->iterations);
     clock_t a_iteration = clock();
@@ -146,7 +182,7 @@ void Experiment::run_direct() {
     clock_t end = clock();
 
     // We store the data
-    this->red_ratio = lumping.size() / static_cast<double>(dimension);
+    this->red_ratio = static_cast<double>(lumping.size()) / static_cast<double>(dimension);
     this->red_time = time_to_double(b_lumping, a_lumping);
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
@@ -158,16 +194,16 @@ void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing DDSIM ONLY execution for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable and system..."<< endl;
-    dd::vEdge observable = this->dd_observable();
+    dd::vEdge obs = this->dd_observable();
     qc::QuantumComputation U_P = this->quantum();
     qc::QuantumComputation U_B = this->quantum_B();
 
 
 
-    cerr << "+++ [ddsim-only @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations...";
+    cerr << "+++ [ddsim-only @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
     std::unique_ptr<dd::Package<>> package(dd_package(this->size()));
-    dd::vEdge current = observable;
+    dd::vEdge current = obs;
     for (luint i = 0; i < this->iterations; i++) {
         current = dd::simulate<>(&U_P, current, package);
         current = dd::simulate<>(&U_B, current, package);
@@ -210,17 +246,18 @@ void Experiment::run() {
     return;
 }
 /* Method that generate the CSV row for this experiment */
-string Experiment::to_csv(char delimiter = ',') {
-    throw logic_error("Method 'to_csv' not yet implemented");
+string Experiment::to_csv(char delimiter) {
     stringstream stream;
-    stream << this->size()     << delimiter <<
-              this->name       << delimiter << 
-              this->observable << delimiter <<
-              this->red_time   << delimiter <<
-              this->red_ratio  << delimiter <<
-              this->iterations << delimiter <<
-              this->it_time    << delimiter <<
-              this->tot_time   << delimiter;
+    stream << this->size()       << delimiter <<
+              this->bound_size() << delimiter <<
+              this->name         << delimiter << 
+              this->observable   << delimiter <<
+              this->red_time     << delimiter <<
+              this->red_ratio    << delimiter <<
+              this->iterations   << delimiter <<
+              this->it_time      << delimiter <<
+              this->tot_time     << delimiter <<
+              this->to_string();
 
     return stream.str();
 }

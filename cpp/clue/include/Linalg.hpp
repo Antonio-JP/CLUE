@@ -17,32 +17,6 @@ using namespace clue;
 
 typedef long unsigned int luint;
 
-string CC_to_string(CC& number);
-string CC_to_string(dd::ComplexValue& number);
-string CC_to_string(dd::Complex& number);
-
-string vector_to_string(dd::CVec& vector);
-string vector_to_string(vector<dd::ComplexValue>& vector);
-string vector_to_string(vector<dd::Complex>& vector);
-
-string matrix_to_string(dd::CMat&);
-string matrix_to_string(vector<vector<dd::ComplexValue>>&);
-string matrix_to_string(vector<vector<dd::Complex>>&);
-
-bool is_square(dd::CMat&);
-bool is_square(vector<CCSparseVector>&);
-dd::CMat sparse_to_dense(vector<CCSparseVector>&);
-dd::CMat ComplexValue_to_complex(vector<vector<dd::ComplexValue>>&);
-
-dd::CMat matmul(dd::CMat&, dd::CMat&);
-dd::CMat matmul(vector<CCSparseVector>&, dd::CMat&);
-dd::CMat matmul(dd::CMat&, vector<CCSparseVector>&);
-dd::CMat matmul(vector<CCSparseVector>&, vector<CCSparseVector>&);
-
-dd::CMat identity_matrix(luint);
-dd::CMat matrix_power(dd::CMat&, luint);
-dd::CMat matrix_power(vector<CCSparseVector>&, luint);
-
 class CacheDDPackage {
     protected:
         /* Private constructor */
@@ -108,7 +82,7 @@ class SparseVector {
 
         /* Abstract methods */
         virtual double norm() = 0;
-        virtual SparseVector<T>& normalize() = 0;
+        virtual SparseVector<T>* normalize() = 0;
         virtual void normalize_in() = 0;
 
         /*********************************************************************/
@@ -157,7 +131,7 @@ class QQSparseVector : public SparseVector<QQ> {
 
         /* VIRTUAL METHODS */
         double norm();
-        QQSparseVector& normalize();
+        QQSparseVector* normalize();
         void normalize_in();
         QQ conjugate_coeff(QQ coeff) { return coeff; }
         std::string coeff_to_string(QQ element);
@@ -178,7 +152,7 @@ class CCSparseVector : public SparseVector<CC> {
         
         /* VIRTUAL METHODS */
         double norm();
-        CCSparseVector& normalize();
+        CCSparseVector* normalize();
         void normalize_in();
         CC conjugate_coeff(CC coeff) { return CC(coeff.real(), -coeff.imag()); }
         std::string coeff_to_string(CC element);
@@ -191,8 +165,6 @@ class CCSparseVector : public SparseVector<CC> {
         CCSparseVector conjugate();
         // CCSparseVector& operator=(const CCSparseVector&) = default;
 };
-
-
 /*************************************************************************/
 class DDVector {
     private:
@@ -212,9 +184,9 @@ class DDVector {
 
         luint nQbits() {return this->qbits; }
         double norm();
-        DDVector& conjugate();
+        DDVector* conjugate();
         void conjugate_in();
-        DDVector& normalize();
+        DDVector* normalize();
         void normalize_in();
 
         DDVector apply_circuit(const dd::mEdge&);
@@ -230,6 +202,42 @@ class DDVector {
         string to_string();
         friend std::ostream& operator<<(std::ostream&, DDVector&);
 };
+
+/*************************************************************************/
+/* Methods and functions for vectors/matrices */
+string CC_to_string(CC& number);
+string CC_to_string(dd::ComplexValue& number);
+string CC_to_string(dd::Complex& number);
+
+string vector_to_string(dd::CVec& vector);
+string vector_to_string(CCSparseVector& vector);
+string vector_to_string(vector<dd::ComplexValue>& vector);
+string vector_to_string(vector<dd::Complex>& vector);
+string vector_to_string(DDVector& vector);
+string vector_to_string(dd::vEdge& vector);
+
+string matrix_to_string(dd::CMat&);
+string matrix_to_string(vector<CCSparseVector>&);
+string matrix_to_string(vector<vector<dd::ComplexValue>>&);
+string matrix_to_string(vector<vector<dd::Complex>>&);
+
+bool is_diagonal(dd::CMat&);
+bool is_diagonal(vector<CCSparseVector>&);
+
+bool is_square(dd::CMat&);
+bool is_square(vector<CCSparseVector>&);
+dd::CMat sparse_to_dense(vector<CCSparseVector>&);
+dd::CMat ComplexValue_to_complex(vector<vector<dd::ComplexValue>>&);
+
+dd::CMat matmul(dd::CMat&, dd::CMat&);
+dd::CMat matmul(vector<CCSparseVector>&, dd::CMat&);
+dd::CMat matmul(dd::CMat&, vector<CCSparseVector>&);
+dd::CMat matmul(vector<CCSparseVector>&, vector<CCSparseVector>&);
+
+dd::CMat identity_matrix(luint);
+dd::CMat matrix_power(dd::CMat&, luint);
+dd::CMat matrix_power(vector<CCSparseVector>&, luint);
+
 
 /*************************************************************************/
 /* Class for Subspace */
@@ -275,6 +283,7 @@ class Subspace {
         /*********************************************************************/
         /* COMPUTATIONAL METHODS */
         luint minimal_invariant_space(vector<M>&);
+        vector<V> lumping_matrix();
         vector<vector<C>> reduced_matrix(M&);
 };
 

@@ -23,5 +23,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include
 
 target_link_libraries(${PROJECT_NAME} PUBLIC MQT::ddsim)
 
-# add MQT alias
+# add alias
 add_library(${PROJECT_NAME}::CPP ALIAS ${PROJECT_NAME})
+
+
+# add experiments package library
+add_subdirectory(experiments)

@@ -38,6 +38,21 @@ string vector_to_string(dd::CVec& vector) {
 
     return stream.str();
 }
+string vector_to_string(CCSparseVector& vector) {
+    stringstream stream;
+    stream << "[";
+    if (vector.dimension()) {
+        CC value = vector[0];
+        stream << CC_to_string(value);
+        for (luint i = 1; i < vector.dimension(); i++) {
+            value = vector[i];
+            stream << ", " << CC_to_string(value);
+        }
+    }
+    stream << "]";
+
+    return stream.str();
+}
 string vector_to_string(vector<dd::ComplexValue>& vector) {
     stringstream stream;
     stream << "[";
@@ -64,11 +79,27 @@ string vector_to_string(vector<dd::Complex>& vector) {
 
     return stream.str();
 }
+string vector_to_string(DDVector& vector) {
+    return vector.to_string();
+}
+string vector_to_string(dd::vEdge& vector) {
+    dd::CVec to_print = vector.getVector();
+    return vector_to_string(to_print);
+}
 
 string matrix_to_string(dd::CMat& matrix) {
     stringstream stream;
     stream << "[" << endl;
     for (dd::CVec row : matrix) {
+        stream << "\t" << vector_to_string(row) << endl;
+    }
+    stream << "]" << endl;
+    return stream.str();
+}
+string matrix_to_string(vector<CCSparseVector>& matrix) {
+    stringstream stream;
+    stream << "[" << endl;
+    for (CCSparseVector row : matrix) {
         stream << "\t" << vector_to_string(row) << endl;
     }
     stream << "]" << endl;
@@ -93,6 +124,25 @@ string matrix_to_string(vector<vector<dd::Complex>>& matrix) {
     return stream.str();
 }
 
+bool is_diagonal(dd::CMat& matrix) {
+    for (luint i = 0; i < matrix.size(); i++) {
+        for (luint j = 0; j < matrix[i].size(); j++) {
+            if (matrix[i][j] != CC(0) && i != j) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+bool is_diagonal(vector<CCSparseVector>& matrix) {
+    for (luint i = 0; i < matrix.size(); i++) {
+        CCSparseVector& row = matrix[i];
+        if (row.nonzero_count() > 1 || (row.nonzero_count() == 1 && row.first_nonzero() != i)) {
+            return false;
+        }
+    }
+    return true;
+}
 bool is_square(dd::CMat& A) {
     luint rows = A.size();
 
@@ -246,10 +296,10 @@ dd::CMat matrix_power(dd::CMat& M, luint t) {
         throw logic_error("The matrix must be square");
     }
     dd::CMat R, B, I = identity_matrix(M.size());
-    int i;
+    luint i;
     if(t & 1) {        //Handle odd values of t (this saves a multiplication later)
         R = M;
-        t = t & ~1;    //Clear the least significant bit of t
+        t = t & ~1UL;    //Clear the least significant bit of t
     } else {
         R = I;
     }
@@ -364,9 +414,9 @@ double DDVector::norm() {
 
     return sqrt(sqrd_norm.real());
 }
-DDVector& DDVector::conjugate() {
-    static DDVector copy = (*this);
-    copy.conjugate_in();
+DDVector* DDVector::conjugate() {
+    DDVector* copy = new DDVector(*this);
+    copy->conjugate_in();
 
     return copy;
 }
@@ -382,9 +432,9 @@ void DDVector::conjugate_in() {
         this->components[ppair.first] = ppair.second;
     }
 }
-DDVector& DDVector::normalize() {
-    static DDVector copy = (*this);
-    copy.normalize_in();
+DDVector* DDVector::normalize() {
+    DDVector* copy = new DDVector(*this);
+    copy->normalize_in();
 
     return copy;
 }

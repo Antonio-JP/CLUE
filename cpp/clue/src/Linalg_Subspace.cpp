@@ -124,19 +124,33 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
     // We return the new dimension of the subspace
     return this->dimension();
 }
+
+template <typename V, typename M, typename C>
+vector<V> Subspace<V,M,C>::lumping_matrix() {
+    vector<V> result = vector<V>();
+    for (luint i = 0; i < this->dimension(); i++) {
+        result.push_back(*this->basis[i]);
+    }
+    return result;
+}
+
 template <typename V, typename M, typename C>
 vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
+    // We create the strucutre for the matrix
     vector<vector<C>> result = vector<vector<C>>(this->dimension());
-    for (luint i = 0; i < this->dimension(); i++) {
-        V* conj = this->conjugate(this->basis[i]);
+
+    for (luint j = 0; j < this->dimension(); j++) {
+        V* conj = this->conjugate(this->basis[j]);
         V* Uld = this->apply(conj, matrix);
-        result[i] = vector<C>(this->dimension());
-        for (luint j = 0; j < this->dimension(); j++) {
-            result[i][j] = this->inner_product(this->basis[i], Uld);
+        V* Uld_conj = this->conjugate(Uld);
+        for (luint i = 0; i < this->dimension(); i++) {
+            C to_put = this->inner_product(this->basis[i], Uld_conj);
+            result[i].push_back(to_put);
         }
         // Freeing memory if needed
         this->free_vector(Uld); 
-        this->free_vector(conj); // Freeing memory in the loop
+        this->free_vector(Uld_conj);
+        this->free_vector(conj);
     }
 
     return result;
@@ -161,7 +175,7 @@ CC CCSubspace::coeff(double coeff) {
 CCSparseVector* CCSubspace::apply(CCSparseVector* u, vector<CCSparseVector>& M) {
     // Computes M*u so the result is nrows(M) x 1
     CCSparseVector * result = new CCSparseVector(M.size());
-    CCSparseVector conj = u->conjugate();
+    CCSparseVector conj = u->conjugate(); // We conjugate so when the inner_product occurs, we do M*u
     for (luint i = 0; i < M.size(); i++) {
         result->set_value(i, M[i].inner_product(conj));
     }

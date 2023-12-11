@@ -1,4 +1,4 @@
-#include "SATExperiment.hpp"
+#include "experiments/SATExperiment.hpp"
 
 #include <cstdlib>
 
@@ -21,12 +21,23 @@ Clause::Clause(string) {
 /*static*/ Clause* Clause::random(luint max_variables, luint num_variables) {
     vector<pair<luint,bool>> variables;
     for (luint i = 0; i < num_variables; i++) {
-        variables.push_back({rand() % max_variables, static_cast<bool>(rand() % 2)});
+        variables.push_back({static_cast<luint>(rand()) % max_variables, static_cast<bool>(rand() % 2)});
     }
     return new Clause(variables);
 }
+/*static*/ Clause* Clause::copy(Clause* clause) {
+    vector<pair<luint,bool>> to_add = vector<pair<luint,bool>>(clause->variables().size());
+    for (luint pos : clause->pos_variables()) {
+        to_add.push_back({pos, true});
+    }
+    for (luint neg : clause->neg_variables()) {
+        to_add.push_back({neg, false});
+    }
+    Clause * result = new Clause(to_add);
+    return result;
+}
 /* Method to evaluate the clause */
-bool Clause::eval(vector<bool> values) {
+bool Clause::eval(boost::dynamic_bitset<> values) {
     if (this->is_trivial()) {
         return true;
     }
@@ -92,6 +103,7 @@ string Clause::to_string() {
     return stream.str();
 }
 
+/*** CODE FOR CLASS SATFORMULA ***/
 SATFormula::SATFormula(string, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {
     throw logic_error("Constructor from string not yet defined");
 }
@@ -108,13 +120,20 @@ luint SATFormula::add_clause(Clause* to_add) {
             if (*to_add == *clause) {
                 found = true; break;
             }
+            for (luint var : clause->variables()) {
+                if (var >= this->max_variables) { 
+                    throw logic_error("The clause exceed the variables valid for this formula"); 
+                }
+            }
         }
         if (!found) { this->clauses.push_back(to_add); }
     }
+
+    return this->clauses.size();
 }
 
-SATFormula* SATFormula::random(luint max_variables, luint max_clauses, bool force_clauses = true, luint max_per_clause = 3, ExperimentType type = ExperimentType::DIRECT) {
-    luint iterations = static_cast<luint>(ceil(pow(2., max_variables/2.)));
+/*static*/ SATFormula* SATFormula::random(luint max_variables, luint max_clauses, bool force_clauses, luint max_per_clause, ExperimentType type) {
+    luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(max_variables)/2.)));
     SATFormula * result = new SATFormula(max_variables, iterations, type);
     for (luint i = 0; i < max_clauses; i++) {
         result->add_clause(Clause::random(max_variables, max_per_clause));
@@ -127,6 +146,27 @@ SATFormula* SATFormula::random(luint max_variables, luint max_clauses, bool forc
     }
 
     return result;
+}
+bool SATFormula::eval(boost::dynamic_bitset<> values) {
+    if (values.size() < this->max_variables) {
+        throw logic_error("Insufficient number of values provided.");
+    }
+    
+    for (Clause* clause : this->clauses) {
+        if (! clause->eval(values)) { return false; }
+    }
+    return true;
+}
+luint SATFormula::count(boost::dynamic_bitset<> values) {
+    if (values.size() < this->max_variables) {
+        throw logic_error("Insufficient number of values provided.");
+    }
+    
+    luint value = 0;
+    for (Clause* clause : this->clauses) {
+        if (clause->eval(values)) { value++; }
+    }
+    return value;
 }
 string SATFormula::to_string() {
     stringstream stream;
@@ -145,28 +185,88 @@ string SATFormula::to_string() {
     return stream.str();
 }
 
+void SATFormula::compute_possible_values() {
+    if (this->possible_values.size() == 0) { // Only do something if this was not called before
+        cerr << "[SAT Formula]\tComputing possible values of formula..." << endl;
+        for (luint i = 0; i < static_cast<luint>(pow(2, this->max_variables)); i++) {
+            luint new_value = this->count(boost::dynamic_bitset<>(this->max_variables, i));
+            if (!this->possible_values.contains(new_value)) {
+                this->possible_values[new_value] = vector<luint>();
+            }
+            this->possible_values[new_value].push_back(i);
+        }
+        cerr << "[SAT Formula]\tComputing possible values of formula -> Done" << endl;
+    }
+    return;
+}
+
 /* Virtual methods from Experiment */
 luint SATFormula::size() {
     return this->max_variables;
 }
 luint SATFormula::correct_size() {
-    return 0; // TODO
+    this->compute_possible_values();
+    return this->possible_values.size();
+}
+luint SATFormula::bound_size() {
+    return this->clauses.size();
 }
 array<dd::CMat, 2U> SATFormula::direct() {
-    return; // TODO
+    luint d = this->correct_size(); // This computes possible_values
+    luint full_size = static_cast<luint>(pow(2, this->max_variables));
+    dd::CMat L = dd::CMat(d), U = dd::CMat(d); 
+    luint i = 0;
+    for (std::pair<luint,vector<luint>> pair : this->possible_values) {
+        L[i] = dd::CVec(full_size);
+        CC value = CC(1./sqrt(pair.second.size()));
+        for (luint j : pair.second) { L[i][j] = value; }
+        U[i] = dd::CVec(d);
+        U[i][i] = exp(CC(0, -static_cast<double>(pair.first)));
+        i++;
+    }
+    return {L,U}; // TODO
 }
 vector<CCSparseVector> SATFormula::matrix() {
-    return; // TODO
+    luint full_size = static_cast<luint>(pow(2, this->max_variables));
+    vector<CCSparseVector> result = vector<CCSparseVector>(full_size, full_size);
+    for (luint i = 0; i < full_size; i++) {
+        luint value = this->count(boost::dynamic_bitset(this->max_variables, i));
+        result[i].set_value(i, CC(static_cast<double>(value)));
+    }
+    return result;
 }
-dd::CMat SATFormula::matrix_B(dd::CMat&) {
-    return; // TODO
+dd::CMat SATFormula::matrix_B(dd::CMat& Uhat) {
+    if (is_diagonal(Uhat)) {
+        // Not yet implemented: we return an identity
+        dd::CMat result = dd::CMat(Uhat.size());
+        for (luint i = 0; i < Uhat.size(); i++) {
+            result[i] = dd::CVec(Uhat.size());
+            result[i][i] = CC(1.);
+        }
+        return result;
+        // cerr << "Found a diagonal matrix: \n" << matrix_to_string(Uhat) << endl;
+        // throw logic_error("Begin matrix not implemented for diagonal matrices");
+    }
+    luint num_clauses = this->clauses.size();
+    dd::CMat result = dd::CMat(Uhat.size());
+    for (luint i = 0; i < Uhat.size(); i++) {
+        result[i] = dd::CVec(Uhat[i].size());
+        result[i][i] = CC(1./static_cast<double>(num_clauses));
+    }
+    result[0][0] = CC(static_cast<double>(num_clauses));
+
+    return result;
 }
 qc::QuantumComputation SATFormula::quantum() {
-    return; // TODO
+    throw logic_error("The quantum circuit from a SAT formula is not yet implemented");
 }
 qc::QuantumComputation SATFormula::quantum_B() {
-    return; // TODO
+    throw logic_error("The begin quantum circuit from a SAT formula is not yet implemented");
 }
-SATFormula& SATFormula::change_exec_type(ExperimentType) {
-    return; // TODO
+SATFormula* SATFormula::change_exec_type(ExperimentType new_type) {
+    SATFormula* result = new SATFormula(this->max_variables, this->iterations, new_type);
+    for (Clause* clause : this->clauses) {
+        result->add_clause(Clause::copy(clause));
+    }
+    return result;
 }

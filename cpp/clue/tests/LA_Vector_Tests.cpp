@@ -86,14 +86,15 @@ void SV_QQ_InnerProduct() {
 
 void SV_QQ_Normalize() {
     QQSparseVector u = QQSparseVector({QQ(2,3),QQ(10,9),QQ(14,27)});
-    QQSparseVector normalized = u.normalize();
+    QQSparseVector* normalized = u.normalize();
     QQSparseVector true_normalized = QQSparseVector({QQ(1),QQ(5,3),QQ(7,9)});
 
-    if (normalized != true_normalized) { throw std::runtime_error("Error in QQ normalization: " + normalized.to_string()); }
+    if (*normalized != true_normalized) { throw std::runtime_error("Error in QQ normalization: " + normalized->to_string()); }
 
     u.normalize_in();
-    if (u != normalized) { throw std::runtime_error("Error in inplace QQ normalization: " + normalized.to_string()); }
+    if (u != *normalized) { throw std::runtime_error("Error in inplace QQ normalization: " + normalized->to_string()); }
 
+    delete normalized;
 }
 
 void SV_CC_Creation() {
@@ -188,13 +189,15 @@ void SV_CC_InnerProduct() {
 
 void SV_CC_Normalize() {
     CCSparseVector u = CCSparseVector({CC(2,3),CC(10,9),CC(14,27)});
-    CCSparseVector normalized = u.normalize();
+    CCSparseVector* normalized = u.normalize();
     CCSparseVector true_normalized = u*(CC(1/u.norm()));
 
-    if ((normalized - true_normalized).norm() > 1e-8) { throw std::runtime_error("Error in CC normalization: " + (normalized-true_normalized).to_string()); }
+    if ((*normalized - true_normalized).norm() > 1e-8) { throw std::runtime_error("Error in CC normalization: " + (*normalized-true_normalized).to_string()); }
 
     u.normalize_in();
-    if (u != normalized) { throw std::runtime_error("Error in inplace CC normalization: " + normalized.to_string()); }
+    if (u != *normalized) { throw std::runtime_error("Error in inplace CC normalization: " + normalized->to_string()); }
+
+    delete normalized;
 
 }
 

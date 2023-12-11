@@ -1,3 +1,6 @@
+#ifndef CLUE_EX_EX
+#define CLUE_EX_EX
+
 #include "Linalg.hpp"
 
 using namespace std;
@@ -8,6 +11,9 @@ enum ExperimentType {
     DIRECT,     // Experiment will reduce with DIRECT and then iterate
     DDSIM_ALONE // Experiment will run the iteration on DD without reduction
 };
+
+ExperimentType ExperimentType_fromString(string);
+string ExperimentType_toString(ExperimentType);
 
 /**
  * Class that define an interface for experiments. 
@@ -21,6 +27,8 @@ class Experiment {
         virtual luint size() = 0;
         /* Method to get the correct size of the lumping for this experiment */
         virtual luint correct_size() = 0;
+        /* Method to get a quivk bound for the lumping size */
+        virtual luint bound_size() = 0;
         /* Method to compute the direct lumping of the experiment (usually faster) */
         virtual array<dd::CMat, 2U> direct() = 0;
         /**
@@ -40,7 +48,7 @@ class Experiment {
         /* Method to obtain the BEGIN circuit (if necessary) */
         virtual qc::QuantumComputation quantum_B() = 0;
         /* Method to change the type of experiment */
-        virtual Experiment& change_exec_type(ExperimentType) = 0;
+        virtual Experiment* change_exec_type(ExperimentType) = 0;
 
         // Protected attributes
         string name;            // Name of the experiment
@@ -80,10 +88,25 @@ class Experiment {
             this->iterations = eIterations; 
             this->type = eType; 
         }
+        
+        virtual ~Experiment() = default;
         /* Method that runs the experiment */
         void run();
         /* Method to clean the execution run */
         void clean_exec() { this->executed = false; }
+        /* Method to get the string out of an experiment */
+        virtual string to_string() = 0;
         /* Method that generate the CSV row for this experiment */
         string to_csv(char = ',');
+
+        /* Method to get the total execution time */
+        double total_time() { return this->tot_time; }
+        /* Method to get the total execution time */
+        double reduction_ratio() { return this->red_ratio; }
+        /* Method to get the total execution time */
+        double reduction_time() { return this->red_time; }
+        /* Method to get the total execution time */
+        double iteration_time() { return this->it_time; }
 };
+
+#endif
