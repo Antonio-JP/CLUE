@@ -230,7 +230,6 @@ void Experiment::run_ddsim_alone() {
     }
     // dd::vEdge obs = this->dd_observable();
     //////////////////////////////////////////////////////////////////////////////////////////////
-    cerr << "+++ \tInitial vector: " << vector_to_string(obs) << endl;
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U_P = this->quantum(par_value);
     qc::QuantumComputation* U_B = this->quantum_B(par_value);
