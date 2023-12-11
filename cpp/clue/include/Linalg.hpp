@@ -320,7 +320,7 @@ class DDSubspace : public Subspace<DDVector, dd::mEdge, dd::ComplexValue> {
 class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
     protected:
         luint nQbits;
-        std::unique_ptr<dd::Package<>> package;
+        dd::Package<>* package;
 
         double norm(dd::vEdge*); // Compute the norm of a vector from its pointer
         dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
@@ -336,7 +336,7 @@ class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::Co
         FullDDSubspace(luint qbits, double error) : 
             Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>(static_cast<luint>(pow(2, qbits)), error) { 
                 this->nQbits = qbits; 
-                this->package = std::unique_ptr<dd::Package<>>(dd_package(qbits));
+                this->package = dd_package(qbits);
         }
         FullDDSubspace(luint qbits) : FullDDSubspace(qbits, 1e-6) { }
 };

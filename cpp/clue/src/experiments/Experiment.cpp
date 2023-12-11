@@ -54,10 +54,10 @@ CCSparseVector Experiment::clue_observable() {
 }
 /* Method to get the observable for use with DD */
 dd::vEdge Experiment::dd_observable() {
-    std::unique_ptr<dd::Package<>> package(dd_package(this->size()));
-    dd::vEdge init;
+    dd::vEdge obs;
+    dd::Package<>* package = dd_package(this->size());
     if (this->observable == "H") {
-        init = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
+        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
     } else {
         int val = stoi(this->observable);
         vector<bool> binary = vector<bool>(this->size(), false);
@@ -65,10 +65,10 @@ dd::vEdge Experiment::dd_observable() {
             binary[i-1] = (val % 2 == 1);
             val /= 2;
         }
-        init = package->makeBasisState(this->size(), binary, 0);
+        obs = package->makeBasisState(this->size(), binary, 0);
     }
-
-    return init;
+    cerr << "+++ \tCreated initial vector: " << vector_to_string(obs) << endl;
+    return obs;
 }
 
 // PRIVATE METHODS
@@ -122,18 +122,35 @@ void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Computing DDSIM reduction for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
-    dd::vEdge obs = this->dd_observable();
-    qc::QuantumComputation U = this->quantum();
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    // TODO: Changed from this->dd_observable()
+    dd::vEdge obs;
+    dd::Package<>* package = dd_package(this->size());
+    if (this->observable == "H") {
+        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
+    } else {
+        int val = stoi(this->observable);
+        vector<bool> binary = vector<bool>(this->size(), false);
+        for (luint i = this->size(); i > 0 && val > 0; i--) {
+            binary[i-1] = (val % 2 == 1);
+            val /= 2;
+        }
+        obs = package->makeBasisState(this->size(), binary, 0);
+    }
+    // dd::vEdge obs = this->dd_observable();
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
+    qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
     cerr << "+++ [ddsim @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
     FullDDSubspace lumping = FullDDSubspace(dimension);
-    vector<qc::QuantumComputation> circuits = {U};
+    vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
     cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_P..." << endl;
-    vector<vector<dd::ComplexValue>> or_Uhat = lumping.reduced_matrix(U);
+    vector<vector<dd::ComplexValue>> or_Uhat = lumping.reduced_matrix(*U);
     dd::CMat Uhat = ComplexValue_to_complex(or_Uhat);
     clock_t a_lumping = clock();
 
@@ -153,6 +170,8 @@ void Experiment::run_ddsim() {
     this->red_time = time_to_double(b_lumping, a_lumping);
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
+
+    delete U;
  
     return;
 }
@@ -194,19 +213,35 @@ void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing DDSIM ONLY execution for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable and system..."<< endl;
-    dd::vEdge obs = this->dd_observable();
-    qc::QuantumComputation U_P = this->quantum();
-    qc::QuantumComputation U_B = this->quantum_B();
-
-
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    // TODO: Changed from this->dd_observable()
+    dd::vEdge obs;
+    dd::Package<>* package = dd_package(this->size());
+    if (this->observable == "H") {
+        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
+    } else {
+        int val = stoi(this->observable);
+        vector<bool> binary = vector<bool>(this->size(), false);
+        for (luint i = this->size(); i > 0 && val > 0; i--) {
+            binary[i-1] = (val % 2 == 1);
+            val /= 2;
+        }
+        obs = package->makeBasisState(this->size(), binary, 0);
+    }
+    // dd::vEdge obs = this->dd_observable();
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    cerr << "+++ \tInitial vector: " << vector_to_string(obs) << endl;
+    double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
+    qc::QuantumComputation* U_P = this->quantum(par_value);
+    qc::QuantumComputation* U_B = this->quantum_B(par_value);
 
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
-    std::unique_ptr<dd::Package<>> package(dd_package(this->size()));
-    dd::vEdge current = obs;
+    dd::vEdge current = obs; // We create a new vector for the current
+    std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->size());
     for (luint i = 0; i < this->iterations; i++) {
-        current = dd::simulate<>(&U_P, current, package);
-        current = dd::simulate<>(&U_B, current, package);
+        current = dd::simulate<>(U_P, current, new_package);
+        current = dd::simulate<>(U_B, current, new_package);
     }
     clock_t a_iteration = clock();
     clock_t end = clock();
@@ -216,6 +251,8 @@ void Experiment::run_ddsim_alone() {
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
  
+    delete U_P; delete U_B;
+
     return;
 }
 
@@ -223,7 +260,7 @@ void Experiment::run_ddsim_alone() {
 /* Method that runs the experiment */
 void Experiment::run() {
     if (!this->executed) {
-        cerr << "++ Executing experiment " << this->name << " of type " << this->type << endl;
+        cerr << "+++ Executing experiment " << this->name << " of type " << ExperimentType_toString(this->type) << endl;
         switch (this->type)
         {
         case ExperimentType::CLUE:

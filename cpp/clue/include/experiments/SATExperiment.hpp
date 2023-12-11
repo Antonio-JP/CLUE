@@ -78,8 +78,8 @@ class SATFormula : public Experiment {
         array<dd::CMat, 2U> direct();
         vector<CCSparseVector> matrix();
         dd::CMat matrix_B(dd::CMat&);
-        qc::QuantumComputation quantum();
-        qc::QuantumComputation quantum_B();
+        qc::QuantumComputation* quantum(double);
+        qc::QuantumComputation* quantum_B(double);
         SATFormula* change_exec_type(ExperimentType);
 };
 

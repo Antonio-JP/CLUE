@@ -322,14 +322,14 @@ dd::CMat matrix_power(vector<CCSparseVector>& M, luint t) {
     return matrix_power(denseM, t);
 }
 
-dd::vEdge* conjugate_edge(dd::vEdge*, unique_ptr<dd::Package<>>&);
-dd::vNode* conjugate_node(dd::vNode*, unique_ptr<dd::Package<>>&);
+dd::vEdge* conjugate_edge(dd::vEdge*, dd::Package<>*);
+dd::vNode* conjugate_node(dd::vNode*, dd::Package<>*);
 
-dd::vEdge* conjugate_edge(dd::vEdge* v, unique_ptr<dd::Package<>>& package) {
+dd::vEdge* conjugate_edge(dd::vEdge* v, dd::Package<>* package) {
     dd::vEdge* result = new dd::vEdge{conjugate_node(v->p, package), package->cn.conj(v->w)};
     return result;
 }
-dd::vNode* conjugate_node(dd::vNode* p, unique_ptr<dd::Package<>>& package) {
+dd::vNode* conjugate_node(dd::vNode* p, dd::Package<>* package) {
     if (dd::vNode::isTerminal(p)) {
         return p;
     }
@@ -392,7 +392,7 @@ DDVector::DDVector(const DDVector& other) : DDVector(other.qbits) {
 
 CC DDVector::inner_product(DDVector& vector) {
     CC result = CC(0);
-    std::unique_ptr<dd::Package<>> package(dd_package(this->qbits));
+    dd::Package<>* package = dd_package(this->qbits);
 
     for (std::pair<dd::vEdge,CC> this_part : this->components) {
         for (std::pair<dd::vEdge,CC> other_part : vector.components) {
@@ -422,7 +422,7 @@ DDVector* DDVector::conjugate() {
 }
 void DDVector::conjugate_in() {
     std::unordered_map<dd::vEdge, CC> new_components;
-    std::unique_ptr<dd::Package<>> package(dd_package(this->nQbits()));
+    dd::Package<>* package = dd_package(this->nQbits());
     for (std::pair<dd::vEdge, CC> ppair : this->components) {
         dd::vEdge* conj_edge = conjugate_edge(&ppair.first, package);
         new_components[*conj_edge] = CC(ppair.second.real(), -ppair.second.imag());
@@ -569,7 +569,8 @@ dd::ComplexValue FullDDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
 }
 dd::vEdge* FullDDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
-    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, this->package));
+    std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->nQbits);
+    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, new_package));
     return result;
 }
 dd::vEdge* FullDDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {

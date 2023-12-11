@@ -1,6 +1,8 @@
 #include "experiments/SATExperiment.hpp"
 
+#include "operations/Operation.hpp"
 #include <cstdlib>
+#include <string>
 
 /*** CODE FOR CLASS CLAUSE ***/
 Clause::Clause(vector<pair<luint,bool>> variables) {
@@ -15,8 +17,27 @@ Clause::Clause(vector<pair<luint,bool>> variables) {
         }
     }
 }
-Clause::Clause(string) {
-    throw logic_error("Constructor from String not yet implemented");
+Clause::Clause(string clause) {
+    if (clause[0] != '(' || clause[clause.length()-1] != ')') {
+        throw logic_error("Malformed clause: it must begin with '(' and end with ')'");
+    }
+
+    luint start = 1, next_or = clause.find('v');
+    while (start < clause.length()) {
+        if (next_or == string::npos) { next_or = clause.length()-1; }
+        string variable = clause.substr(start, next_or-start);
+        luint var_number = stoul(variable.substr(variable.find("_")));
+        bool var_value = variable.find("-") == string::npos;
+        if (this->elements_in.contains(var_number)) {
+            if (this->elements_in[var_number] != var_value) {
+                this->elements_in.clear();
+                return;
+            }
+        } else {
+            this->elements_in[var_number] = var_value;
+        }
+        start = next_or+1; next_or = clause.find('v', start);
+    }
 }
 /*static*/ Clause* Clause::random(luint max_variables, luint num_variables) {
     vector<pair<luint,bool>> variables;
@@ -104,8 +125,25 @@ string Clause::to_string() {
 }
 
 /*** CODE FOR CLASS SATFORMULA ***/
-SATFormula::SATFormula(string, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {
-    throw logic_error("Constructor from string not yet defined");
+SATFormula::SATFormula(string formula, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {
+    if (formula[0] != '[') {
+        throw logic_error("A formula must start with an opening bracket '['");
+    }
+    luint beg = 1, i = 1;
+    bool opened = false;
+    while(formula[i] != ']') {
+        if (!opened && formula[i] == ')') { 
+            beg = i; opened = true;
+        } else if (formula[i] == ')') {
+            throw range_error("Expression is not well formed: found two opening parenthesis together.");
+        } else if (opened && formula[i] == ')') {
+            this->add_clause(new Clause(formula.substr(beg, i-beg+1)));
+            opened = false;
+        } else if (formula[i] == ')') {
+            throw range_error("Expression is not well formed: found closing parenthesis without opener.");
+        }
+        i++;
+    }
 }
 SATFormula::~SATFormula() {
     for (Clause* clause : this->clauses) {
@@ -257,12 +295,93 @@ dd::CMat SATFormula::matrix_B(dd::CMat& Uhat) {
 
     return result;
 }
-qc::QuantumComputation SATFormula::quantum() {
-    throw logic_error("The quantum circuit from a SAT formula is not yet implemented");
+qc::QuantumComputation* SATFormula::quantum(double par_val) {
+    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->max_variables); 
+
+    for (Clause* clause : this->clauses) {
+        vector<qc::Qubit> pos, neg; // Convert the positive and negative variables into the Qubits
+        for (luint p : clause->pos_variables()) { pos.push_back(static_cast<qc::Qubit>(p)); }
+        for (luint n : clause->neg_variables()) { neg.push_back(static_cast<qc::Qubit>(n)); }
+
+        if (pos.size() == 3) { // TTT case 
+            qc::Controls controls{};
+            controls.emplace(pos[0]); controls.emplace(pos[1]);
+
+            circuit->x(pos[0]);
+            circuit->cx(pos[0], pos[1]);  
+            circuit->mcx(controls, pos[2]);
+            circuit->mcp(-par_val, controls, pos[2]);
+            circuit->mcx(controls, pos[2]);
+            circuit->cx(pos[0], pos[1]);  
+            circuit->x(pos[0]);
+        } else if (pos.size() == 2 && neg.size() == 1) { // FTT case
+            qc::Controls controls{};
+            controls.emplace(neg[0]); controls.emplace(pos[0]);
+
+            circuit->cx(neg[0],pos[0]);
+            circuit->mcx(controls,pos[1]);
+            circuit->mcp(-par_val, controls,pos[1]);
+            circuit->mcx(controls,pos[1]);
+            circuit->cx(neg[0],pos[0]);
+        } else if (pos.size() == 2 && neg.size() == 0) { // TT case
+            circuit->x(pos[0]);
+            circuit->cx(pos[0], pos[1]);
+            circuit->cp(-par_val, pos[0], pos[1]);
+            circuit->cx(pos[0], pos[1]);
+            circuit->x(pos[0]);
+        } else if (pos.size() == 1 && neg.size() == 2) { // FFT case
+            qc::Controls controls{};
+            controls.emplace(neg[0]); controls.emplace(neg[1]);
+
+            circuit->mcx(controls, pos[0]);
+            circuit->mcp(-par_val, controls, pos[0]);
+            circuit->mcx(controls, pos[0]);
+        } else if (pos.size() == 1 && neg.size() == 1) { // FT case
+            circuit->cx(neg[0], pos[0]);
+            circuit->cp(-par_val, neg[0], pos[0]);
+            circuit->cx(neg[0], pos[0]);
+        } else if (pos.size() == 1 && neg.size() == 0) { // T case
+            circuit->x(pos[0]);
+            circuit->p(-par_val, pos[0]);
+            circuit->x(pos[0]);
+        } else if (pos.size() == 0 && neg.size() == 3) { // FFF case
+            qc::Controls controls{};
+            controls.emplace(neg[0]); controls.emplace(neg[1]);
+
+            circuit->mcp(-par_val, controls, neg[2]);
+        } else if (pos.size() == 0 && neg.size() == 2) { // FF case
+            circuit->cp(-par_val, neg[0], neg[1]);
+        } else if (pos.size() == 0 && neg.size() == 1) { // F case
+            circuit->p(-par_val, neg[0]);
+        } else {
+            throw logic_error("Error in a clause: unrecognized set up of variables");
+        }
+    }
+    return circuit;
 }
-qc::QuantumComputation SATFormula::quantum_B() {
-    throw logic_error("The begin quantum circuit from a SAT formula is not yet implemented");
+qc::QuantumComputation* SATFormula::quantum_B(double par_val) {
+    // Create a circuit with the appropriate number of qbits
+    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->max_variables); 
+
+    // We create the new gates
+    for (luint i = 0; i < this->max_variables; i++) {
+        luint count = 0;
+        for (Clause* clause : this->clauses) {
+            for (luint var : clause->variables()) {
+                if (var == i) { count++; break; }
+            }
+        }
+
+        circuit->h(static_cast<qc::Qubit>(i));
+        circuit->x(static_cast<qc::Qubit>(i));
+        circuit->p(-par_val*static_cast<double>(count), static_cast<qc::Qubit>(i));
+        circuit->x(static_cast<qc::Qubit>(i));
+        circuit->h(static_cast<qc::Qubit>(i));
+    }
+    
+    return circuit;
 }
+
 SATFormula* SATFormula::change_exec_type(ExperimentType new_type) {
     SATFormula* result = new SATFormula(this->max_variables, this->iterations, new_type);
     for (Clause* clause : this->clauses) {

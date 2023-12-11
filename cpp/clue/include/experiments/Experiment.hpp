@@ -44,9 +44,9 @@ class Experiment {
          * 
          * This method obtains the "problem" circuit in the case of QAOA.
         */
-        virtual qc::QuantumComputation quantum() = 0;
+        virtual qc::QuantumComputation* quantum(double) = 0;
         /* Method to obtain the BEGIN circuit (if necessary) */
-        virtual qc::QuantumComputation quantum_B() = 0;
+        virtual qc::QuantumComputation* quantum_B(double) = 0;
         /* Method to change the type of experiment */
         virtual Experiment* change_exec_type(ExperimentType) = 0;
 
@@ -68,7 +68,7 @@ class Experiment {
         /* Method to get the observable for use with CLUE */
         CCSparseVector clue_observable();
         /* Method to get the observable for use with DD */
-        dd::vEdge dd_observable();
+        dd::vEdge dd_observable(); // TODO Currently not working
 
     private:
         /* Method that runs the CLUE reduction (only used when this->type == CLUE) */

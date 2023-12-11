@@ -68,7 +68,7 @@ static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argume
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
     string test = "sat";
-    ExperimentType type = ExperimentType::CLUE;
+    ExperimentType type = ExperimentType::DDSIM_ALONE;
     luint m = 3, M = 3, repeats = 1;
 
     if (argc > 1) {
