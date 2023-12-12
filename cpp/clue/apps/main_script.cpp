@@ -8,6 +8,7 @@
 
 #include "experiments/Experiment.hpp"
 #include "experiments/SATExperiment.hpp"
+#include "experiments/GroverExperiment.hpp"
 
 using namespace std;
 
@@ -18,6 +19,7 @@ Experiment* generate_example(string name, luint size, ExperimentType type) {
     } else if (upper == "MAXCUT") {
         throw logic_error("The MaxCUT experiment is not yet implemented.");
     } else if (upper == "SEARCH") {
+        return QuantumSearch::random(size, type);
         throw logic_error("The Search experiment is not yet implemented.");
     } else {
         throw logic_error("The given class of experiments is not recognized.");
@@ -67,9 +69,9 @@ static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argume
 
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
-    string test = "sat";
-    ExperimentType type = ExperimentType::DDSIM_ALONE;
-    luint m = 3, M = 3, repeats = 2;
+    string test = "search";
+    ExperimentType type = ExperimentType::CLUE;
+    luint m = 3, M = 6, repeats = 2;
 
     if (argc > 1) {
         test = argv[1];

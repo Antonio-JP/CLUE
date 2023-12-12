@@ -80,16 +80,16 @@ void Experiment::run_clue() {
     // cerr << "+++ \t" << matrix_to_string(U) << endl;
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [clue @ " << this->name << "] Computing lumping..." << endl;
+    cerr << "+++ [clue @ " << this->name << "] Computing lumping...";
     clock_t b_lumping = clock();
     CCSubspace lumping = CCSubspace(dimension);
     vector<vector<CCSparseVector>> matrices = {U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(matrices);
+    cerr << " (" << lumping.dimension() << ")" << endl;
     cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_P..." << endl;
     dd::CMat Uhat = lumping.reduced_matrix(U);
     clock_t a_lumping = clock();
-    vector<CCSparseVector> L = lumping.lumping_matrix();
     // cerr << "+++ \tL = " << matrix_to_string(L) << endl;
     // cerr << "+++ \tUhat = " << matrix_to_string(Uhat) << endl;
 
