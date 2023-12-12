@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
     string test = "sat";
     ExperimentType type = ExperimentType::DDSIM_ALONE;
-    luint m = 3, M = 3, repeats = 1;
+    luint m = 3, M = 3, repeats = 2;
 
     if (argc > 1) {
         test = argv[1];

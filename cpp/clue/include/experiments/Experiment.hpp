@@ -68,7 +68,7 @@ class Experiment {
         /* Method to get the observable for use with CLUE */
         CCSparseVector clue_observable();
         /* Method to get the observable for use with DD */
-        dd::vEdge dd_observable(); // TODO Currently not working
+        dd::vEdge dd_observable(std::unique_ptr<dd::Package<>>&); // TODO Currently not working
 
     private:
         /* Method that runs the CLUE reduction (only used when this->type == CLUE) */

@@ -6,25 +6,6 @@
 #include "dd/Package.hpp"
 #include "dd/Simulation.hpp"
 
-CacheDDPackage* CacheDDPackage::singleton_ = nullptr;
-CacheDDPackage* CacheDDPackage::GetInstance() {
-    if(singleton_==nullptr) {
-        singleton_ = new CacheDDPackage();
-    }
-
-    return singleton_;
-}
-dd::Package<>* CacheDDPackage::get_dd_package(luint nQbits) {
-    if (this->cache.count(nQbits) == 0) {
-        this->cache[nQbits] = new dd::Package<>(nQbits);
-    }
-
-    return this->cache[nQbits];
-}
-dd::Package<> * dd_package(luint nQbits) {
-    return CacheDDPackage::GetInstance()->get_dd_package(nQbits);
-}
-
 string vector_to_string(dd::CVec& vector) {
     stringstream stream;
     stream << "[";
@@ -322,14 +303,14 @@ dd::CMat matrix_power(vector<CCSparseVector>& M, luint t) {
     return matrix_power(denseM, t);
 }
 
-dd::vEdge* conjugate_edge(dd::vEdge*, dd::Package<>*);
-dd::vNode* conjugate_node(dd::vNode*, dd::Package<>*);
+dd::vEdge* conjugate_edge(dd::vEdge*, std::unique_ptr<dd::Package<>>&);
+dd::vNode* conjugate_node(dd::vNode*, std::unique_ptr<dd::Package<>>&);
 
-dd::vEdge* conjugate_edge(dd::vEdge* v, dd::Package<>* package) {
+dd::vEdge* conjugate_edge(dd::vEdge* v, std::unique_ptr<dd::Package<>>& package) {
     dd::vEdge* result = new dd::vEdge{conjugate_node(v->p, package), package->cn.conj(v->w)};
     return result;
 }
-dd::vNode* conjugate_node(dd::vNode* p, dd::Package<>* package) {
+dd::vNode* conjugate_node(dd::vNode* p, std::unique_ptr<dd::Package<>>& package) {
     if (dd::vNode::isTerminal(p)) {
         return p;
     }
@@ -392,7 +373,7 @@ DDVector::DDVector(const DDVector& other) : DDVector(other.qbits) {
 
 CC DDVector::inner_product(DDVector& vector) {
     CC result = CC(0);
-    dd::Package<>* package = dd_package(this->qbits);
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->qbits);
 
     for (std::pair<dd::vEdge,CC> this_part : this->components) {
         for (std::pair<dd::vEdge,CC> other_part : vector.components) {
@@ -422,7 +403,7 @@ DDVector* DDVector::conjugate() {
 }
 void DDVector::conjugate_in() {
     std::unordered_map<dd::vEdge, CC> new_components;
-    dd::Package<>* package = dd_package(this->nQbits());
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->nQbits());
     for (std::pair<dd::vEdge, CC> ppair : this->components) {
         dd::vEdge* conj_edge = conjugate_edge(&ppair.first, package);
         new_components[*conj_edge] = CC(ppair.second.real(), -ppair.second.imag());
@@ -444,7 +425,7 @@ void DDVector::normalize_in() {
 }
 
 DDVector DDVector::apply_circuit(const dd::mEdge& circuit) {
-    dd::Package<> * package = dd_package(this->qbits);
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->qbits);
 
     unordered_map<dd::vEdge, CC> new_parts;
     for (std::pair<dd::vEdge, CC> pair : this->components) {
@@ -569,8 +550,8 @@ dd::ComplexValue FullDDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
 }
 dd::vEdge* FullDDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
-    std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->nQbits);
-    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, new_package));
+    // std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->nQbits);
+    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, this->package));
     return result;
 }
 dd::vEdge* FullDDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {

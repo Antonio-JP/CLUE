@@ -107,7 +107,7 @@ dd::CVec starting_phi(luint nQbits) {
 luint run_example(luint nQbits, dd::CVec& starting, dd::CMat& U) {
     clock_t start = clock();
     cout << "Translating from dense to DD..." << endl;
-    dd::Package<> * package = dd_package(nQbits);
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(nQbits);
     dd::vEdge starting_DD = package->makeStateFromVector(starting);
     dd::mEdge circuit = package->makeDDFromMatrix(U);
     vector<dd::mEdge> circuits = {circuit};

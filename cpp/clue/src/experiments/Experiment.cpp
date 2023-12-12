@@ -53,9 +53,8 @@ CCSparseVector Experiment::clue_observable() {
     return result;
 }
 /* Method to get the observable for use with DD */
-dd::vEdge Experiment::dd_observable() {
+dd::vEdge Experiment::dd_observable(std::unique_ptr<dd::Package<>>& package) {
     dd::vEdge obs;
-    dd::Package<>* package = dd_package(this->size());
     if (this->observable == "H") {
         obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
     } else {
@@ -67,7 +66,6 @@ dd::vEdge Experiment::dd_observable() {
         }
         obs = package->makeBasisState(this->size(), binary, 0);
     }
-    cerr << "+++ \tCreated initial vector: " << vector_to_string(obs) << endl;
     return obs;
 }
 
@@ -122,30 +120,15 @@ void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Computing DDSIM reduction for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    // TODO: Changed from this->dd_observable()
-    dd::vEdge obs;
-    dd::Package<>* package = dd_package(this->size());
-    if (this->observable == "H") {
-        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
-    } else {
-        int val = stoi(this->observable);
-        vector<bool> binary = vector<bool>(this->size(), false);
-        for (luint i = this->size(); i > 0 && val > 0; i--) {
-            binary[i-1] = (val % 2 == 1);
-            val /= 2;
-        }
-        obs = package->makeBasisState(this->size(), binary, 0);
-    }
-    // dd::vEdge obs = this->dd_observable();
-    //////////////////////////////////////////////////////////////////////////////////////////////
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->size());
+    dd::vEdge obs = this->dd_observable(package);
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
     cerr << "+++ [ddsim @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
-    FullDDSubspace lumping = FullDDSubspace(dimension);
+    FullDDSubspace lumping = FullDDSubspace(dimension, package);
     vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
@@ -213,23 +196,8 @@ void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing DDSIM ONLY execution for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable and system..."<< endl;
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    // TODO: Changed from this->dd_observable()
-    dd::vEdge obs;
-    dd::Package<>* package = dd_package(this->size());
-    if (this->observable == "H") {
-        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
-    } else {
-        int val = stoi(this->observable);
-        vector<bool> binary = vector<bool>(this->size(), false);
-        for (luint i = this->size(); i > 0 && val > 0; i--) {
-            binary[i-1] = (val % 2 == 1);
-            val /= 2;
-        }
-        obs = package->makeBasisState(this->size(), binary, 0);
-    }
-    // dd::vEdge obs = this->dd_observable();
-    //////////////////////////////////////////////////////////////////////////////////////////////
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->size());
+    dd::vEdge obs = this->dd_observable(package);
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U_P = this->quantum(par_value);
     qc::QuantumComputation* U_B = this->quantum_B(par_value);
@@ -237,10 +205,9 @@ void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
     clock_t b_iteration = clock();
     dd::vEdge current = obs; // We create a new vector for the current
-    std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->size());
     for (luint i = 0; i < this->iterations; i++) {
-        current = dd::simulate<>(U_P, current, new_package);
-        current = dd::simulate<>(U_B, current, new_package);
+        current = dd::simulate<>(U_P, current, package);
+        current = dd::simulate<>(U_B, current, package);
     }
     clock_t a_iteration = clock();
     clock_t end = clock();

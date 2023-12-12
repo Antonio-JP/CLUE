@@ -16,7 +16,7 @@ double ddsim(string name, luint size, string observable) {
     qc::QuantumComputation circuit = qc::QuantumComputation("../../../../tests/quantum/circuits/" + name + ".qasm");
     clock_t a_read = clock();
     double read_time = double(a_read - b_read) / double(CLOCKS_PER_SEC);
-    dd::Package<>* package = dd_package(size);
+    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(size);
     vector<qc::QuantumComputation> circuits = {circuit};
     cout << "### ++ -- -- Read " << name << endl;
 
@@ -39,7 +39,7 @@ double ddsim(string name, luint size, string observable) {
 
     // Computing the lumping
     clock_t b_lumping = clock();
-    FullDDSubspace lumping = FullDDSubspace(size);
+    FullDDSubspace lumping = FullDDSubspace(size, package);
     lumping.absorb_new_vector(&init);
 
     lumping.minimal_invariant_space(circuits);

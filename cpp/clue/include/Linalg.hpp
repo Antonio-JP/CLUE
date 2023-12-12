@@ -17,26 +17,6 @@ using namespace clue;
 
 typedef long unsigned int luint;
 
-class CacheDDPackage {
-    protected:
-        /* Private constructor */
-        CacheDDPackage() = default;
-        static CacheDDPackage* singleton_;
-        unordered_map<luint, dd::Package<>*> cache;
-    public:
-        /* Removing cloning and assignment methods */
-        CacheDDPackage(CacheDDPackage &) = delete;
-        CacheDDPackage& operator=(const CacheDDPackage &) = delete;
-        ~CacheDDPackage() = default;
-
-        /* Method for getting instance */
-        static CacheDDPackage* GetInstance();
-
-        /* Logic of the Cache */
-        dd::Package<>* get_dd_package(luint nQbits);
-};
-dd::Package<> * dd_package(luint nQbits);
-
 /*************************************************************************/
 /* Class for vector */
 template <typename T>
@@ -320,7 +300,7 @@ class DDSubspace : public Subspace<DDVector, dd::mEdge, dd::ComplexValue> {
 class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
     protected:
         luint nQbits;
-        dd::Package<>* package;
+        std::unique_ptr<dd::Package<>> package;
 
         double norm(dd::vEdge*); // Compute the norm of a vector from its pointer
         dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
@@ -333,12 +313,12 @@ class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::Co
         string print_vector(dd::vEdge* vector) { dd::CVec v = vector->getVector(); return vector_to_string(v); }
     
     public:
-        FullDDSubspace(luint qbits, double error) : 
+        FullDDSubspace(luint qbits, double error, std::unique_ptr<dd::Package<>>& pck) : 
             Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>(static_cast<luint>(pow(2, qbits)), error) { 
                 this->nQbits = qbits; 
-                this->package = dd_package(qbits);
+                this->package = std::move(pck); // Computation on this subspace work with a particular package
         }
-        FullDDSubspace(luint qbits) : FullDDSubspace(qbits, 1e-6) { }
+        FullDDSubspace(luint qbits, std::unique_ptr<dd::Package<>>& pck) : FullDDSubspace(qbits, 1e-6, pck) { }
 };
 
 #endif
