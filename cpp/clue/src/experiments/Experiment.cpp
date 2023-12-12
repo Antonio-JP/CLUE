@@ -128,7 +128,7 @@ void Experiment::run_ddsim() {
 
     cerr << "+++ [ddsim @ " << this->name << "] Computing lumping..." << endl;
     clock_t b_lumping = clock();
-    FullDDSubspace lumping = FullDDSubspace(dimension, package);
+    DDSubspace lumping = DDSubspace(dimension, package);
     vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);

@@ -157,7 +157,6 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
 }
 
 template class Subspace<CCSparseVector, vector<CCSparseVector>, CC>;
-template class Subspace<DDVector, dd::mEdge, dd::ComplexValue>;
 template class Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>;
 
 /*******************************************************************************************************************

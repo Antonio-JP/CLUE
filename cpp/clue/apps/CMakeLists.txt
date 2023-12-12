@@ -8,6 +8,5 @@ macro(ADD_APP_EXECUTABLE runname)
 endmacro()
 
 ADD_APP_EXECUTABLE(main)
-ADD_APP_EXECUTABLE(main_DD)
 ADD_APP_EXECUTABLE(main_QASM)
 ADD_APP_EXECUTABLE(main_script ${PROJECT_NAME}-experiments)

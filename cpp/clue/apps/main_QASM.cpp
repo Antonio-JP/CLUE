@@ -39,7 +39,7 @@ double ddsim(string name, luint size, string observable) {
 
     // Computing the lumping
     clock_t b_lumping = clock();
-    FullDDSubspace lumping = FullDDSubspace(size, package);
+    DDSubspace lumping = DDSubspace(size, package);
     lumping.absorb_new_vector(&init);
 
     lumping.minimal_invariant_space(circuits);

@@ -145,43 +145,6 @@ class CCSparseVector : public SparseVector<CC> {
         CCSparseVector conjugate();
         // CCSparseVector& operator=(const CCSparseVector&) = default;
 };
-/*************************************************************************/
-class DDVector {
-    private:
-        luint qbits;
-        unordered_map<dd::vEdge, CC> components;
-
-    public:
-        DDVector(luint nQbits) { this->qbits = nQbits; }
-        DDVector(luint nQbits, unordered_map<dd::vEdge, CC> parts);
-        DDVector(luint nQbits, vector<dd::vEdge> parts);
-        DDVector(luint nQbits, dd::vEdge& part) : DDVector(nQbits, vector<dd::vEdge>({part})) { }
-        DDVector(const DDVector &);
-        ~DDVector() = default;
-
-        CC inner_product(DDVector&);
-        CC inner_product(dd::vEdge& vector);
-
-        luint nQbits() {return this->qbits; }
-        double norm();
-        DDVector* conjugate();
-        void conjugate_in();
-        DDVector* normalize();
-        void normalize_in();
-
-        DDVector apply_circuit(const dd::mEdge&);
-
-        DDVector operator+(const DDVector& other);
-        DDVector operator-();
-        DDVector operator-(const DDVector& other);
-        DDVector operator*(CC& to_scale);
-        void operator+=(const DDVector& other);
-        void operator-=(const DDVector& other);
-        void operator*=(CC& to_scale);
-
-        string to_string();
-        friend std::ostream& operator<<(std::ostream&, DDVector&);
-};
 
 /*************************************************************************/
 /* Methods and functions for vectors/matrices */
@@ -193,7 +156,6 @@ string vector_to_string(dd::CVec& vector);
 string vector_to_string(CCSparseVector& vector);
 string vector_to_string(vector<dd::ComplexValue>& vector);
 string vector_to_string(vector<dd::Complex>& vector);
-string vector_to_string(DDVector& vector);
 string vector_to_string(dd::vEdge& vector);
 
 string matrix_to_string(dd::CMat&);
@@ -282,22 +244,7 @@ class CCSubspace : public Subspace<CCSparseVector, vector<CCSparseVector>, CC> {
         using Subspace<CCSparseVector, vector<CCSparseVector>, CC>::Subspace;
 };
 
-class DDSubspace : public Subspace<DDVector, dd::mEdge, dd::ComplexValue> {
-    protected:
-        double norm(DDVector*); // Compute the norm of a vector from its pointer
-        dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
-        DDVector* apply(DDVector*, dd::mEdge&); // Compute the application of M to V (i.e., M*V)
-        DDVector* scale(DDVector*, dd::ComplexValue); // Scales a vector using a complex number
-        DDVector* add(DDVector*, DDVector*); // Compute the addition of two vectors
-        dd::ComplexValue inner_product(DDVector*, DDVector*); // Compute the inner product of two vectors
-        DDVector* conjugate(DDVector*); // Conjugate a vector
-        string print_vector(DDVector* vector) { return vector->to_string(); }
-    
-    public:
-        using Subspace<DDVector, dd::mEdge, dd::ComplexValue>::Subspace;
-};
-
-class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
+class DDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
     protected:
         luint nQbits;
         std::unique_ptr<dd::Package<>> package;
@@ -313,12 +260,12 @@ class FullDDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::Co
         string print_vector(dd::vEdge* vector) { dd::CVec v = vector->getVector(); return vector_to_string(v); }
     
     public:
-        FullDDSubspace(luint qbits, double error, std::unique_ptr<dd::Package<>>& pck) : 
+        DDSubspace(luint qbits, double error, std::unique_ptr<dd::Package<>>& pck) : 
             Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>(static_cast<luint>(pow(2, qbits)), error) { 
                 this->nQbits = qbits; 
                 this->package = std::move(pck); // Computation on this subspace work with a particular package
         }
-        FullDDSubspace(luint qbits, std::unique_ptr<dd::Package<>>& pck) : FullDDSubspace(qbits, 1e-6, pck) { }
+        DDSubspace(luint qbits, std::unique_ptr<dd::Package<>>& pck) : DDSubspace(qbits, 1e-6, pck) { }
 };
 
 #endif
