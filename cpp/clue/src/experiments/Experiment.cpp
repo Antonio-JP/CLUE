@@ -19,7 +19,7 @@ ExperimentType ExperimentType_fromString(string value) {
     } else if (upper == "DDSIM_ALONE") {
         return ExperimentType::DDSIM_ALONE;
     } else {
-        throw logic_error("Unrecognize experiment type from string");
+        throw logic_error("Unrecognize experiment type from string (" + value + ")");
     }
 }
 string ExperimentType_toString(ExperimentType type) {

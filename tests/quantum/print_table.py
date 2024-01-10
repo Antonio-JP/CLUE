@@ -59,21 +59,51 @@ def process_averages(table: str, observable = "all", kappa = "all", skip_kappa =
 
     return data.groupby(by=grouping).mean(numeric_only=True)
 
-def table1():
-    time_grover_clue = process_averages("q_search_full_clue", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("Grover", "CLUE")})
-    time_grover_ddsim = process_averages("q_search_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("Grover", "DDSIM")})
-    time_sat_ddsim = process_averages("q_sat_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("SAT", "DDSIM")})
-    time_sat_clue = process_averages("q_sat_full_direct", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("SAT", "CLUE")})
-    d_sat_clue = process_averages("q_sat_direct", remove_outliers=False)["red. size"].to_frame().rename(columns={"red. size" : ("SAT", "d")})
-    time_maxcut_ddsim = process_averages("q_maxcut_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("MaxCut", "DDSIM")})
-    time_maxcut_clue = process_averages("q_maxcut_full_direct", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("MaxCut", "CLUE")})
-    d_maxcut_clue = process_averages("q_maxcut_direct", remove_outliers=False)["red. size"].to_frame().rename(columns={"red. size" : ("MaxCut", "d")})
+def table1(*, cpp:bool=False):
+    if not cpp:
+        time_grover_clue = process_averages("q_search_full_clue", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("Grover", "CLUE")})
+        time_grover_ddsim = process_averages("q_search_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("Grover", "DDSIM")})
+        time_sat_ddsim = process_averages("q_sat_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("SAT", "DDSIM")})
+        time_sat_clue = process_averages("q_sat_full_direct", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("SAT", "CLUE")})
+        d_sat_clue = process_averages("q_sat_direct", remove_outliers=False)["red. size"].to_frame().rename(columns={"red. size" : ("SAT", "d")})
+        time_maxcut_ddsim = process_averages("q_maxcut_full_ddsim", skip_kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("MaxCut", "DDSIM")})
+        time_maxcut_clue = process_averages("q_maxcut_full_direct", skip_kappa=1, remove_outliers=False, add_times=True)["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("MaxCut", "CLUE")})
+        d_maxcut_clue = process_averages("q_maxcut_direct", remove_outliers=False)["red. size"].to_frame().rename(columns={"red. size" : ("MaxCut", "d")})
 
-    return reduce(
-        lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
-        [time_grover_ddsim, time_grover_clue, time_sat_ddsim, time_sat_clue, d_sat_clue, time_maxcut_ddsim, time_maxcut_clue, d_maxcut_clue])
+        return reduce(
+            lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
+            [time_grover_ddsim, time_grover_clue, time_sat_ddsim, time_sat_clue, d_sat_clue, time_maxcut_ddsim, time_maxcut_clue, d_maxcut_clue])
+    else:
+        time_grover_clue = process_averages("q_search_clue", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("Grover", "CLUE")})
+        time_grover_ddsim = process_averages("q_search_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("Grover", "DDSIM")})
+        time_grover_ddsim_alone = process_averages("q_search_full_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("Grover", "DDSIM-ALONE")})
+        time_sat_clue = process_averages("q_sat_clue", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "CLUE")})
+        time_sat_ddsim = process_averages("q_sat_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "DDSIM")})
+        time_sat_ddsim_alone = process_averages("q_sat_full_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "DDSIM-ALONE")})
+        d_sat_clue = process_averages("q_sat_direct", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("SAT", "d")})
+        for i in range(len(d_sat_clue)):
+            d_sat_clue.iloc[i][0] = 2**d_sat_clue.iloc[i].name * d_sat_clue.iloc[i][0]
+        time_maxcut_clue = process_averages("q_maxcut_clue", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "CLUE")})
+        time_maxcut_ddsim = process_averages("q_maxcut_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "DDSIM")})
+        time_maxcut_ddsim_alone = process_averages("q_maxcut_full_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "DDSIM-ALONE")})
+        d_maxcut_clue = process_averages("q_maxcut_direct", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("MAXCUT", "d")})
+        for i in range(len(d_maxcut_clue)):
+            d_maxcut_clue.iloc[i][0] = 2**d_maxcut_clue.iloc[i].name * d_maxcut_clue.iloc[i][0]
 
-def table2():
+        columns = [
+                time_grover_clue, time_grover_ddsim, time_grover_ddsim_alone, 
+                time_sat_clue, time_sat_ddsim, time_sat_ddsim_alone, d_sat_clue, 
+                time_maxcut_clue, time_maxcut_ddsim, time_maxcut_ddsim_alone, d_maxcut_clue
+            ]
+        
+        # return columns
+
+        return reduce(
+            lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
+            columns)
+
+
+def table2(*, cpp:bool=False):
     red_zero = process_averages("q_benchmark_clue", remove_outliers=False, observable=0)["red. ratio"].droplevel(-1).to_frame().rename(columns={"red. ratio": "d/N wrt S_0"})
     avg_clue = process_averages("q_benchmark_clue", remove_outliers=False)[["red. ratio","time_lumping"]].rename(columns={"red. ratio": "Avg. d/N across S_x", "time_lumping": "Avg. time (s)"})
     avg_time_ddsim = process_averages("q_benchmark_full_ddsim", remove_outliers=False, kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration": "DDSIM time"})
@@ -91,6 +121,10 @@ if __name__ == "__main__":
         print(table1())
     elif what == "table2":
         print(table2())
+    elif what == "table1-cpp":
+        print(table1(cpp=True))
+    elif what == "table2-cpp":
+        print(table2(cpp=False))
     else:
         n = 2; observable = "all"; kappa = "all"; skip_kappa = None; remove_outliers = True; without_infinity = False; add_times = False; is_cpp = False
         while n < len(sys.argv):
