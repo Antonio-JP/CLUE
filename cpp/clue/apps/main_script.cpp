@@ -8,6 +8,7 @@
 
 #include "experiments/Experiment.hpp"
 #include "experiments/SATExperiment.hpp"
+#include "experiments/CUTExperiment.hpp"
 #include "experiments/GroverExperiment.hpp"
 
 using namespace std;
@@ -17,10 +18,9 @@ Experiment* generate_example(string name, luint size, ExperimentType type) {
     if (upper == "SAT") {
         return SATFormula::random(size, static_cast<luint>(rand())%(2*size) + size, true, 3UL, type);
     } else if (upper == "MAXCUT") {
-        throw logic_error("The MaxCUT experiment is not yet implemented.");
+        return UndirectedGraph::random(size, 1./3., type);
     } else if (upper == "SEARCH") {
         return QuantumSearch::random(size, type);
-        throw logic_error("The Search experiment is not yet implemented.");
     } else {
         throw logic_error("The given class of experiments is not recognized.");
     }
@@ -29,7 +29,8 @@ Experiment* generate_example(string name, luint size, ExperimentType type) {
 int main_script(string name, ExperimentType type, luint m, luint M, luint repeats) {
     double total_time = 0.;
     ofstream out; 
-    out.open("../../../../tests/quantum/results/[result-cpp]q_" + name + "_" + ExperimentType_toString(type) + ".csv", std::ios::app);
+    filesystem::path out_path = filesystem::path("../../../../tests/quantum/results/[result-cpp]q_" + name + "_" + ExperimentType_toString(type) + ".csv");
+    out.open(out_path, std::ios::app);
     cout << "##################################################################################" << endl;
     cout << "### EXECUTION ON " << boost::to_upper_copy<std::string>(name) << "[m=" << m << ", M=" << M << ", repeats=" << repeats << ", method=" << type << "]" << endl;
     cout << "##################################################################################" << endl;
@@ -69,15 +70,14 @@ static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argume
 
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
-    string test = "search";
-    ExperimentType type = ExperimentType::CLUE;
+    string test = "maxcut";
+    ExperimentType type = ExperimentType::DDSIM;
     luint m = 3, M = 6, repeats = 2;
 
     if (argc > 1) {
         test = argv[1];
         int i = 2;
         while (i < argc) {
-            cerr << "Checking argument " << i << ": " << argv[i] << endl;
             switch (s_mapArgumentValues[argv[i]]) {
                 case ArgumentValues::type:
                     type = ExperimentType_fromString(string(argv[i+1]));
