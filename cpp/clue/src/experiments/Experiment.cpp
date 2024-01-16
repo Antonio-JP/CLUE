@@ -126,12 +126,13 @@ void Experiment::run_ddsim() {
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping..." << endl;
+    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping...";
     clock_t b_lumping = clock();
     DDSubspace lumping = DDSubspace(dimension, package);
     vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
+    cerr << "(" << lumping.dimension() << ")" << endl;
     cerr << "+++ [ddsim @ " << this->name << "] Getting the reduced U_P..." << endl;
     vector<vector<dd::ComplexValue>> or_Uhat = lumping.reduced_matrix(*U);
     dd::CMat Uhat = ComplexValue_to_complex(or_Uhat);

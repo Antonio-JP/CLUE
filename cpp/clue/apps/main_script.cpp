@@ -10,10 +10,11 @@
 #include "experiments/SATExperiment.hpp"
 #include "experiments/CUTExperiment.hpp"
 #include "experiments/GroverExperiment.hpp"
+#include "experiments/BenchmarkExperiment.hpp"
 
 using namespace std;
 
-Experiment* generate_example(string name, luint size, ExperimentType type) {
+Experiment* generate_example(string name, luint size, ExperimentType type, string observable) {
     string upper = boost::to_upper_copy<std::string>(name);
     if (upper == "SAT") {
         return SATFormula::random(size, static_cast<luint>(rand())%(2*size) + size, true, 3UL, type);
@@ -22,30 +23,60 @@ Experiment* generate_example(string name, luint size, ExperimentType type) {
     } else if (upper == "SEARCH") {
         return QuantumSearch::random(size, type);
     } else {
-        throw logic_error("The given class of experiments is not recognized.");
+        try {
+            std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(size);
+            return new BenchmarkExperiment(size, name, observable, type, package);
+        } catch (const domain_error& err) {
+            throw logic_error("The given class of experiments is not recognized.");
+        }
     }
 }
 
-int main_script(string name, ExperimentType type, luint m, luint M, luint repeats) {
+vector<string> generate_observables(string observable, luint size) {
+    vector<string> result = vector<string>();
+    if (observable == "all") {
+        result.push_back("H");
+        for (luint i = 0; i < static_cast<luint>(pow(2, size)); i++) {
+            result.push_back(std::to_string(i));
+        }
+    } else {
+        result.push_back(observable);
+    }
+    return result;
+}
+
+int main_script(string name, ExperimentType type, luint m, luint M, luint repeats, string observable) {
     double total_time = 0.;
     ofstream out; 
-    filesystem::path out_path = filesystem::path("../../../../tests/quantum/results/[result-cpp]q_" + name + "_" + ExperimentType_toString(type) + ".csv");
+    // PROCESSING THE OUTPUT FILE
+    string upper = boost::to_upper_copy<std::string>(name);
+    string lower = boost::to_lower_copy<std::string>(name);
+    string filename;
+    if (upper != "SAT" && upper != "MAXCUT" && upper != "SEARCH") {
+        filename = "benchmark";
+    } else {
+        filename = lower;
+    }
+
+    filesystem::path out_path = filesystem::path("../../../../tests/quantum/results/[result-cpp]q_" + filename + "_" + ExperimentType_toString(type) + ".csv");
     out.open(out_path, std::ios::app);
     cout << "##################################################################################" << endl;
     cout << "### EXECUTION ON " << boost::to_upper_copy<std::string>(name) << "[m=" << m << ", M=" << M << ", repeats=" << repeats << ", method=" << type << "]" << endl;
     cout << "##################################################################################" << endl;
     
     for (luint size = m; size <= M; size++) { // We repeat for each size
-        for (luint execution = 1; execution <= repeats; execution++) { // We repeat "repeats" times
-            Experiment * experiment = generate_example(name, size, type);
-            cout << "Generated example\n\t" << experiment->to_string() << endl;
-            experiment->run();
-                
-            cout << "### -- Finished execution " << execution << "/" << repeats << "(size=" << size << "): took " << experiment->total_time() << "s." << endl;
+        for (string obs : generate_observables(observable, size)) {
+            for (luint execution = 1; execution <= repeats; execution++) { // We repeat "repeats" times
+                Experiment * experiment = generate_example(name, size, type, obs);
+                cout << "Generated example\n\t" << experiment->to_string() << endl;
+                experiment->run();
+                    
+                cout << "### -- Finished execution " << execution << "/" << repeats << "(size=" << size << "): took " << experiment->total_time() << "s." << endl;
 
-            total_time += experiment->total_time();
-            out << experiment->to_csv() << endl;
-            delete experiment;
+                total_time += experiment->total_time();
+                out << experiment->to_csv() << endl;
+                delete experiment;
+            }
         }
     }
     double average_time = total_time/static_cast<double>((M-m+1)*repeats);
@@ -55,7 +86,7 @@ int main_script(string name, ExperimentType type, luint m, luint M, luint repeat
 }
 
 enum ArgumentValues {
-    type, min, max, repeats
+    type, min, max, repeats, observable
 };
 
 std::map<std::string, ArgumentValues> create_argument_map() {
@@ -64,15 +95,17 @@ std::map<std::string, ArgumentValues> create_argument_map() {
     m["-m"] = ArgumentValues::min;
     m["-M"] = ArgumentValues::max;
     m["-repeats"] = ArgumentValues::repeats;
+    m["-obs"] = ArgumentValues::observable;
     return m;
 }
 static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argument_map();
 
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
-    string test = "maxcut";
+    string test = "dj";
     ExperimentType type = ExperimentType::DDSIM;
-    luint m = 3, M = 6, repeats = 2;
+    luint m = 3, M = 6, repeats = 1;
+    string observable = "all";
 
     if (argc > 1) {
         test = argv[1];
@@ -94,6 +127,10 @@ int main(int argc, char** argv) {
                 case ArgumentValues::repeats:
                     repeats = stoul(argv[i+1]);
                     i+=2;
+                    break;     
+                case ArgumentValues::observable:
+                    observable = argv[i+1];
+                    i+=2;
                     break;        
                 default:
                     cout << "Error in arguments: found " << argv[i];
@@ -102,5 +139,5 @@ int main(int argc, char** argv) {
         }
     }
 
-    return main_script(test, type, m, M, repeats);
+    return main_script(test, type, m, M, repeats, observable);
 }
