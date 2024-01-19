@@ -106,6 +106,24 @@ bool UndirectedGraph::add_edge(luint src, luint trg) {
     return G;
 }
 
+// Graph methods
+vector<CCSparseVector> UndirectedGraph::adjacency_matrix() {
+    vector<CCSparseVector> result = vector<CCSparseVector>(this->n_vertices(), this->n_vertices());
+    luint i = 0;
+    for (luint src : this->vertices) {
+        luint j = 0;
+        for (luint trg: this->vertices) {
+            if (this->edges[src].contains(trg)) {
+                result[i].set_value(j, CC(1));
+            }
+            j++;
+        }
+        i++;
+    }
+
+    return result;
+}
+
 // Methods to extract information
 luint UndirectedGraph::cut_value(boost::dynamic_bitset<> cut) {
     std::unordered_set<luint> zero_set, one_set;

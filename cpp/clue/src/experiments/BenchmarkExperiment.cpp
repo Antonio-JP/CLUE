@@ -1,7 +1,26 @@
 #include "experiments/BenchmarkExperiment.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 #include "dd/Operations.hpp"
+#include "experiments/CUTExperiment.hpp"
+#include "experiments/benchmark/AmplitudeEstimation.hpp"
+#include "experiments/benchmark/DeutschJozsa.hpp"
+#include "experiments/benchmark/GHZ.hpp"
+#include "experiments/benchmark/GraphState.hpp"
+#include "experiments/benchmark/HHL.hpp"
+#include "experiments/benchmark/PortfolioQAOA.hpp"
+#include "experiments/benchmark/PortfolioVQE.hpp"
+#include "experiments/benchmark/PricingCall.hpp"
+#include "experiments/benchmark/PricingPut.hpp"
+#include "experiments/benchmark/QPEExact.hpp"
+#include "experiments/benchmark/QPEInexact.hpp"
+#include "experiments/benchmark/QuantumFourierTransform.hpp"
+#include "experiments/benchmark/QuantumNeuralNetwork.hpp"
+#include "experiments/benchmark/QuantumWalk.hpp"
+#include "experiments/benchmark/TravellingSalesman.hpp"
+#include "experiments/benchmark/VariationalQuantumEigensolver.hpp"
+#include "experiments/benchmark/WState.hpp"
 
 /*** CODE FOR CIRCUIT_TYPE ENUM ***/
 CircuitType CircuitType_fromString(string name) {
@@ -128,99 +147,6 @@ string CircuitType_toName(CircuitType type) {
             throw domain_error("Circuit type not recognized.");
     }
 }
-
-// Methods to create the circuits using the description in the Python implementation of mqt.bench
-/** AE **/
-qc::QuantumComputation* create_ae(luint) {
-    return nullptr;
-}
-/** DJ **/
-void dj_oracle(qc::QuantumComputation& circuit) {
-    luint qbits = circuit.getNqubits();
-    circuit.x(static_cast<qc::Qubit>(qbits-1));
-}
-void dj_algorithm(qc::QuantumComputation& circuit) {
-    qc::Qubit n = static_cast<qc::Qubit>(circuit.getNqubits());
-
-    circuit.x(n-1);
-    circuit.h(n-1);
-
-    for (qc::Qubit i = 0; i < n-1; i++) {
-        circuit.h(i);
-    }
-
-    dj_oracle(circuit);
-
-    for (qc::Qubit i = 0; i < n-1; i++) {
-        circuit.h(i);
-    }
-}
-qc::QuantumComputation* create_dj(luint qubits) {
-    qc::QuantumComputation* result = new qc::QuantumComputation(qubits);
-    dj_algorithm(*result);
-    return result;
-}
-
-/** GHZ **/
-qc::QuantumComputation* create_ghz(luint) {
-    return nullptr;
-}
-/** GRAPHSTATE **/
-qc::QuantumComputation* create_graphstate(luint) {
-    return nullptr;
-}
-/** HHL **/
-qc::QuantumComputation* create_hhl(luint) {
-    return nullptr;
-}
-/** PRICINGPUT **/
-qc::QuantumComputation* create_pricingput(luint) {
-    return nullptr;
-}
-/** PRICINGCALL **/
-qc::QuantumComputation* create_pricingcall(luint) {
-    return nullptr;
-}
-/** PORTFOLIOQAOA **/
-qc::QuantumComputation* create_portfolioqaoa(luint) {
-    return nullptr;
-}
-/** PORTFOLIOVQE **/
-qc::QuantumComputation* create_portfoliovqe(luint) {
-    return nullptr;
-}
-/** QFT **/
-qc::QuantumComputation* create_qft(luint) {
-    return nullptr;
-}
-/** QPEEXACT **/
-qc::QuantumComputation* create_qpeexact(luint) {
-    return nullptr;
-}
-/** QPEINEXACT **/
-qc::QuantumComputation* create_qpeinexact(luint) {
-    return nullptr;
-}
-/** QWALK **/
-qc::QuantumComputation* create_qwalk(luint) {
-    return nullptr;
-}
-/** TSP **/
-qc::QuantumComputation* create_tsp(luint) {
-    return nullptr;
-}
-/** QNN **/
-qc::QuantumComputation* create_qnn(luint) {
-    return nullptr;
-}
-/** VQE **/
-qc::QuantumComputation* create_vqe(luint) {
-    return nullptr;
-}
-/** WSTATE **/
-qc::QuantumComputation* create_wstate(luint) {
-    return nullptr;
-}
 /*** CODE FOR CLASS BENCHMARK_EXAMPLE ***/
 luint BenchmarkExperiment::correct_size() {
     return -1UL; // Unknown
@@ -246,55 +172,55 @@ qc::QuantumComputation* BenchmarkExperiment::quantum(double) {
         switch (circuit_type)
         {
             case CircuitType::AE:
-                this->circuit = create_ae(this->size());
+                this->circuit = ae::create(this->size());
                 break;
             case CircuitType::DJ:
-                this->circuit = create_dj(this->size());
+                this->circuit = dj::create(this->size());
                 break;
             case CircuitType::GHZ:
-                this->circuit = create_ghz(this->size());
+                this->circuit = ghz::create(this->size());
                 break;
             case CircuitType::GRAPHSTATE:
-                this->circuit = create_graphstate(this->size());
+                this->circuit = graphstate::create(this->size());
                 break;
             case CircuitType::HHL:
-                this->circuit = create_hhl(this->size());
+                this->circuit = hhl::create(this->size());
                 break;
             case CircuitType::PORTFOLIOQAOA:
-                this->circuit = create_portfolioqaoa(this->size());
+                this->circuit = portfolioqaoa::create(this->size());
                 break;
             case CircuitType::PORTFOLIOVQE:
-                this->circuit = create_portfoliovqe(this->size());
+                this->circuit = portfoliovqe::create(this->size());
                 break;
             case CircuitType::PRICINGCALL:
-                this->circuit = create_pricingcall(this->size());
+                this->circuit = pricingcall::create(this->size());
                 break;
             case CircuitType::PRICINGPUT:
-                this->circuit = create_pricingput(this->size());
+                this->circuit = pricingput::create(this->size());
                 break;
             case CircuitType::QFT:
-                this->circuit = create_qft(this->size());
+                this->circuit = qft::create(this->size());
                 break;
             case CircuitType::QNN:
-                this->circuit = create_qnn(this->size());
+                this->circuit = qnn::create(this->size());
                 break;
             case CircuitType::QPEEXACT:
-                this->circuit = create_qpeexact(this->size());
+                this->circuit = qpeexact::create(this->size());
                 break;
             case CircuitType::QPEINEXACT:
-                this->circuit = create_qpeinexact(this->size());
+                this->circuit = qpeinexact::create(this->size());
                 break;
             case CircuitType::QWALK:
-                this->circuit = create_qwalk(this->size());
+                this->circuit = qwalk::create(this->size());
                 break;
             case CircuitType::TSP:
-                this->circuit = create_tsp(this->size());
+                this->circuit = tsp::create(this->size());
                 break;
             case CircuitType::VQE:
-                this->circuit = create_vqe(this->size());
+                this->circuit = vqe::create(this->size());
                 break;
             case CircuitType::WSTATE:
-                this->circuit = create_wstate(this->size());
+                this->circuit = wstate::create(this->size());
                 break;
             default:
                 throw domain_error("Circuit type not recognized.");

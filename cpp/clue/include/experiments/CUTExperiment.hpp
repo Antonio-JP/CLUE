@@ -38,6 +38,7 @@ class UndirectedGraph : public Experiment {
 
         luint n_vertices() { return this->__nVertices; }
         luint n_edges() { return this->__nEdges; }
+        vector<CCSparseVector> adjacency_matrix();
 
         /* Method to count the cut value from a cut */
         luint cut_value(boost::dynamic_bitset<>);
