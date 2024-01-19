@@ -10,7 +10,7 @@ namespace graphstate { // Completed
             circuit.h(i);
         }
         for (qc::Qubit i = 0; i < qbits; i++) {
-            for (qc::Qubit j = i+1; i < qbits; j++) {
+            for (qc::Qubit j = i+1; j < qbits; j++) {
                 if (A[i][j] != CC(0)) {
                     circuit.cz(i, j);
                 }
