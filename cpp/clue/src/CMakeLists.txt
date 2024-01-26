@@ -2,7 +2,7 @@
 set(BUILD_MQT_DDSIM_TESTS
     OFF
     CACHE BOOL "Build MQT DDSIM tests")
-add_subdirectory("${PROJECT_SOURCE_DIR}/extern/mqt-ddsim" "extern/mqt-ddsim"
+add_subdirectory("${PROJECT_SOURCE_DIR}/extern/mqt-core" "extern/mqt-core"
                  EXCLUDE_FROM_ALL)
 
 

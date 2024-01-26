@@ -18,7 +18,7 @@ macro(CHECK_SUBMODULE_PRESENT modulename)
   endif()
 endmacro()
 
-check_submodule_present(mqt-ddsim)
+check_submodule_present(mqt-core)
 
 # Including Boost into the linking and looking
 find_package(Boost)

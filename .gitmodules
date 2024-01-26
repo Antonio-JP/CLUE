@@ -1,4 +1,3 @@
-[submodule "cpp/clue/extern/mqt-ddsim"]
-	path = cpp/clue/extern/mqt-ddsim
-	url = https://github.com/cda-tum/mqt-ddsim.git
-	branch = main
+[submodule "cpp/clue/extern/mqt-core"]
+	path = cpp/clue/extern/mqt-core
+	url = https://github.com/cda-tum/mqt-core.git
