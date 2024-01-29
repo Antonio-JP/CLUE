@@ -61,13 +61,14 @@ bool Subspace<V,M,C>::absorb_new_vector(V* vector) {
     // cout <<"\t\tReduced:\n\t\t" << this->print_vector(reduced) << endl;
     // cout <<"\t\tNorm: " << this->norm(reduced) << endl;
     bool result = false;
-    if (this->norm(reduced) > this->max_error) {
+    double norm_reduced = this->norm(reduced);
+    if (norm_reduced > this->max_error) {
+        // cerr << "Adding new vector (" << norm_reduced << ") [" << this->max_error << "]" << endl;
         V* to_add = this->scale(reduced, this->coeff(1/this->norm(reduced)));
-        // cout <<"\t\tScaled:\n\t\t" << this->print_vector(to_add) << endl;
         this->basis.push_back(to_add);
         result = true;
     } else {
-        // cout <<"Found an element inside: " << this->norm(vector) << endl;
+        // cerr <<"Found an element inside: " << norm_reduced << endl;
     }
     this->free_vector(reduced); //Removing memory for reduced vector
     return result;
@@ -138,20 +139,27 @@ template <typename V, typename M, typename C>
 vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
     // We create the strucutre for the matrix
     vector<vector<C>> result = vector<vector<C>>(this->dimension());
+    vector<V*> conjugates = vector<V*>();
+    for (luint i = 0; i < this->dimension(); i++) {
+        V* conj = this->conjugate(this->basis[i]);
+        conjugates.push_back(conj);
+    }
 
     for (luint j = 0; j < this->dimension(); j++) {
-        V* conj = this->conjugate(this->basis[j]);
-        V* Uld = this->apply(conj, matrix);
-        V* Uld_conj = this->conjugate(Uld);
+        // V* conj = this->conjugate(this->basis[j]);
+        V* Uld = this->apply(conjugates[j], matrix);
+        // V* Uld_conj = this->conjugate(Uld);
         for (luint i = 0; i < this->dimension(); i++) {
-            C to_put = this->inner_product(this->basis[i], Uld_conj);
+            // C to_put = this->inner_product(this->basis[i], Uld_conj);
+            C to_put = this->inner_product(Uld, conjugates[i]);
             result[i].push_back(to_put);
         }
         // Freeing memory if needed
         this->free_vector(Uld); 
-        this->free_vector(Uld_conj);
-        this->free_vector(conj);
+        // this->free_vector(Uld_conj);
+        // this->free_vector(conj);
     }
+    for (V* v : conjugates) { this->free_vector(v); }
 
     return result;
 }

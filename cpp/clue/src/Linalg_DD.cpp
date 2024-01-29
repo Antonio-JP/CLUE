@@ -317,21 +317,18 @@ dd::vNode* conjugate_node(dd::vNode* p, dd::Package<>* package) {
     dd::vEdge* zero_out = nullptr;
     dd::vEdge* one_out = nullptr;
     
-    // Creating the edges of the new node
+    // Creating the zero edge
     if (p->e[0].w.approximatelyZero()) { // We create a zero edge
-        zero_out = new dd::vEdge{dd::vNode::getTerminal(), package->cn.lookup(0)};
-    }
-    if (p->e[1].w.approximatelyZero()) { // We create a zero edge
-        one_out = new dd::vEdge{dd::vNode::getTerminal(), package->cn.lookup(0)};
-    }
-
-    if (zero_out == nullptr) { // zero edge was not zero
+        zero_out = new dd::vEdge{conjugate_node(p->e[0].p, package), package->cn.lookup(0)};
+    } else {
         zero_out = conjugate_edge(&p->e[0], package);
-        if (&p->e[0] == &p->e[1]) {
-            one_out = zero_out;
-        }
-    } 
-    if (one_out == nullptr) {
+    }
+    // Creating the one edge
+    if (&p->e[0] == &p->e[1]) {
+        one_out = zero_out;
+    } else if (p->e[1].w.approximatelyZero()) { // We create a zero edge
+        one_out = new dd::vEdge{conjugate_node(p->e[1].p, package), package->cn.lookup(0)};
+    } else {
         one_out = conjugate_edge(&p->e[1], package);
     }
 

@@ -80,7 +80,7 @@ void Experiment::run_clue() {
     // cerr << "+++ \t" << matrix_to_string(U) << endl;
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [clue @ " << this->name << "] Computing lumping...";
+    cerr << "+++ [clue @ " << this->name << "] Computing lumping... (" << this->correct_size() << "/" << this->bound_size() << ") ";
     clock_t b_lumping = clock();
     CCSubspace lumping = CCSubspace(dimension);
     vector<vector<CCSparseVector>> matrices = {U};
@@ -125,9 +125,9 @@ void Experiment::run_ddsim() {
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping...";
+    cerr << "+++ [ddsim @ " << this->name << "] Computing lumping... (" << this->correct_size() << "/" << this->bound_size() << ") ";
     clock_t b_lumping = clock();
-    DDSubspace lumping = DDSubspace(dimension, this->package);
+    DDSubspace lumping = DDSubspace(this->size(), 5e-5, this->package);
     vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
@@ -164,7 +164,7 @@ void Experiment::run_direct() {
     clock_t begin = clock();
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
-    cerr << "+++ [direct @ " << this->name << "] Computing lumping..." << endl;
+    cerr << "+++ [direct @ " << this->name << "] Computing lumping... (" << this->correct_size() << "/" << this->bound_size() << ") " << endl;
     clock_t b_lumping = clock();
     array<dd::CMat, 2U> reduction = this->direct();
     dd::CMat& lumping = reduction[0];

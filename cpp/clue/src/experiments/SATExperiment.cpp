@@ -225,7 +225,6 @@ string SATFormula::to_string() {
 
 void SATFormula::compute_possible_values() {
     if (this->possible_values.size() == 0) { // Only do something if this was not called before
-        cerr << "[SAT Formula]\tComputing possible values of formula..." << endl;
         for (luint i = 0; i < static_cast<luint>(pow(2, this->max_variables)); i++) {
             luint new_value = this->count(boost::dynamic_bitset<>(this->max_variables, i));
             if (!this->possible_values.contains(new_value)) {
@@ -233,7 +232,6 @@ void SATFormula::compute_possible_values() {
             }
             this->possible_values[new_value].push_back(i);
         }
-        cerr << "[SAT Formula]\tComputing possible values of formula -> Done" << endl;
     }
     return;
 }

@@ -185,6 +185,12 @@ dd::CMat matrix_power(vector<CCSparseVector>&, luint);
 /* Class for Subspace */
 template <typename V, typename M, typename C>
 class Subspace {
+    private:
+        luint vector_dim(V* vector) {
+            string str = this->print_vector(vector);
+            return static_cast<luint>(std::count_if(str.begin(), str.end(), []( char c ){return c==',';}));
+        }
+
     protected:
         luint dim; // Ambient dimension of the vector space
         double max_error; // Maximal error allow for vectors to be in the space (0 indicates exact algorithms)
