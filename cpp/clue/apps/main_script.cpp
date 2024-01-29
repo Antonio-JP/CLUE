@@ -96,6 +96,7 @@ std::map<std::string, ArgumentValues> create_argument_map() {
     m["-m"] = ArgumentValues::min;
     m["-M"] = ArgumentValues::max;
     m["-repeats"] = ArgumentValues::repeats;
+    m["-r"] = ArgumentValues::repeats;
     m["-obs"] = ArgumentValues::observable;
     return m;
 }
