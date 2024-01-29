@@ -14,17 +14,16 @@
 
 using namespace std;
 
-Experiment* generate_example(string name, luint size, ExperimentType type, string observable) {
+Experiment* generate_example(string name, luint size, ExperimentType type, string observable, dd::Package<>* package) {
     string upper = boost::to_upper_copy<std::string>(name);
     if (upper == "SAT") {
-        return SATFormula::random(size, static_cast<luint>(rand())%(2*size) + size, true, 3UL, type);
+        return SATFormula::random(size, static_cast<luint>(rand())%(2*size) + size, true, 3UL, type, package);
     } else if (upper == "MAXCUT") {
-        return UndirectedGraph::random(size, 1./3., type);
+        return UndirectedGraph::random(size, 1./3., type, package);
     } else if (upper == "SEARCH") {
-        return QuantumSearch::random(size, type);
+        return QuantumSearch::random(size, type, package);
     } else {
         try {
-            std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(size);
             return new BenchmarkExperiment(size, name, observable, type, package);
         } catch (const domain_error& err) {
             throw logic_error("The given class of experiments is not recognized.");
@@ -67,7 +66,8 @@ int main_script(string name, ExperimentType type, luint m, luint M, luint repeat
     for (luint size = m; size <= M; size++) { // We repeat for each size
         for (string obs : generate_observables(observable, size)) {
             for (luint execution = 1; execution <= repeats; execution++) { // We repeat "repeats" times
-                Experiment * experiment = generate_example(name, size, type, obs);
+                dd::Package<>* package = new dd::Package<>(size);
+                Experiment * experiment = generate_example(name, size, type, obs, package);
                 cout << "Generated example\n\t" << experiment->to_string() << endl;
                 experiment->run();
                     
@@ -76,6 +76,7 @@ int main_script(string name, ExperimentType type, luint m, luint M, luint repeat
                 total_time += experiment->total_time();
                 out << experiment->to_csv() << endl;
                 delete experiment;
+                delete package;
             }
         }
     }
@@ -102,10 +103,10 @@ static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argume
 
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
-    string test = "dj";
+    string test = "search";
     ExperimentType type = ExperimentType::DDSIM;
     luint m = 3, M = 6, repeats = 1;
-    string observable = "all";
+    string observable = "H";
 
     if (argc > 1) {
         test = argv[1];

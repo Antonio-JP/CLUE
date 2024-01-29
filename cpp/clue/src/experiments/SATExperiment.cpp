@@ -125,7 +125,7 @@ string Clause::to_string() {
 }
 
 /*** CODE FOR CLASS SATFORMULA ***/
-SATFormula::SATFormula(string formula, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {
+SATFormula::SATFormula(string formula, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) : Experiment("SAT", "H", eIterations, eType, ePackage) {
     if (formula[0] != '[') {
         throw logic_error("A formula must start with an opening bracket '['");
     }
@@ -170,9 +170,9 @@ luint SATFormula::add_clause(Clause* to_add) {
     return this->clauses.size();
 }
 
-/*static*/ SATFormula* SATFormula::random(luint max_variables, luint max_clauses, bool force_clauses, luint max_per_clause, ExperimentType type) {
+/*static*/ SATFormula* SATFormula::random(luint max_variables, luint max_clauses, bool force_clauses, luint max_per_clause, ExperimentType type, dd::Package<>* ePackage) {
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(max_variables)/2.)));
-    SATFormula * result = new SATFormula(max_variables, iterations, type);
+    SATFormula * result = new SATFormula(max_variables, iterations, type, ePackage);
     for (luint i = 0; i < max_clauses; i++) {
         result->add_clause(Clause::random(max_variables, max_per_clause));
     }
@@ -383,7 +383,7 @@ qc::QuantumComputation* SATFormula::quantum_B(double par_val) {
 }
 
 SATFormula* SATFormula::change_exec_type(ExperimentType new_type) {
-    SATFormula* result = new SATFormula(this->max_variables, this->iterations, new_type);
+    SATFormula* result = new SATFormula(this->max_variables, this->iterations, new_type, this->package);
     for (Clause* clause : this->clauses) {
         result->add_clause(Clause::copy(clause));
     }

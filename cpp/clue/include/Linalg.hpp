@@ -247,7 +247,7 @@ class CCSubspace : public Subspace<CCSparseVector, vector<CCSparseVector>, CC> {
 class DDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue> {
     protected:
         luint nQbits;
-        std::unique_ptr<dd::Package<>> package;
+        dd::Package<>* package;
 
         double norm(dd::vEdge*); // Compute the norm of a vector from its pointer
         dd::ComplexValue coeff(double); // Compute the norm of a vector from its pointer
@@ -260,12 +260,12 @@ class DDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::Comple
         string print_vector(dd::vEdge* vector) { dd::CVec v = vector->getVector(); return vector_to_string(v); }
     
     public:
-        DDSubspace(luint qbits, double error, std::unique_ptr<dd::Package<>>& pck) : 
+        DDSubspace(luint qbits, double error, dd::Package<>* pck) : 
             Subspace<dd::vEdge, qc::QuantumComputation, dd::ComplexValue>(static_cast<luint>(pow(2, qbits)), error) { 
                 this->nQbits = qbits; 
-                this->package = std::move(pck); // Computation on this subspace work with a particular package
+                this->package = pck; // Computation on this subspace work with a particular package
         }
-        DDSubspace(luint qbits, std::unique_ptr<dd::Package<>>& pck) : DDSubspace(qbits, 1e-6, pck) { }
+        DDSubspace(luint qbits, dd::Package<>* pck) : DDSubspace(qbits, 1e-6, pck) { }
 };
 
 #endif

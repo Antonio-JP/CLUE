@@ -25,16 +25,16 @@ class UndirectedGraph : public Experiment {
 
         unordered_map<luint,vector<luint>> compute_possible_values();
     public:
-        UndirectedGraph(luint, luint, ExperimentType); // Builds graphs with given number of vertices
-        UndirectedGraph(luint eIterations, ExperimentType eType) : UndirectedGraph(0, eIterations, eType) { }
+        UndirectedGraph(luint, luint, ExperimentType, dd::Package<>*); // Builds graphs with given number of vertices
+        UndirectedGraph(luint eIterations, ExperimentType eType, dd::Package<>* ePackage) : UndirectedGraph(0, eIterations, eType, ePackage) { }
         ~UndirectedGraph() = default;
 
         bool add_vertex(luint);
         bool add_vertex() { return this->add_vertex(this->next_to_add); }
         bool add_edge(luint, luint);
 
-        static UndirectedGraph* random(luint, double, ExperimentType = ExperimentType::DIRECT); // Random builder with probability on edges
-        static UndirectedGraph* random(luint, luint, ExperimentType = ExperimentType::DIRECT); // Random builder with fixed number of edges
+        static UndirectedGraph* random(luint, double, ExperimentType, dd::Package<>*); // Random builder with probability on edges
+        static UndirectedGraph* random(luint, luint, ExperimentType, dd::Package<>*); // Random builder with fixed number of edges
 
         luint n_vertices() { return this->__nVertices; }
         luint n_edges() { return this->__nEdges; }

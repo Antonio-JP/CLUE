@@ -244,10 +244,9 @@ BenchmarkExperiment* BenchmarkExperiment::change_exec_type(ExperimentType new_ty
 }
 
 /*** BUILDERS FOR BENCHMARK_EXAMPLE ***/
-BenchmarkExperiment::BenchmarkExperiment(luint bQbits, string eName, string eObservable, ExperimentType eType, std::unique_ptr<dd::Package<>>& bPackage) : 
-    Experiment(eName, eObservable, 1UL, eType) {
+BenchmarkExperiment::BenchmarkExperiment(luint bQbits, string eName, string eObservable, ExperimentType eType, dd::Package<>* ePackage) : 
+    Experiment(eName, eObservable, 1UL, eType, ePackage) {
     this->qbits = bQbits;
-    this->package = std::move(bPackage);
     this->circuit = nullptr;
     this->nstates = static_cast<luint>(pow(2UL, bQbits));
 }

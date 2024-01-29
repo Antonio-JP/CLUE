@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include "dd/Package.hpp"
 
-QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterations, ExperimentType eType) : Experiment("Grover", "H", eIterations, eType) {
+QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) : Experiment("Grover", "H", eIterations, eType, ePackage) {
     this->qbits = nQbits;
     luint bound = static_cast<luint>(pow(2UL, nQbits-1));
     for (luint el : success) { 
@@ -12,12 +12,12 @@ QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterati
     }
 }
 
-/*static*/ QuantumSearch* QuantumSearch::random(luint nQbits, ExperimentType eType) {
+/*static*/ QuantumSearch* QuantumSearch::random(luint nQbits, ExperimentType eType, dd::Package<>* ePackage) {
     luint half_size = static_cast<luint>(pow(2UL, nQbits-1));
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(nQbits-1)/2.)));
     luint value = static_cast<luint>(rand())%half_size;
 
-    return new QuantumSearch(nQbits, {value}, iterations, eType);
+    return new QuantumSearch(nQbits, {value}, iterations, eType, ePackage);
 }
 
 bool QuantumSearch::oracle(boost::dynamic_bitset<> bitchain) {
@@ -78,14 +78,14 @@ CCSparseVector QuantumSearch::clue_observable() {
 
     return result;
 }
-dd::vEdge QuantumSearch::dd_observable(std::unique_ptr<dd::Package<>>& package) {
+dd::vEdge QuantumSearch::dd_observable() {
     vector<dd::BasisStates> states;
     for (luint i = 0; i < this->size()-1; i++) {
         states.push_back(dd::BasisStates::plus);
     }
     states.push_back(dd::BasisStates::one);
 
-    return package->makeBasisState(this->size(), states);
+    return this->package->makeBasisState(this->size(), states);
 }
 /* Virtual methods from Experiment */
 array<dd::CMat, 2U> QuantumSearch::direct() {
@@ -134,7 +134,7 @@ QuantumSearch* QuantumSearch::change_exec_type(ExperimentType new_type) {
         to_copy.push_back(*it);
     }
 
-    return new QuantumSearch(this->size()-1, to_copy, this->iterations, new_type);
+    return new QuantumSearch(this->size()-1, to_copy, this->iterations, new_type, this->package);
 }
 
 string QuantumSearch::to_string() {

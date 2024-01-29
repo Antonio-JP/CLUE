@@ -25,7 +25,7 @@ class QuantumSearch : public Experiment{
 
         /* Overriden methods from Experiment */
         CCSparseVector clue_observable();
-        dd::vEdge dd_observable(std::unique_ptr<dd::Package<>>&);
+        dd::vEdge dd_observable();
         /* Virtual methods from Experiment */
         luint size() {return this->qbits; }
         luint correct_size() { return 2UL; }
@@ -37,9 +37,9 @@ class QuantumSearch : public Experiment{
         qc::QuantumComputation* quantum_B(double);
         QuantumSearch* change_exec_type(ExperimentType);
     public:
-        QuantumSearch(luint, vector<luint>, luint, ExperimentType);
+        QuantumSearch(luint, vector<luint>, luint, ExperimentType, dd::Package<>*);
 
-        static QuantumSearch* random(luint, ExperimentType);
+        static QuantumSearch* random(luint, ExperimentType, dd::Package<>*);
 
         /* Method to get the string out of an experiment */
         string to_string();

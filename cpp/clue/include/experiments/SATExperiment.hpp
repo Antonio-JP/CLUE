@@ -56,14 +56,14 @@ class SATFormula : public Experiment {
 
         void compute_possible_values();
     public:
-        SATFormula(luint nvars, luint eIterations, ExperimentType eType) : Experiment("SAT", "H", eIterations, eType) {this->max_variables = nvars; }
-        SATFormula(string, luint, ExperimentType);
+        SATFormula(luint nvars, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) : Experiment("SAT", "H", eIterations, eType, ePackage) {this->max_variables = nvars; }
+        SATFormula(string, luint, ExperimentType, dd::Package<>*);
         ~SATFormula();
 
         /* Method to modify a formula by adding a clause */
         luint add_clause(Clause*);
         /* Method to create a random formula */
-        static SATFormula* random(luint, luint, bool = true, luint = 3UL, ExperimentType = ExperimentType::DIRECT);
+        static SATFormula* random(luint, luint, bool, luint, ExperimentType, dd::Package<>*);
         /* Method to evaluate the formula */
         bool eval(boost::dynamic_bitset<>);
         /* Method to count the truth clauses in  the formula */

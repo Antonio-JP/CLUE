@@ -2,6 +2,7 @@
 #define CLUE_EX_EX
 
 #include "Linalg.hpp"
+#include "dd/Package.hpp"
 
 using namespace std;
 
@@ -55,6 +56,7 @@ class Experiment {
         string observable;      // String representing the observable for the lumping
         luint iterations;       // Number of iterations to perform in an experiment.
         ExperimentType type;    // Type of the experiment. Depending on the type, different methods will be run
+        dd::Package<>* package; // dd::Package with the cache information for the size for  whole execution.
 
         /* Execution attributes */
         bool executed = false;  // Flag indicating if the experiment has been executed or not
@@ -68,7 +70,7 @@ class Experiment {
         /* Method to get the observable for use with CLUE */
         virtual CCSparseVector clue_observable();
         /* Method to get the observable for use with DD */
-        virtual dd::vEdge dd_observable(std::unique_ptr<dd::Package<>>&); // TODO Currently not working
+        virtual dd::vEdge dd_observable(); // TODO Currently not working
 
     private:
         /* Method that runs the CLUE reduction (only used when this->type == CLUE) */
@@ -82,11 +84,12 @@ class Experiment {
 
     public:
         /** CONSTRUCTORS **/
-        Experiment(string eName, string eObservable, luint eIterations, ExperimentType eType) { 
+        Experiment(string eName, string eObservable, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) { 
             this->name = eName; 
             this->observable = eObservable; 
             this->iterations = eIterations; 
             this->type = eType; 
+            this->package = ePackage;
         }
         
         virtual ~Experiment() = default;

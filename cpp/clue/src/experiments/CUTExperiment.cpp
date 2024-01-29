@@ -21,8 +21,8 @@ unordered_map<luint,vector<luint>> UndirectedGraph::compute_possible_values() {
 }
 
 // Builders for Undirected graphs
-UndirectedGraph::UndirectedGraph(luint n_vertices, luint eIterations, ExperimentType eType) 
-    : Experiment("CUT", "H", eIterations, eType) {
+UndirectedGraph::UndirectedGraph(luint n_vertices, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) 
+    : Experiment("CUT", "H", eIterations, eType, ePackage) {
     // We add the first vertices indicated by the argument n_vertices
     for (luint i = 0; i < n_vertices; i++) {
         this->add_vertex(i);
@@ -64,9 +64,9 @@ bool UndirectedGraph::add_edge(luint src, luint trg) {
 }
 
 // Static methods
-/*static*/ UndirectedGraph* UndirectedGraph::random(luint n_vertices, double density, ExperimentType eType) {
+/*static*/ UndirectedGraph* UndirectedGraph::random(luint n_vertices, double density, ExperimentType eType, dd::Package<>* ePackage) {
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(n_vertices)/2.)));
-    UndirectedGraph *G = new UndirectedGraph(n_vertices, iterations, eType);
+    UndirectedGraph *G = new UndirectedGraph(n_vertices, iterations, eType, ePackage);
 
     vector<pair<luint,luint>> possible_edges;
     std::unordered_set<luint>::iterator v_end = G->vertices.end();
@@ -84,9 +84,9 @@ bool UndirectedGraph::add_edge(luint src, luint trg) {
 
     return G;
 }
-/*static*/ UndirectedGraph* UndirectedGraph::random(luint n_vertices, luint n_edges, ExperimentType eType) {
+/*static*/ UndirectedGraph* UndirectedGraph::random(luint n_vertices, luint n_edges, ExperimentType eType, dd::Package<>* ePackage) {
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(n_vertices)/2.)));
-    UndirectedGraph *G = new UndirectedGraph(n_vertices, iterations, eType);
+    UndirectedGraph *G = new UndirectedGraph(n_vertices, iterations, eType, ePackage);
 
     vector<pair<luint,luint>> possible_edges;
     std::unordered_set<luint>::iterator v_end = G->vertices.end();
@@ -254,7 +254,7 @@ qc::QuantumComputation* UndirectedGraph::quantum_B(double par_val) {
     return circuit;
 }
 UndirectedGraph* UndirectedGraph::change_exec_type(ExperimentType new_type) {
-    UndirectedGraph* result = new UndirectedGraph(this->n_vertices(), this->iterations, new_type);
+    UndirectedGraph* result = new UndirectedGraph(this->n_vertices(), this->iterations, new_type, this->package);
     for (luint src : this->vertices) {
         for (luint trg : this->edges[src]) {
             result->add_edge(src, trg);

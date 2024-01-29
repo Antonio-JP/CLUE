@@ -28,7 +28,6 @@ class BenchmarkExperiment : public Experiment{
     private:
         luint nstates;
         qc::QuantumComputation* circuit;
-        std::unique_ptr<dd::Package<>> package;
 
     protected:
         luint qbits;
@@ -46,7 +45,7 @@ class BenchmarkExperiment : public Experiment{
         qc::QuantumComputation* quantum_B(double);
         BenchmarkExperiment* change_exec_type(ExperimentType);
     public:
-        BenchmarkExperiment(luint, string, string, ExperimentType, std::unique_ptr<dd::Package<>>&);
+        BenchmarkExperiment(luint, string, string, ExperimentType, dd::Package<>*);
 
         /* Method to get the string out of an experiment */
         string to_string();

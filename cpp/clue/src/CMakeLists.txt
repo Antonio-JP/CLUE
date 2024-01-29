@@ -1,7 +1,7 @@
 # add MQT::Core target
-set(BUILD_MQT_DDSIM_TESTS
+set(BUILD_MQT_CORE_TESTS
     OFF
-    CACHE BOOL "Build MQT DDSIM tests")
+    CACHE BOOL "Build MQT Core tests")
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/mqt-core" "extern/mqt-core"
                  EXCLUDE_FROM_ALL)
 
@@ -21,7 +21,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include
                                                   ${PROJECT_BINARY_DIR}/include)
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC MQT::ddsim)
+target_link_libraries(${PROJECT_NAME} PUBLIC MQT::CoreDD)
 
 # add alias
 add_library(${PROJECT_NAME}::CPP ALIAS ${PROJECT_NAME})

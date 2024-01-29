@@ -19,7 +19,7 @@ namespace graphstate { // Completed
     }
 
     qc::QuantumComputation* create(luint qbits) {
-        UndirectedGraph* G = UndirectedGraph::random(qbits, 0.3);
+        UndirectedGraph* G = UndirectedGraph::random(qbits, 0.3, ExperimentType::DIRECT, nullptr);
         vector<CCSparseVector> A = G->adjacency_matrix();
 
         qc::QuantumComputation* circuit = new qc::QuantumComputation(qbits);

@@ -53,10 +53,10 @@ CCSparseVector Experiment::clue_observable() {
     return result;
 }
 /* Method to get the observable for use with DD */
-dd::vEdge Experiment::dd_observable(std::unique_ptr<dd::Package<>>& package) {
+dd::vEdge Experiment::dd_observable() {
     dd::vEdge obs;
     if (this->observable == "H") {
-        obs = package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
+        obs = this->package->makeBasisState(this->size(), vector<dd::BasisStates>(this->size(), dd::BasisStates::plus), 0);
     } else {
         int val = stoi(this->observable);
         vector<bool> binary = vector<bool>(this->size(), false);
@@ -64,7 +64,7 @@ dd::vEdge Experiment::dd_observable(std::unique_ptr<dd::Package<>>& package) {
             binary[i-1] = (val % 2 == 1);
             val /= 2;
         }
-        obs = package->makeBasisState(this->size(), binary, 0);
+        obs = this->package->makeBasisState(this->size(), binary, 0);
     }
     return obs;
 }
@@ -120,15 +120,14 @@ void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Computing DDSIM reduction for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
-    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->size());
-    dd::vEdge obs = this->dd_observable(package);
+    dd::vEdge obs = this->dd_observable();
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
     cerr << "+++ [ddsim @ " << this->name << "] Computing lumping...";
     clock_t b_lumping = clock();
-    DDSubspace lumping = DDSubspace(dimension, package);
+    DDSubspace lumping = DDSubspace(dimension, this->package);
     vector<qc::QuantumComputation> circuits = {*U};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
@@ -197,8 +196,7 @@ void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing DDSIM ONLY execution for " << this->name << endl;
     clock_t begin = clock();
     cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable and system..."<< endl;
-    std::unique_ptr<dd::Package<>> package = std::make_unique<dd::Package<>>(this->size());
-    dd::vEdge obs = this->dd_observable(package);
+    dd::vEdge obs = this->dd_observable();
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U_P = this->quantum(par_value);
     qc::QuantumComputation* U_B = this->quantum_B(par_value);
@@ -207,8 +205,8 @@ void Experiment::run_ddsim_alone() {
     clock_t b_iteration = clock();
     dd::vEdge current = obs; // We create a new vector for the current
     for (luint i = 0; i < this->iterations; i++) {
-        current = dd::simulate<>(U_P, current, package);
-        current = dd::simulate<>(U_B, current, package);
+        current = dd::simulate<>(U_P, current, *package);
+        current = dd::simulate<>(U_B, current, *package);
     }
     clock_t a_iteration = clock();
     clock_t end = clock();

@@ -300,14 +300,14 @@ dd::CMat matrix_power(vector<CCSparseVector>& M, luint t) {
     return matrix_power(denseM, t);
 }
 
-dd::vEdge* conjugate_edge(dd::vEdge*, std::unique_ptr<dd::Package<>>&);
-dd::vNode* conjugate_node(dd::vNode*, std::unique_ptr<dd::Package<>>&);
+dd::vEdge* conjugate_edge(dd::vEdge*, dd::Package<>*);
+dd::vNode* conjugate_node(dd::vNode*, dd::Package<>*);
 
-dd::vEdge* conjugate_edge(dd::vEdge* v, std::unique_ptr<dd::Package<>>& package) {
+dd::vEdge* conjugate_edge(dd::vEdge* v, dd::Package<>* package) {
     dd::vEdge* result = new dd::vEdge{conjugate_node(v->p, package), package->cn.conj(v->w)};
     return result;
 }
-dd::vNode* conjugate_node(dd::vNode* p, std::unique_ptr<dd::Package<>>& package) {
+dd::vNode* conjugate_node(dd::vNode* p, dd::Package<>* package) {
     if (dd::vNode::isTerminal(p)) {
         return p;
     }
@@ -358,8 +358,7 @@ dd::ComplexValue DDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
 }
 dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
-    // std::unique_ptr<dd::Package<>> new_package = std::make_unique<dd::Package<>>(this->nQbits);
-    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, this->package));
+    dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, *this->package));
     return result;
 }
 dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
