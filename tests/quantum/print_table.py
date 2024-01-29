@@ -80,20 +80,26 @@ def table1(*, cpp:bool=False):
         time_sat_clue = process_averages("q_sat_clue", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "CLUE")})
         time_sat_ddsim = process_averages("q_sat_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "DDSIM")})
         time_sat_ddsim_alone = process_averages("q_sat_full_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("SAT", "DDSIM-ALONE")})
-        d_sat_clue = process_averages("q_sat_direct", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("SAT", "d")})
+        d_sat_clue = process_averages("q_sat_clue", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("SAT", "d-CLUE")})
         for i in range(len(d_sat_clue)):
             d_sat_clue.iloc[i][0] = 2**d_sat_clue.iloc[i].name * d_sat_clue.iloc[i][0]
+        d_sat_ddsim = process_averages("q_sat_ddsim", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("SAT", "d-DD")})
+        for i in range(len(d_sat_ddsim)):
+            d_sat_ddsim.iloc[i][0] = 2**d_sat_ddsim.iloc[i].name * d_sat_ddsim.iloc[i][0]
         time_maxcut_clue = process_averages("q_maxcut_clue", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "CLUE")})
         time_maxcut_ddsim = process_averages("q_maxcut_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "DDSIM")})
         time_maxcut_ddsim_alone = process_averages("q_maxcut_full_ddsim", remove_outliers=False, add_times=False, cpp=True)["time"].droplevel(0).to_frame().rename(columns={"time" : ("MAXCUT", "DDSIM-ALONE")})
-        d_maxcut_clue = process_averages("q_maxcut_direct", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("MAXCUT", "d")})
+        d_maxcut_clue = process_averages("q_maxcut_clue", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("MAXCUT", "d")})
         for i in range(len(d_maxcut_clue)):
             d_maxcut_clue.iloc[i][0] = 2**d_maxcut_clue.iloc[i].name * d_maxcut_clue.iloc[i][0]
+        d_maxcut_ddsim = process_averages("q_maxcut_ddsim", remove_outliers=False, add_times=False, cpp=True)["red. ratio"].droplevel(0).to_frame().rename(columns={"red. ratio" : ("MAXCUT", "d-DD")})
+        for i in range(len(d_maxcut_ddsim)):
+            d_maxcut_ddsim.iloc[i][0] = 2**d_maxcut_ddsim.iloc[i].name * d_maxcut_ddsim.iloc[i][0]
 
         columns = [
                 time_grover_clue, time_grover_ddsim, time_grover_ddsim_alone, 
-                time_sat_clue, time_sat_ddsim, time_sat_ddsim_alone, d_sat_clue, 
-                time_maxcut_clue, time_maxcut_ddsim, time_maxcut_ddsim_alone, d_maxcut_clue
+                time_sat_clue, time_sat_ddsim, time_sat_ddsim_alone, d_sat_clue, d_sat_ddsim,
+                time_maxcut_clue, time_maxcut_ddsim, time_maxcut_ddsim_alone, d_maxcut_clue, d_maxcut_ddsim
             ]
         
         # return columns
