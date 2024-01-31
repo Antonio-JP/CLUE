@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 #include <cmath>
 #include "dd/Operations.hpp"
+#include "dd/FunctionalityConstruction.hpp"
 #include "experiments/CUTExperiment.hpp"
 #include "experiments/benchmark/AmplitudeEstimation.hpp"
 #include "experiments/benchmark/DeutschJozsa.hpp"
@@ -160,7 +161,18 @@ array<dd::CMat, 2U> BenchmarkExperiment::direct() {
 }
 
 vector<CCSparseVector> BenchmarkExperiment::matrix() {
-    throw logic_error("Matrix from circuit not yet implemented");
+    qc::QuantumComputation* circuit = this->quantum(0.0);
+    dd::mEdge circuit_dd = buildFunctionality(circuit, *this->package);
+    dd::CMat unitary = circuit_dd.getMatrix(); 
+    luint N = unitary.size();
+    vector<CCSparseVector> U = vector<CCSparseVector>(N, N); // Initializing the final matrix
+    for (luint i = 0; i < N; i++) {
+        for (luint j = 0; j < N; j++) {
+            U[i].set_value(j, unitary[i][j]);
+        }
+    }
+
+    return U;
 }
 dd::CMat BenchmarkExperiment::matrix_B(dd::CMat& U) {
     return identity_matrix(U.size()); // There is no begin hamiltonian: we use the identity
