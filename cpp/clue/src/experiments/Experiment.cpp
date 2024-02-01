@@ -122,13 +122,15 @@ void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
     dd::vEdge obs = this->dd_observable();
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
+    double par_value_lump = 1./static_cast<double>(this->bound_size());
+    qc::QuantumComputation* U_to_lump = this->quantum(par_value_lump);
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 
     cerr << "+++ [ddsim @ " << this->name << "] Computing lumping... (" << this->correct_size() << "/" << this->bound_size() << ") ";
     clock_t b_lumping = clock();
     DDSubspace lumping = DDSubspace(this->size(), 5e-5, this->package);
-    vector<qc::QuantumComputation> circuits = {*U};
+    vector<qc::QuantumComputation> circuits = {*U_to_lump};
     lumping.absorb_new_vector(&obs);
     lumping.minimal_invariant_space(circuits);
     cerr << "(" << lumping.dimension() << ")" << endl;
