@@ -166,6 +166,9 @@ string matrix_to_string(vector<vector<dd::Complex>>&);
 bool is_diagonal(dd::CMat&);
 bool is_diagonal(vector<CCSparseVector>&);
 
+dd::CVec get_diagonal(dd::CMat&);
+dd::CVec get_diagonal(vector<CCSparseVector>&);
+
 bool is_square(dd::CMat&);
 bool is_square(vector<CCSparseVector>&);
 dd::CMat sparse_to_dense(vector<CCSparseVector>&);
@@ -185,13 +188,12 @@ dd::CMat matrix_power(vector<CCSparseVector>&, luint);
 /* Class for Subspace */
 template <typename V, typename M, typename C>
 class Subspace {
-    private:
+    protected:
         luint vector_dim(V* vector) {
             string str = this->print_vector(vector);
-            return static_cast<luint>(std::count_if(str.begin(), str.end(), []( char c ){return c==',';}));
+            return static_cast<luint>(std::count_if(str.begin(), str.end(), []( char c ){return c==',';})) + 1UL;
         }
 
-    protected:
         luint dim; // Ambient dimension of the vector space
         double max_error; // Maximal error allow for vectors to be in the space (0 indicates exact algorithms)
 

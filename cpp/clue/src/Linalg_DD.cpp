@@ -1,6 +1,7 @@
 #include "Linalg.hpp"
 
 #include <memory>
+#include <cassert>
 
 #include "dd/ComplexValue.hpp"
 #include "dd/Package.hpp"
@@ -354,8 +355,12 @@ double DDSubspace::norm(dd::vEdge* v) {
 dd::ComplexValue DDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
 }
-dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
+dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {    
+    luint old_dim = this->vector_dim(v);
     dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, *this->package));
+    if(old_dim != this->vector_dim(v)) {
+        assert(false);
+    }
     return result;
 }
 dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {

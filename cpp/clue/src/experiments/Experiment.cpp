@@ -1,6 +1,7 @@
 #include "experiments/Experiment.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include "dd/FunctionalityConstruction.hpp"
 #include "dd/Simulation.hpp"
 
 // Auxiliar method to convert time clocks into double time
@@ -124,6 +125,11 @@ void Experiment::run_ddsim() {
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     double par_value_lump = 1./static_cast<double>(this->bound_size());
     qc::QuantumComputation* U_to_lump = this->quantum(par_value_lump);
+    // dd::mEdge circuit_dd = buildFunctionality(U_to_lump, *this->package);
+    // dd::CMat unitary = circuit_dd.getMatrix(); 
+    // assert(is_diagonal(unitary));
+    // dd::CVec diagonal = get_diagonal(unitary);
+    // cerr << "+++ [ddsim @ " << this->name << "] The diagonal: " << endl << vector_to_string(diagonal) << endl;
     qc::QuantumComputation* U = this->quantum(par_value);
     luint dimension = static_cast<luint>(pow(2, this->size()));
 

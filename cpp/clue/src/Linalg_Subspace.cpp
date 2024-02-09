@@ -56,20 +56,16 @@ bool Subspace<V,M,C>::contains(V* vector) {
 
 template <typename V, typename M, typename C>
 bool Subspace<V,M,C>::absorb_new_vector(V* vector) {
-    // cout <<"\t Trying to absorb a new vector:" << endl << "\t\t" << this->print_vector(vector) << endl;
     V* reduced = this->reduce_vector(vector);
-    // cout <<"\t\tReduced:\n\t\t" << this->print_vector(reduced) << endl;
-    // cout <<"\t\tNorm: " << this->norm(reduced) << endl;
     bool result = false;
     double norm_reduced = this->norm(reduced);
+    cerr << endl <<"\t\tNorm: " << this->norm(reduced) << " -- " << norm_reduced << "[" << this->max_error << "]";
     if (norm_reduced > this->max_error) {
-        // cerr << "Adding new vector (" << norm_reduced << ") [" << this->max_error << "]" << endl;
         V* to_add = this->scale(reduced, this->coeff(1/this->norm(reduced)));
         this->basis.push_back(to_add);
         result = true;
-    } else {
-        // cerr <<"Found an element inside: " << norm_reduced << endl;
-    }
+    } 
+
     this->free_vector(reduced); //Removing memory for reduced vector
     return result;
 }
@@ -95,7 +91,6 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
 
     //We now iterate on the queue until this is empty
     while ((!to_process.empty()) && (this->dimension() < this->ambient_dimension())) {
-        // cout <<"Remaining vectors: " << to_process.size() << endl;
         V* current = to_process.front(); to_process.pop(); // We take the first element
         
         // cout <<this->print_vector(current) << endl;
@@ -109,6 +104,10 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
             // cout <<"Generated:" << endl;
             for (M matrix : matrices) {
                 // We do multiplication matrix*current
+                cerr << endl << "\tStarting application";
+                cerr << endl << "\tSizes in basis: (";
+                for (luint i = 0; i < this->dimension(); i++) { cerr << this->vector_dim(this->basis[i]) << ", "; }
+                cerr << ")";
                 V* result = this->apply(current, matrix);
                 // cout <<"\t[-] " << this->print_vector(result) << endl; 
                 // We add this vector to the queue
@@ -196,7 +195,7 @@ CCSparseVector* CCSubspace::scale(CCSparseVector* u, CC c) {
     while (it != u->nonzero_iterator_end()) {
         result->set_value(*it, c*u->get_value(*it));
         it++;
-    }
+    } 
 
     return result;
 }

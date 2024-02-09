@@ -104,9 +104,9 @@ static std::map<std::string, ArgumentValues> s_mapArgumentValues = create_argume
 
 int main(int argc, char** argv) {
     srand (static_cast<unsigned>(time(NULL)));
-    string test = "search";
+    string test = "sat";
     ExperimentType type = ExperimentType::DDSIM;
-    luint m = 3, M = 6, repeats = 1;
+    luint m = 9, M = 9, repeats = 1;
     string observable = "H";
 
     if (argc > 1) {
