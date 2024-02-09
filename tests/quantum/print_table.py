@@ -97,9 +97,22 @@ def table1(*, cpp:bool=False):
             d_maxcut_ddsim.iloc[i][0] = 2**d_maxcut_ddsim.iloc[i].name * d_maxcut_ddsim.iloc[i][0]
 
         columns = [
-                time_grover_clue, time_grover_ddsim, time_grover_ddsim_alone, 
-                time_sat_clue, time_sat_ddsim, time_sat_ddsim_alone, d_sat_clue, d_sat_ddsim,
-                time_maxcut_clue, time_maxcut_ddsim, time_maxcut_ddsim_alone, d_maxcut_clue, d_maxcut_ddsim
+                # Grover
+                time_grover_clue, 
+                time_grover_ddsim, 
+                time_grover_ddsim_alone, 
+                # SAT
+                time_sat_clue, 
+                time_sat_ddsim, 
+                time_sat_ddsim_alone, 
+                d_sat_clue, 
+                d_sat_ddsim,
+                # CUT
+                time_maxcut_clue, 
+                time_maxcut_ddsim, 
+                time_maxcut_ddsim_alone, 
+                d_maxcut_clue, 
+                d_maxcut_ddsim
             ]
         
         # return columns
