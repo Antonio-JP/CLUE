@@ -358,6 +358,7 @@ dd::ComplexValue DDSubspace::coeff(double c) {
 dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {    
     luint old_dim = this->vector_dim(v);
     dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, *this->package));
+    this->package->incRef(*result); // Trying to increase the references count for the copied edge
     if(old_dim != this->vector_dim(v)) {
         assert(false);
     }
@@ -366,10 +367,12 @@ dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
 dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
     dd::Complex new_value = this->package->cn.lookup(c * dd::ComplexValue(v->w));
     dd::vEdge* output = new dd::vEdge{v->p, new_value}; // Creating the edge with the new weight
+    this->package->incRef(*output); // Trying to increase the references count for the copied edge
     return output;
 }
 dd::vEdge* DDSubspace::add(dd::vEdge* u, dd::vEdge* v) {
     dd::vEdge* result = new dd::vEdge(this->package->add(*u, *v));
+    this->package->incRef(*result); // Trying to increase the references count for the copied edge
     return result;
 }
 dd::ComplexValue DDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
@@ -377,5 +380,6 @@ dd::ComplexValue DDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
 }
 dd::vEdge* DDSubspace::conjugate(dd::vEdge* v) {
     dd::vEdge* conj = conjugate_edge(v, this->package);
+    this->package->incRef(*conj);
     return conj;
 }
