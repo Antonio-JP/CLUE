@@ -59,7 +59,7 @@ bool Subspace<V,M,C>::absorb_new_vector(V* vector) {
     V* reduced = this->reduce_vector(vector);
     bool result = false;
     double norm_reduced = this->norm(reduced);
-    cerr << endl <<"\t\tNorm: " << this->norm(reduced) << " -- " << norm_reduced << "[" << this->max_error << "]";
+    // cerr << endl <<"\t\tNorm: " << this->norm(reduced) << " -- " << norm_reduced << "[" << this->max_error << "]";
     if (norm_reduced > this->max_error) {
         V* to_add = this->scale(reduced, this->coeff(1/this->norm(reduced)));
         this->basis.push_back(to_add);
@@ -104,10 +104,10 @@ luint Subspace<V,M,C>::minimal_invariant_space(vector<M>& matrices) {
             // cout <<"Generated:" << endl;
             for (M matrix : matrices) {
                 // We do multiplication matrix*current
-                cerr << endl << "\tStarting application";
-                cerr << endl << "\tSizes in basis: (";
-                for (luint i = 0; i < this->dimension(); i++) { cerr << this->vector_dim(this->basis[i]) << ", "; }
-                cerr << ")";
+                // cerr << endl << "\tStarting application";
+                // cerr << endl << "\tSizes in basis: (";
+                // for (luint i = 0; i < this->dimension(); i++) { cerr << this->vector_dim(this->basis[i]) << ", "; }
+                // cerr << ")";
                 V* result = this->apply(current, matrix);
                 // cout <<"\t[-] " << this->print_vector(result) << endl; 
                 // We add this vector to the queue

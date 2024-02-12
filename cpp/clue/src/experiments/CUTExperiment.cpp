@@ -5,7 +5,7 @@
 // Private section
 unordered_map<luint,vector<luint>> UndirectedGraph::compute_possible_values() {
     if (this->__modified) { // Not yet computed
-        cerr << "[CUT Graph]\tComputing possible cut values of a graph..." << endl;
+        // cerr << "[CUT Graph]\tComputing possible cut values of a graph..." << endl;
         luint nVertices = this->n_vertices();
         for (luint i = 0; i < static_cast<luint>(pow(2, nVertices)); i++) {
             luint new_value = this->cut_value(boost::dynamic_bitset<>(nVertices, i));
@@ -14,7 +14,7 @@ unordered_map<luint,vector<luint>> UndirectedGraph::compute_possible_values() {
             }
             this->possible_values[new_value].push_back(i);
         }
-        cerr << "[CUT Graph]\tComputing possible cut values of a graph -> Done" << endl;
+        // cerr << "[CUT Graph]\tComputing possible cut values of a graph -> Done" << endl;
         this->__modified = false;
     }
     return this->possible_values;
