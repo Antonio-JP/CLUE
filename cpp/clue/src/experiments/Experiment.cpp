@@ -75,7 +75,7 @@ dd::vEdge Experiment::dd_observable() {
 void Experiment::run_clue() {
     cerr << "+++ [clue @ " << this->name << "] Computing CLUE reduction for " << this->name << endl;
     clock_t begin = clock();
-    cerr << "+++ [clue @ " << this->name << "] Setting up observable and system..."<< endl;
+    cerr << "+++ [clue @ " << this->name << "] Setting up observable (" << this->observable << ") and system..."<< endl;
     CCSparseVector obs = this->clue_observable();
     vector<CCSparseVector> U = this->matrix();
     // cerr << "+++ \t" << matrix_to_string(U) << endl;
@@ -117,7 +117,7 @@ void Experiment::run_clue() {
 void Experiment::run_ddsim() {
     cerr << "+++ [ddsim @ " << this->name << "] Computing DDSIM reduction for " << this->name << endl;
     clock_t begin = clock();
-    cerr << "+++ [ddsim @ " << this->name << "] Setting up observable and system..."<< endl;
+    cerr << "+++ [ddsim @ " << this->name << "] Setting up observable (" << this->observable << ") and system..."<< endl;
     dd::vEdge obs = this->dd_observable();
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     double par_value_lump = 1./static_cast<double>(this->bound_size());
@@ -201,7 +201,7 @@ void Experiment::run_direct() {
 void Experiment::run_ddsim_alone() {
     cerr << "+++ [ddsim-only @ " << this->name << "] Computing DDSIM ONLY execution for " << this->name << endl;
     clock_t begin = clock();
-    cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable and system..."<< endl;
+    cerr << "+++ [ddsim-only @ " << this->name << "] Setting up observable (" << this->observable << ") and system..."<< endl;
     dd::vEdge obs = this->dd_observable();
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     qc::QuantumComputation* U_P = this->quantum(par_value);
