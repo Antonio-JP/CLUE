@@ -66,17 +66,21 @@ int main_script(string name, ExperimentType type, luint m, luint M, luint repeat
     for (luint size = m; size <= M; size++) { // We repeat for each size
         for (string obs : generate_observables(observable, size)) {
             for (luint execution = 1; execution <= repeats; execution++) { // We repeat "repeats" times
-                dd::Package<>* package = new dd::Package<>(size);
-                Experiment * experiment = generate_example(name, size, type, obs, package);
-                cout << "Generated example\n\t" << experiment->to_string() << endl;
-                experiment->run();
-                    
-                cout << "### -- Finished execution " << execution << "/" << repeats << "(size=" << size << "): took " << experiment->total_time() << "s." << endl;
+                try {
+                    dd::Package<>* package = new dd::Package<>(size);
+                    Experiment * experiment = generate_example(name, size, type, obs, package);
+                    cout << "Generated example\n\t" << experiment->to_string() << endl;
+                    experiment->run();
+                        
+                    cout << "### -- Finished execution " << execution << "/" << repeats << "(size=" << size << "): took " << experiment->total_time() << "s." << endl;
 
-                total_time += experiment->total_time();
-                out << experiment->to_csv() << endl;
-                delete experiment;
-                delete package;
+                    total_time += experiment->total_time();
+                    out << experiment->to_csv() << endl;
+                    delete experiment;
+                    delete package;
+                } catch (qc::QFRException &e) {
+                    cout << "### -- Error in execution " << execution << "/" << repeats << "(size=" << size << "): " << e.what() << endl;
+                }
             }
         }
     }
