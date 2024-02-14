@@ -121,15 +121,30 @@ def table1(*, cpp:bool=False):
             lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
             columns)
 
-
 def table2(*, cpp:bool=False):
-    red_zero = process_averages("q_benchmark_clue", remove_outliers=False, observable=0)["red. ratio"].droplevel(-1).to_frame().rename(columns={"red. ratio": "d/N wrt S_0"})
-    avg_clue = process_averages("q_benchmark_clue", remove_outliers=False)[["red. ratio","time_lumping"]].rename(columns={"red. ratio": "Avg. d/N across S_x", "time_lumping": "Avg. time (s)"})
-    avg_time_ddsim = process_averages("q_benchmark_full_ddsim", remove_outliers=False, kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration": "DDSIM time"})
+    if not cpp:
+        red_zero = process_averages("q_benchmark_clue", remove_outliers=False, observable=0)["red. ratio"].droplevel(-1).to_frame().rename(columns={"red. ratio": "d/N wrt S_0"})
+        avg_clue = process_averages("q_benchmark_clue", remove_outliers=False)[["red. ratio","time_lumping"]].rename(columns={"red. ratio": "Avg. d/N across S_x", "time_lumping": "Avg. time (s)"})
+        avg_time_ddsim = process_averages("q_benchmark_full_ddsim", remove_outliers=False, kappa=1)["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration": "DDSIM time"})
 
-    return reduce(
-        lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
-        [red_zero, avg_clue, avg_time_ddsim])
+        return reduce(
+            lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
+            [red_zero, avg_clue, avg_time_ddsim])
+    else:
+        red_zero_clue = process_averages("q_benchmark_clue", remove_outliers=False, observable=0, cpp=True)["red. ratio"].droplevel(-1).to_frame().rename(columns={"red. ratio": ("CLUE","d/N wrt S_0")})
+        avg_clue_clue = process_averages("q_benchmark_clue", remove_outliers=False, cpp=True)[["red. ratio","time_lumping"]].rename(columns={"red. ratio": ("CLUE","Avg. d/N across S_x"), "time_lumping": ("CLUE", "Avg. time (s)")})
+        
+        red_zero_ddsim = process_averages("q_benchmark_ddsim", remove_outliers=False, observable=0, cpp=True)["red. ratio"].droplevel(-1).to_frame().rename(columns={"red. ratio": ("DDSIM","d/N wrt S_0")})
+        avg_clue_ddsim = process_averages("q_benchmark_ddsim", remove_outliers=False, cpp=True)[["red. ratio","time_lumping"]].rename(columns={"red. ratio": ("DDSIM","Avg. d/N across S_x"), "time_lumping": ("DDSIM", "Avg. time (s)")})
+        avg_time_ddsim = process_averages("q_benchmark_full_ddsim", remove_outliers=False, kappa=1, cpp=True)["time_iterations"].to_frame().rename(columns={"time_iterations": ("DDSIM-ALONE", "Avg. time (s)")})
+
+        return reduce(
+            lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
+            [
+                red_zero_clue, avg_clue_clue, 
+                red_zero_ddsim, avg_clue_ddsim, 
+                avg_time_ddsim
+            ])
 
 def satcpp():
     return process_averages("q_sat_clue", remove_outliers=False, add_times=False,cpp=True)
@@ -143,7 +158,7 @@ if __name__ == "__main__":
     elif what == "table1-cpp":
         print(table1(cpp=True))
     elif what == "table2-cpp":
-        print(table2(cpp=False))
+        print(table2(cpp=True))
     else:
         n = 2; observable = "all"; kappa = "all"; skip_kappa = None; remove_outliers = True; without_infinity = False; add_times = False; is_cpp = False
         while n < len(sys.argv):
