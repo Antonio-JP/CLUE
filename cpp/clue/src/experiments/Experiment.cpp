@@ -91,12 +91,9 @@ void Experiment::run_clue() {
     cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_P..." << endl;
     dd::CMat Uhat = lumping.reduced_matrix(U);
     clock_t a_lumping = clock();
-    // cerr << "+++ \tL = " << matrix_to_string(L) << endl;
-    // cerr << "+++ \tUhat = " << matrix_to_string(Uhat) << endl;
 
     cerr << "+++ [clue @ " << this->name << "] Getting the reduced U_B..." << endl;
     dd::CMat UB = this->matrix_B(Uhat);
-    // cerr << "+++ \tUB   = " << matrix_to_string(UB) << endl;
     dd::CMat U_full = matmul(Uhat, UB);
 
     cerr << "+++ [clue @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
@@ -125,6 +122,7 @@ void Experiment::run_ddsim() {
     double par_value = 1./(pow(2., static_cast<double>(this->size()))*static_cast<double>(10*this->iterations));
     double par_value_lump = 1./static_cast<double>(this->bound_size());
     qc::QuantumComputation* U_to_lump = this->quantum(par_value_lump);
+    // cerr << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl << *U_to_lump << endl;
     // dd::mEdge circuit_dd = buildFunctionality(U_to_lump, *this->package);
     // dd::CMat unitary = circuit_dd.getMatrix(); 
     // assert(is_diagonal(unitary));

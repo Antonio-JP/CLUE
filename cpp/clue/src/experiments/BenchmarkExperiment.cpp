@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <cmath>
+#include "CircuitOptimizer.hpp"
 #include "dd/Operations.hpp"
 #include "dd/FunctionalityConstruction.hpp"
 #include "experiments/CUTExperiment.hpp"
@@ -150,7 +151,7 @@ string CircuitType_toName(CircuitType type) {
 }
 /*** CODE FOR CLASS BENCHMARK_EXAMPLE ***/
 luint BenchmarkExperiment::correct_size() {
-    return -1UL; // Unknown
+    return 0; // Unknown
 }
 luint BenchmarkExperiment::bound_size() {
     return this->nstates; // No preknown bound
@@ -161,8 +162,8 @@ array<dd::CMat, 2U> BenchmarkExperiment::direct() {
 }
 
 vector<CCSparseVector> BenchmarkExperiment::matrix() {
-    qc::QuantumComputation* circuit = this->quantum(0.0);
-    dd::mEdge circuit_dd = buildFunctionality(circuit, *this->package);
+    this->quantum(0.0);
+    dd::mEdge circuit_dd = buildFunctionality(this->circuit, *this->package);
     dd::CMat unitary = circuit_dd.getMatrix(); 
     luint N = unitary.size();
     vector<CCSparseVector> U = vector<CCSparseVector>(N, N); // Initializing the final matrix
@@ -181,62 +182,65 @@ dd::CMat BenchmarkExperiment::matrix_B(dd::CMat& U) {
 qc::QuantumComputation* BenchmarkExperiment::quantum(double) {
     if (this->circuit == nullptr) {
         CircuitType circuit_type = CircuitType_fromString(this->name);
-        switch (circuit_type)
-        {
-            case CircuitType::AE:
-                this->circuit = ae::create(this->size());
-                break;
-            case CircuitType::DJ:
-                this->circuit = dj::create(this->size());
-                break;
-            case CircuitType::GHZ:
-                this->circuit = ghz::create(this->size());
-                break;
-            case CircuitType::GRAPHSTATE:
-                this->circuit = graphstate::create(this->size());
-                break;
-            case CircuitType::HHL:
-                this->circuit = hhl::create(this->size());
-                break;
-            case CircuitType::PORTFOLIOQAOA:
-                this->circuit = portfolioqaoa::create(this->size());
-                break;
-            case CircuitType::PORTFOLIOVQE:
-                this->circuit = portfoliovqe::create(this->size());
-                break;
-            case CircuitType::PRICINGCALL:
-                this->circuit = pricingcall::create(this->size());
-                break;
-            case CircuitType::PRICINGPUT:
-                this->circuit = pricingput::create(this->size());
-                break;
-            case CircuitType::QFT:
-                this->circuit = qft::create(this->size());
-                break;
-            case CircuitType::QNN:
-                this->circuit = qnn::create(this->size());
-                break;
-            case CircuitType::QPEEXACT:
-                this->circuit = qpeexact::create(this->size());
-                break;
-            case CircuitType::QPEINEXACT:
-                this->circuit = qpeinexact::create(this->size());
-                break;
-            case CircuitType::QWALK:
-                this->circuit = qwalk::create(this->size());
-                break;
-            case CircuitType::TSP:
-                this->circuit = tsp::create(this->size());
-                break;
-            case CircuitType::VQE:
-                this->circuit = vqe::create(this->size());
-                break;
-            case CircuitType::WSTATE:
-                this->circuit = wstate::create(this->size());
-                break;
-            default:
-                throw domain_error("Circuit type not recognized.");
-        }
+        string file_name = boost::to_lower_copy(CircuitType_toString(circuit_type)) + "_indep_qiskit_" + std::to_string(this->qbits) + ".qasm";
+        this->circuit = new qc::QuantumComputation("../../../../tests/quantum/circuits/" + file_name);
+        qc::CircuitOptimizer::removeFinalMeasurements(*this->circuit);
+        // switch (circuit_type)
+        // {
+        //     case CircuitType::AE:
+        //         this->circuit = ae::create(this->size());
+        //         break;
+        //     case CircuitType::DJ:
+        //         this->circuit = dj::create(this->size());
+        //         break;
+        //     case CircuitType::GHZ:
+        //         this->circuit = ghz::create(this->size());
+        //         break;
+        //     case CircuitType::GRAPHSTATE:
+        //         this->circuit = graphstate::create(this->size());
+        //         break;
+        //     case CircuitType::HHL:
+        //         this->circuit = hhl::create(this->size());
+        //         break;
+        //     case CircuitType::PORTFOLIOQAOA:
+        //         this->circuit = portfolioqaoa::create(this->size());
+        //         break;
+        //     case CircuitType::PORTFOLIOVQE:
+        //         this->circuit = portfoliovqe::create(this->size());
+        //         break;
+        //     case CircuitType::PRICINGCALL:
+        //         this->circuit = pricingcall::create(this->size());
+        //         break;
+        //     case CircuitType::PRICINGPUT:
+        //         this->circuit = pricingput::create(this->size());
+        //         break;
+        //     case CircuitType::QFT:
+        //         this->circuit = qft::create(this->size());
+        //         break;
+        //     case CircuitType::QNN:
+        //         this->circuit = qnn::create(this->size());
+        //         break;
+        //     case CircuitType::QPEEXACT:
+        //         this->circuit = qpeexact::create(this->size());
+        //         break;
+        //     case CircuitType::QPEINEXACT:
+        //         this->circuit = qpeinexact::create(this->size());
+        //         break;
+        //     case CircuitType::QWALK:
+        //         this->circuit = qwalk::create(this->size());
+        //         break;
+        //     case CircuitType::TSP:
+        //         this->circuit = tsp::create(this->size());
+        //         break;
+        //     case CircuitType::VQE:
+        //         this->circuit = vqe::create(this->size());
+        //         break;
+        //     case CircuitType::WSTATE:
+        //         this->circuit = wstate::create(this->size());
+        //         break;
+        //     default:
+        //         throw domain_error("Circuit type not recognized.");
+        // }
     }
 
     if (this->circuit == nullptr) {
