@@ -15,10 +15,20 @@ QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterati
 /*static*/ QuantumSearch* QuantumSearch::random(luint nQbits, ExperimentType eType, dd::Package<>* ePackage) {
     luint half_size = static_cast<luint>(pow(2UL, nQbits-1));
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(nQbits-1)/2.)));
-    luint value = static_cast<luint>(rand())%half_size;
 
+    // RANDOM WITH 1 SUCCESS VALUE
+    luint value = static_cast<luint>(rand())%half_size;
     return new QuantumSearch(nQbits, {value}, iterations, eType, ePackage);
+
+    // RANDOM WITH SEVERAL SUCCESS VALUES
+    // luint number_of_successes = (static_cast<luint>(rand())%(nQbits-1))+1;
+    // vector<luint> success_set = vector<luint>();
+    // for (luint i = 0; i < number_of_successes; i++) {
+    //     success_set.push_back(static_cast<luint>(rand())%half_size);
+    // }
+    // return new QuantumSearch(nQbits, success_set, iterations, eType, ePackage);
 }
+
 
 bool QuantumSearch::oracle(boost::dynamic_bitset<> bitchain) {
     luint value = 0UL, to_add = 1UL;

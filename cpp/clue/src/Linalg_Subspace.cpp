@@ -139,15 +139,19 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
     // We create the strucutre for the matrix
     vector<vector<C>> result = vector<vector<C>>(this->dimension());
     vector<V*> conjugates = vector<V*>();
+    // cerr << "\t+ Computing the conjugate of the basis..." << endl;
     for (luint i = 0; i < this->dimension(); i++) {
         V* conj = this->conjugate(this->basis[i]);
         conjugates.push_back(conj);
     }
 
     for (luint j = 0; j < this->dimension(); j++) {
+        // cerr << "\tStarting round " << j+1 << "/" << this->dimension() << endl;
         // V* conj = this->conjugate(this->basis[j]);
+        // cerr << "\t\tApplying matrix to conjugate..." << endl;
         V* Uld = this->apply(conjugates[j], matrix);
         // V* Uld_conj = this->conjugate(Uld);
+        // cerr << "\t\tComputing scalar product with basis..." << endl;
         for (luint i = 0; i < this->dimension(); i++) {
             // C to_put = this->inner_product(this->basis[i], Uld_conj);
             C to_put = this->inner_product(Uld, conjugates[i]);
@@ -158,6 +162,7 @@ vector<vector<C>> Subspace<V,M,C>::reduced_matrix(M& matrix) {
         // this->free_vector(Uld_conj);
         // this->free_vector(conj);
     }
+    // cerr << "\t- Finished reduction of matrix" << endl;
     for (V* v : conjugates) { this->free_vector(v); }
 
     return result;
