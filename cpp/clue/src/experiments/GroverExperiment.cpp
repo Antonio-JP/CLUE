@@ -16,17 +16,13 @@ QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterati
     luint half_size = static_cast<luint>(pow(2UL, nQbits-1));
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(nQbits-1)/2.)));
 
-    // RANDOM WITH 1 SUCCESS VALUE
-    luint value = static_cast<luint>(rand())%half_size;
-    return new QuantumSearch(nQbits, {value}, iterations, eType, ePackage);
-
     // RANDOM WITH SEVERAL SUCCESS VALUES
-    // luint number_of_successes = (static_cast<luint>(rand())%(nQbits-1))+1;
-    // vector<luint> success_set = vector<luint>();
-    // for (luint i = 0; i < number_of_successes; i++) {
-    //     success_set.push_back(static_cast<luint>(rand())%half_size);
-    // }
-    // return new QuantumSearch(nQbits, success_set, iterations, eType, ePackage);
+    luint number_of_successes = (static_cast<luint>(rand())%(nQbits-1))+1;
+    vector<luint> success_set = vector<luint>();
+    for (luint i = 0; i < number_of_successes; i++) {
+        success_set.push_back(static_cast<luint>(rand())%half_size);
+    }
+    return new QuantumSearch(nQbits, success_set, iterations, eType, ePackage);
 }
 
 
@@ -41,41 +37,64 @@ bool QuantumSearch::oracle(boost::dynamic_bitset<> bitchain) {
 bool QuantumSearch::oracle(luint value) {
     return this->success_set.contains(value);
 }
+
+/**
+ * @brief Applies the Quantum Oracle associated with `this`.
+ * 
+ * This method applies to the given ``circuit`` the Quantum Oracle associated with the 
+ * success set defined in `this`. For getting a description of the circuit itself, look 
+ * into the notes in https://cnot.io/quantum_algorithms/grover/grovers_algorithm.html,
+ * where the oracle is described.
+ * 
+ * As a summary, for each `element` in the success set, we add a controlled `X` gate 
+ * over the ancillary qubit, where the controls on the other qubits are as the bit chain
+ * representing `element`. More precisely, for `3` in 4 bits, we have `3 = 0101`, so we would
+ * apply a controlled `X` to the 5-th qubit with controls `C(-)C(+)C(-)C(+)`.
+*/
 void QuantumSearch::quantum_oracle(qc::QuantumComputation& circuit) {
-    if (this->success_set.size() != 1UL) {
-        throw logic_error("Quantum oracle only implemented for 1 success element");
+    vector<boost::dynamic_bitset<>> success_bitchains = vector<boost::dynamic_bitset<>>(this->success_set.size());
+    luint j = 0;
+    for (luint success : this->success_set) {
+        success_bitchains[j] = boost::dynamic_bitset<>(this->size()-1, success);
+        j++;
     }
     qc::Controls controls{};
-    boost::dynamic_bitset<> element = boost::dynamic_bitset<>(this->size()-1, *this->success_set.begin());
-    for (luint i = 0; i < this->size()-1; ++i) {
-        controls.emplace(static_cast<qc::Qubit>(i), (element[i] ? qc::Control::Type::Pos : qc::Control::Type::Neg));
+    for (boost::dynamic_bitset<> element : success_bitchains) {
+        controls.clear();
+        for (luint i = 0; i < this->size()-1; ++i) {
+            controls.emplace(qc::Control{static_cast<qc::Qubit>(i), (element[i] ? qc::Control::Type::Pos : qc::Control::Type::Neg)});
+        }
+        circuit.mcx(controls, static_cast<qc::Qubit>(this->size()-1));
     }
-    circuit.mcz(controls, static_cast<qc::Qubit>(this->size()-1));
 }
+/**
+ * @brief Applies the Quantum Diffusion operator for Grover's algorithm.
+ * 
+ * This method applies to the given ``circuit`` the Quantum Diffusion operator. For getting 
+ * a description of the circuit itself, look into the notes in 
+ * https://cnot.io/quantum_algorithms/grover/grovers_algorithm.html,
+ * where the diffusion operator is described.
+ * 
+ * As a summary, we apply the hadamard gate to each qubit and then a controlled `X` gate 
+ * over the ancillary qubit with negative controls all over other qubits.
+ * 
+*/
 void QuantumSearch::quantum_diffusion(qc::QuantumComputation& circuit) { 
     // Code taken from mqt-core/algorithms/Grover.cpp
     for (luint i = 0; i < this->size()-1; ++i) {
         circuit.h(static_cast<qc::Qubit>(i));
     }
-    for (luint i = 0; i < this->size()-1; ++i) {
-        circuit.x(static_cast<qc::Qubit>(i));
-    }
 
-    circuit.h(0);
     qc::Controls controls{};
-    for (qc::Qubit j = 1; j < this->size()-1; ++j) {
-        controls.emplace(j);
+    for (qc::Qubit j = 0; j < this->size()-1; ++j) {
+        controls.emplace(qc::Control{j, qc::Control::Type::Neg});
     }
-    circuit.mcx(controls, 0);
-    circuit.h(0);
+    circuit.mcx(controls, static_cast<qc::Qubit>(this->size()-1));
 
-    for (auto i = static_cast<std::make_signed_t<qc::Qubit>>(this->size() - 2); i >= 0; --i) {
-        circuit.x(static_cast<qc::Qubit>(i));
-    }
-    for (auto i = static_cast<std::make_signed_t<qc::Qubit>>(this->size() - 2); i >= 0; --i) {
+    for (luint i = this->size()-2; i < this->size()-1; --i) {
         circuit.h(static_cast<qc::Qubit>(i));
     }
-} // Adds the diffusion operator to the circuit given as input
+}
 
 /* Overriden methods from Experiment */
 CCSparseVector QuantumSearch::clue_observable() {
@@ -88,12 +107,20 @@ CCSparseVector QuantumSearch::clue_observable() {
 
     return result;
 }
+/**
+ * @brief Computes the initial state for the Grover algorithm.
+ * 
+ * As described in https://cnot.io/quantum_algorithms/grover/grovers_algorithm.html,
+ * the initial state for Grover's Algorithm is an entangled state in the non-ancillary qubits 
+ * with a |-> state for the ancillary qubit.
+ * 
+*/
 dd::vEdge QuantumSearch::dd_observable() {
     vector<dd::BasisStates> states;
     for (luint i = 0; i < this->size()-1; i++) {
         states.push_back(dd::BasisStates::plus);
     }
-    states.push_back(dd::BasisStates::one);
+    states.push_back(dd::BasisStates::minus);
 
     return this->package->makeBasisState(this->size(), states);
 }
