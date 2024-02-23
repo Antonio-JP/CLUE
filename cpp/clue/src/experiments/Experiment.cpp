@@ -147,7 +147,7 @@ void Experiment::run_ddsim() {
     dd::CMat UB = this->matrix_B(Uhat);
     dd::CMat U_full = matmul(Uhat, UB);
 
-    cerr << "+++ [ddsim @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations..." << endl;
+    cerr << "+++ [ddsim @ " << this->name << "] Computing the iteration (U_P*U_B)^iterations... (iterations = " << this->iterations << ")" << endl;
     clock_t b_iteration = clock();
     matrix_power(U_full, this->iterations);
     clock_t a_iteration = clock();
@@ -160,7 +160,10 @@ void Experiment::run_ddsim() {
     this->it_time = time_to_double(b_iteration, a_iteration);
     this->tot_time = time_to_double(begin, end);
 
-    delete U;
+    if (U != U_to_lump) {
+        delete U;
+    }
+    delete U_to_lump;
  
     return;
 }
