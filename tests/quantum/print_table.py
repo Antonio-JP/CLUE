@@ -52,7 +52,8 @@ def process_averages(table: str, observable = "all", kappa = "all", skip_kappa =
             data = data.reset_index()
             data = data.drop("obs", axis=1)
         elif observable != "split":
-            data = data[data["obs"] == str(observable)]
+            if data.dtypes['obs'] == 'O': data = data[data["obs"] == str(observable)]
+            else: data = data[data["obs"] == data.dtypes["obs"].type(observable)]
 
     if "kappa" in data.columns:
         if kappa != "all":
@@ -246,6 +247,70 @@ def table2(*, cpp:bool=False, out:str="text", formt="sci"):
         elif out == "style":
             return styler
 
+def table3(*, cpp:bool=False, out:str="text", formt="sci"):
+    ## Creating the table (depends on C++ argument)
+    if not cpp:
+        raise NotImplementedError
+    else:
+        zero_clue = process_averages("q_benchmark_clue", remove_outliers=False, observable='0', cpp=True).droplevel(-1)[["red. ratio", "time_lumping"]].rename(
+            columns={"red. ratio": ("CLUE",r"RR for $S_{\ket{0}}$"), "time_lumping": ("CLUE", r"Time (s)")})
+        zero_ddsim_clue = process_averages("q_benchmark_ddsim", remove_outliers=False, observable='0', cpp=True).droplevel(-1)[["red. ratio", "time_lumping"]].rename(
+            columns={"red. ratio": ("DDSIM+CLUE",r"RR for $S_{\ket{0}}$"), "time_lumping": ("DDSIM+CLUE", r"Time (s)")})
+        zero_ddsim_alone = process_averages("q_benchmark_full_ddsim", remove_outliers=False, observable=0, kappa=1, cpp=True).droplevel(-1)["time_iterations"].to_frame().rename(columns={"time_iterations": ("DDSIM", "Time (s)")})
+        
+        data = reduce(
+            lambda p, q : p.merge(q, how="outer", left_index=True, right_index=True), 
+            [
+                zero_clue, zero_ddsim_clue, zero_ddsim_alone
+            ])
+        data.columns = pd.MultiIndex.from_tuples(data.columns, names=(None,None))
+        count_per_column = [len([c for c in data.columns if c[0] == data.columns[0][0]])]
+        while len(count_per_column) < len(data.columns.levels[0]):
+            count_per_column += [len([c for c in data.columns if c[0] == data.columns[sum(count_per_column)][0]])]
+
+    ## Now 'data' contains the table to be formatted
+    data.index.names = [None, None]
+    for column in data.columns:
+        if "RR" in column or any("RR" in v for v in column):
+            data[column] = data[column].apply(lambda x : 100*x)
+    ## We generate the output
+    if out == "text":
+        if formt == "sci": # We use scientific notation
+            pd.set_option("display.float_format", '{:.3E}'.format)
+        elif formt == "float": # we print the float number
+            pd.set_option("display.float_format", '{:.6f}'.format)
+        print(data)
+    else: # We need to format the output
+        styler = data.style
+        ## Place for formatting the table
+        styler = styler.format({k: '{:.2f}\%' if "RR" in k or any("RR" in v for v in k) else '{:.3E}' for k in data.columns})
+        if cpp: # we mark the minimum between the two avg. times
+            styler = styler.highlight_min(subset=[("CLUE","Time (s)"), ("DDSIM+CLUE","Time (s)")], axis=1, props="font-weight:bold;")
+        
+        ## Deciding the output of the table
+        if out == "latex":
+            with open(os.path.join(SCRIPT_DIR, "table_benchmark_zeros.tex"), "w") as file:
+                styler.format_index("\\textbf{{{}}}", axis=1).to_latex(
+                    file,
+                    convert_css=True,
+                    column_format="rc|" + "|".join(e*"r" for e in count_per_column),
+                    position="tp",
+                    position_float="centering",
+                    hrules=True,
+                    clines="skip-last;data",
+                    label="table:benchmark",
+                    multirow_align="c",
+                    multicol_align="c",
+                    sparse_index=True,
+                    sparse_columns=True,
+                    caption=r"Some nice caption."
+                )
+        elif out == "html":
+            with open(os.path.join(SCRIPT_DIR, "table_examples.html")) as file:
+                styler.to_html(file)
+        elif out == "style":
+            return styler
+
 #######################################################################################
 ### METHODS TO PROCESS THE ARGUMENTS OF THE SCRIPT
 #######################################################################################
@@ -302,6 +367,9 @@ if __name__ == "__main__":
     elif what == "table2":
         out, formt, cpp = table_args(*sys.argv[2:])
         table2(out=out,formt=formt,cpp=cpp)
+    elif what == "table3":
+        out, formt, cpp = table_args(*sys.argv[2:])
+        table3(out=out,formt=formt,cpp=cpp)
     else:
         observable, kappa, skip_kappa, remove_outliers, without_infinity, add_times, is_cpp = avg_args(*sys.argv[:2])
 
