@@ -303,7 +303,9 @@ def table3(*, cpp:bool=False, out:str="text", formt="sci"):
                     multicol_align="c",
                     sparse_index=True,
                     sparse_columns=True,
-                    caption=r"Some nice caption."
+                    caption=r"Reduction Ratio (RR) and Time (s) comparison between CLUE and CLUE+DDSIM for computing \
+                        a lumping w.r.t. $\ket{0}$. Last column also shows the execution time of the circuit for \
+                        the input $\ket{0}$ once."
                 )
         elif out == "html":
             with open(os.path.join(SCRIPT_DIR, "table_examples.html")) as file:
