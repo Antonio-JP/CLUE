@@ -3824,3 +3824,618 @@ size,bound,name,obs,time_lumping,red. ratio, kappa,time_iterations,time,descript
 5,32,wstate,31,0.058846,1,1,0.000166,0.065367,W-State with 5 q-bits.
 5,32,wstate,31,0.063709,1,1,0.000171,0.069342,W-State with 5 q-bits.
 5,32,wstate,31,0.05898,1,1,0.000289,0.072893,W-State with 5 q-bits.
+3,8,ae,0,0.001869,1,1,1.3e-05,0.008234,Amplitude Estimation with 3 q-bits.
+3,8,ae,0,0.001468,1,1,1.3e-05,0.007538,Amplitude Estimation with 3 q-bits.
+3,8,ae,0,0.003084,1,1,3e-05,0.008736,Amplitude Estimation with 3 q-bits.
+3,8,ae,0,0.00116,1,1,1.8e-05,0.006528,Amplitude Estimation with 3 q-bits.
+3,8,ae,0,0.001048,1,1,1.1e-05,0.007067,Amplitude Estimation with 3 q-bits.
+3,8,dj,0,9.4e-05,0.125,1,5e-06,0.00419,Deutsch-Jozsa with 3 q-bits.
+3,8,dj,0,3.6e-05,0.125,1,5e-06,0.003983,Deutsch-Jozsa with 3 q-bits.
+3,8,dj,0,0.000132,0.125,1,1.3e-05,0.007607,Deutsch-Jozsa with 3 q-bits.
+3,8,dj,0,0.000133,0.125,1,4e-06,0.005923,Deutsch-Jozsa with 3 q-bits.
+3,8,dj,0,0.000111,0.125,1,8e-06,0.020046,Deutsch-Jozsa with 3 q-bits.
+3,8,ghz,0,0.005129,0.75,1,2.2e-05,0.010448,Greenberger–Horne–Zeilinger  with 3 q-bits.
+3,8,ghz,0,0.00066,0.75,1,3.6e-05,0.021485,Greenberger–Horne–Zeilinger  with 3 q-bits.
+3,8,ghz,0,0.000581,0.75,1,9e-06,0.004373,Greenberger–Horne–Zeilinger  with 3 q-bits.
+3,8,ghz,0,0.0004,0.75,1,6e-06,0.005154,Greenberger–Horne–Zeilinger  with 3 q-bits.
+3,8,ghz,0,0.000539,0.75,1,9e-06,0.007425,Greenberger–Horne–Zeilinger  with 3 q-bits.
+3,8,graphstate,0,0.000863,0.5,1,6e-06,0.00706,Graph State with 3 q-bits.
+3,8,graphstate,0,0.000617,0.5,1,6e-06,0.007536,Graph State with 3 q-bits.
+3,8,graphstate,0,0.000813,0.5,1,6e-06,0.008281,Graph State with 3 q-bits.
+3,8,graphstate,0,0.00046,0.5,1,6e-06,0.006616,Graph State with 3 q-bits.
+3,8,graphstate,0,0.001041,0.5,1,8e-06,0.008262,Graph State with 3 q-bits.
+3,8,qwalk,0,0.000608,0.75,1,5.7e-05,0.007857,Quantum Walk with 3 q-bits.
+3,8,qwalk,0,0.000567,0.75,1,1.4e-05,0.01697,Quantum Walk with 3 q-bits.
+3,8,qwalk,0,0.000472,0.75,1,9e-06,0.007603,Quantum Walk with 3 q-bits.
+3,8,qwalk,0,0.009752,0.75,1,1.9e-05,0.028189,Quantum Walk with 3 q-bits.
+3,8,qwalk,0,0.000478,0.75,1,9e-06,0.018353,Quantum Walk with 3 q-bits.
+3,8,portfolioqaoa,0,0.001852,1,1,1.3e-05,0.013632,Portfolio QAOA with 3 q-bits.
+3,8,portfolioqaoa,0,0.003052,1,1,2.6e-05,0.011927,Portfolio QAOA with 3 q-bits.
+3,8,portfolioqaoa,0,0.002547,1,1,1.3e-05,0.012182,Portfolio QAOA with 3 q-bits.
+3,8,portfolioqaoa,0,0.001097,1,1,8e-06,0.011709,Portfolio QAOA with 3 q-bits.
+3,8,portfolioqaoa,0,0.001799,1,1,1.3e-05,0.010762,Portfolio QAOA with 3 q-bits.
+3,8,portfoliovqe,0,0.001032,1,1,1.9e-05,0.009669,Portfolio QVE with 3 q-bits.
+3,8,portfoliovqe,0,0.001844,1,1,3.2e-05,0.014731,Portfolio QVE with 3 q-bits.
+3,8,portfoliovqe,0,0.003265,1,1,1.3e-05,0.009372,Portfolio QVE with 3 q-bits.
+3,8,portfoliovqe,0,0.001805,1,1,3.4e-05,0.008496,Portfolio QVE with 3 q-bits.
+3,8,portfoliovqe,0,0.001942,1,1,5.3e-05,0.008193,Portfolio QVE with 3 q-bits.
+3,8,qnn,0,0.001771,1,1,3.9e-05,0.010828,Quantum Neural Network with 3 q-bits.
+3,8,qnn,0,0.001163,1,1,8e-06,0.012495,Quantum Neural Network with 3 q-bits.
+3,8,qnn,0,0.00176,1,1,1.4e-05,0.015229,Quantum Neural Network with 3 q-bits.
+3,8,qnn,0,0.005926,1,1,4.2e-05,0.014194,Quantum Neural Network with 3 q-bits.
+3,8,qnn,0,0.001221,1,1,1.1e-05,0.013761,Quantum Neural Network with 3 q-bits.
+3,8,qpeexact,0,0.000606,1,1,1.2e-05,0.009284,Quantum Phase Estimation (exact) with 3 q-bits.
+3,8,qpeexact,0,0.00063,1,1,1.5e-05,0.011212,Quantum Phase Estimation (exact) with 3 q-bits.
+3,8,qpeexact,0,0.002648,1,1,2.8e-05,0.007842,Quantum Phase Estimation (exact) with 3 q-bits.
+3,8,qpeexact,0,0.000428,1,1,8e-06,0.013954,Quantum Phase Estimation (exact) with 3 q-bits.
+3,8,qpeexact,0,0.000856,1,1,1.3e-05,0.010001,Quantum Phase Estimation (exact) with 3 q-bits.
+3,8,qpeinexact,0,0.000926,1,1,1.7e-05,0.010709,Quantum Phase Estimation (inexact) with 3 q-bits.
+3,8,qpeinexact,0,0.000796,1,1,8e-06,0.006232,Quantum Phase Estimation (inexact) with 3 q-bits.
+3,8,qpeinexact,0,0.000643,1,1,9e-06,0.005509,Quantum Phase Estimation (inexact) with 3 q-bits.
+3,8,qpeinexact,0,0.000716,1,1,1.5e-05,0.005464,Quantum Phase Estimation (inexact) with 3 q-bits.
+3,8,qpeinexact,0,0.000561,1,1,9e-06,0.006222,Quantum Phase Estimation (inexact) with 3 q-bits.
+3,8,vqe,0,0.001096,1,1,1.2e-05,0.007581,Variational Quantum Eigensolver with 3 q-bits.
+3,8,vqe,0,0.001664,1,1,1.1e-05,0.009138,Variational Quantum Eigensolver with 3 q-bits.
+3,8,vqe,0,0.00103,1,1,1.2e-05,0.008152,Variational Quantum Eigensolver with 3 q-bits.
+3,8,vqe,0,0.001113,1,1,1.8e-05,0.006107,Variational Quantum Eigensolver with 3 q-bits.
+3,8,vqe,0,0.001733,1,1,8e-06,0.0084,Variational Quantum Eigensolver with 3 q-bits.
+3,8,wstate,0,0.001018,1,1,2.4e-05,0.007137,W-State with 3 q-bits.
+3,8,wstate,0,0.000754,1,1,2e-05,0.005654,W-State with 3 q-bits.
+3,8,wstate,0,0.001973,1,1,2.6e-05,0.008615,W-State with 3 q-bits.
+3,8,wstate,0,0.007217,1,1,1.4e-05,0.013448,W-State with 3 q-bits.
+3,8,wstate,0,0.001089,1,1,1.3e-05,0.008044,W-State with 3 q-bits.
+4,16,ae,0,0.021578,1,1,0.000124,0.029708,Amplitude Estimation with 4 q-bits.
+4,16,ae,0,0.029381,1,1,5.1e-05,0.038127,Amplitude Estimation with 4 q-bits.
+4,16,ae,0,0.021191,1,1,3.6e-05,0.038237,Amplitude Estimation with 4 q-bits.
+4,16,ae,0,0.012051,1,1,2.8e-05,0.021653,Amplitude Estimation with 4 q-bits.
+4,16,ae,0,0.015942,1,1,3.3e-05,0.024427,Amplitude Estimation with 4 q-bits.
+4,16,dj,0,6.2e-05,0.0625,1,3e-06,0.004901,Deutsch-Jozsa with 4 q-bits.
+4,16,dj,0,8.7e-05,0.0625,1,6e-06,0.006917,Deutsch-Jozsa with 4 q-bits.
+4,16,dj,0,4.5e-05,0.0625,1,3e-06,0.004843,Deutsch-Jozsa with 4 q-bits.
+4,16,dj,0,0.000141,0.0625,1,1e-05,0.00877,Deutsch-Jozsa with 4 q-bits.
+4,16,dj,0,0.000128,0.0625,1,4e-06,0.011045,Deutsch-Jozsa with 4 q-bits.
+4,16,ghz,0,0.007426,0.875,1,4.3e-05,0.013657,Greenberger–Horne–Zeilinger  with 4 q-bits.
+4,16,ghz,0,0.009043,0.875,1,2.8e-05,0.015518,Greenberger–Horne–Zeilinger  with 4 q-bits.
+4,16,ghz,0,0.00494,0.875,1,6.5e-05,0.013119,Greenberger–Horne–Zeilinger  with 4 q-bits.
+4,16,ghz,0,0.00595,0.875,1,3.5e-05,0.014236,Greenberger–Horne–Zeilinger  with 4 q-bits.
+4,16,ghz,0,0.003396,0.875,1,2e-05,0.014091,Greenberger–Horne–Zeilinger  with 4 q-bits.
+4,16,graphstate,0,0.002402,0.25,1,8e-06,0.012699,Graph State with 4 q-bits.
+4,16,graphstate,0,0.002636,0.25,1,6e-06,0.010993,Graph State with 4 q-bits.
+4,16,graphstate,0,0.003788,0.25,1,7e-06,0.009704,Graph State with 4 q-bits.
+4,16,graphstate,0,0.001529,0.25,1,5e-06,0.008807,Graph State with 4 q-bits.
+4,16,graphstate,0,0.001501,0.25,1,5e-06,0.008954,Graph State with 4 q-bits.
+4,16,qwalk,0,0.003352,1,1,4.4e-05,0.027518,Quantum Walk with 4 q-bits.
+4,16,qwalk,0,0.003008,1,1,3.1e-05,0.021509,Quantum Walk with 4 q-bits.
+4,16,qwalk,0,0.003088,1,1,1.9e-05,0.021865,Quantum Walk with 4 q-bits.
+4,16,qwalk,0,0.0032,1,1,4.4e-05,0.026301,Quantum Walk with 4 q-bits.
+4,16,qwalk,0,0.003195,1,1,5.2e-05,0.025456,Quantum Walk with 4 q-bits.
+4,16,tsp,0,0.008306,0.875,1,4.2e-05,0.023255,Travelling-Salesman Problem with 4 q-bits.
+4,16,tsp,0,0.010819,0.875,1,6.1e-05,0.021834,Travelling-Salesman Problem with 4 q-bits.
+4,16,tsp,0,0.011667,0.875,1,2.9e-05,0.024619,Travelling-Salesman Problem with 4 q-bits.
+4,16,tsp,0,0.013914,0.875,1,4e-05,0.032539,Travelling-Salesman Problem with 4 q-bits.
+4,16,tsp,0,0.009543,0.875,1,6.3e-05,0.02796,Travelling-Salesman Problem with 4 q-bits.
+4,16,portfolioqaoa,0,0.00955,1,1,2.1e-05,0.02302,Portfolio QAOA with 4 q-bits.
+4,16,portfolioqaoa,0,0.009122,1,1,2.3e-05,0.021142,Portfolio QAOA with 4 q-bits.
+4,16,portfolioqaoa,0,0.01503,1,1,3.1e-05,0.029796,Portfolio QAOA with 4 q-bits.
+4,16,portfolioqaoa,0,0.009367,1,1,5.3e-05,0.020951,Portfolio QAOA with 4 q-bits.
+4,16,portfolioqaoa,0,0.011371,1,1,3.1e-05,0.025768,Portfolio QAOA with 4 q-bits.
+4,16,portfoliovqe,0,0.010844,1,1,2e-05,0.021513,Portfolio QVE with 4 q-bits.
+4,16,portfoliovqe,0,0.011552,1,1,2.8e-05,0.021726,Portfolio QVE with 4 q-bits.
+4,16,portfoliovqe,0,0.008932,1,1,2e-05,0.019896,Portfolio QVE with 4 q-bits.
+4,16,portfoliovqe,0,0.008566,1,1,3.9e-05,0.018956,Portfolio QVE with 4 q-bits.
+4,16,portfoliovqe,0,0.012298,1,1,4.5e-05,0.022941,Portfolio QVE with 4 q-bits.
+4,16,qnn,0,0.011597,1,1,3.2e-05,0.022823,Quantum Neural Network with 4 q-bits.
+4,16,qnn,0,0.01104,1,1,4.3e-05,0.026,Quantum Neural Network with 4 q-bits.
+4,16,qnn,0,0.009978,1,1,2e-05,0.024963,Quantum Neural Network with 4 q-bits.
+4,16,qnn,0,0.014041,1,1,3.4e-05,0.028307,Quantum Neural Network with 4 q-bits.
+4,16,qnn,0,0.008402,1,1,5.6e-05,0.020463,Quantum Neural Network with 4 q-bits.
+4,16,qpeexact,0,0.003273,1,1,3.3e-05,0.009376,Quantum Phase Estimation (exact) with 4 q-bits.
+4,16,qpeexact,0,0.005436,1,1,3.9e-05,0.014068,Quantum Phase Estimation (exact) with 4 q-bits.
+4,16,qpeexact,0,0.004542,1,1,3.5e-05,0.00971,Quantum Phase Estimation (exact) with 4 q-bits.
+4,16,qpeexact,0,0.004287,1,1,2.9e-05,0.009019,Quantum Phase Estimation (exact) with 4 q-bits.
+4,16,qpeexact,0,0.003496,1,1,2.9e-05,0.010581,Quantum Phase Estimation (exact) with 4 q-bits.
+4,16,qpeinexact,0,0.003683,1,1,2e-05,0.011983,Quantum Phase Estimation (inexact) with 4 q-bits.
+4,16,qpeinexact,0,0.003569,1,1,2.6e-05,0.009469,Quantum Phase Estimation (inexact) with 4 q-bits.
+4,16,qpeinexact,0,0.003489,1,1,1.8e-05,0.00851,Quantum Phase Estimation (inexact) with 4 q-bits.
+4,16,qpeinexact,0,0.005014,1,1,2e-05,0.009575,Quantum Phase Estimation (inexact) with 4 q-bits.
+4,16,qpeinexact,0,0.005485,1,1,2.2e-05,0.013524,Quantum Phase Estimation (inexact) with 4 q-bits.
+4,16,vqe,0,0.012012,1,1,3.8e-05,0.022666,Variational Quantum Eigensolver with 4 q-bits.
+4,16,vqe,0,0.015164,1,1,3.5e-05,0.02385,Variational Quantum Eigensolver with 4 q-bits.
+4,16,vqe,0,0.011071,1,1,4.2e-05,0.02102,Variational Quantum Eigensolver with 4 q-bits.
+4,16,vqe,0,0.013155,1,1,2.8e-05,0.025019,Variational Quantum Eigensolver with 4 q-bits.
+4,16,vqe,0,0.013795,1,1,5.5e-05,0.021685,Variational Quantum Eigensolver with 4 q-bits.
+4,16,wstate,0,0.012581,1,1,4.3e-05,0.017939,W-State with 4 q-bits.
+4,16,wstate,0,0.008329,1,1,7.8e-05,0.022415,W-State with 4 q-bits.
+4,16,wstate,0,0.008588,1,1,4.5e-05,0.016862,W-State with 4 q-bits.
+4,16,wstate,0,0.005979,1,1,2.6e-05,0.012166,W-State with 4 q-bits.
+4,16,wstate,0,0.005351,1,1,2.3e-05,0.01017,W-State with 4 q-bits.
+5,32,ae,0,0.271466,1,1,0.000252,0.294498,Amplitude Estimation with 5 q-bits.
+5,32,ae,0,0.150231,1,1,0.000164,0.174174,Amplitude Estimation with 5 q-bits.
+5,32,ae,0,0.110925,1,1,0.000607,0.133421,Amplitude Estimation with 5 q-bits.
+5,32,ae,0,0.114931,1,1,0.000115,0.130483,Amplitude Estimation with 5 q-bits.
+5,32,ae,0,0.102892,1,1,0.00011,0.118491,Amplitude Estimation with 5 q-bits.
+5,32,dj,0,0.003741,0.03125,1,5e-06,0.012465,Deutsch-Jozsa with 5 q-bits.
+5,32,dj,0,0.000226,0.03125,1,1e-05,0.008336,Deutsch-Jozsa with 5 q-bits.
+5,32,dj,0,9.2e-05,0.03125,1,4e-06,0.008905,Deutsch-Jozsa with 5 q-bits.
+5,32,dj,0,0.000147,0.03125,1,8e-06,0.007407,Deutsch-Jozsa with 5 q-bits.
+5,32,dj,0,0.000275,0.03125,1,1.1e-05,0.010336,Deutsch-Jozsa with 5 q-bits.
+5,32,ghz,0,0.011387,0.5,1,5.1e-05,0.017427,Greenberger–Horne–Zeilinger  with 5 q-bits.
+5,32,ghz,0,0.011828,0.5,1,3.7e-05,0.017012,Greenberger–Horne–Zeilinger  with 5 q-bits.
+5,32,ghz,0,0.011582,0.5,1,6.7e-05,0.017381,Greenberger–Horne–Zeilinger  with 5 q-bits.
+5,32,ghz,0,0.011385,0.5,1,7.2e-05,0.018578,Greenberger–Horne–Zeilinger  with 5 q-bits.
+5,32,ghz,0,0.016653,0.5,1,3.6e-05,0.02204,Greenberger–Horne–Zeilinger  with 5 q-bits.
+5,32,graphstate,0,0.017134,0.25,1,1e-05,0.024535,Graph State with 5 q-bits.
+5,32,graphstate,0,0.015978,0.25,1,9e-06,0.024193,Graph State with 5 q-bits.
+5,32,graphstate,0,0.015609,0.25,1,2.3e-05,0.022002,Graph State with 5 q-bits.
+5,32,graphstate,0,0.017735,0.25,1,1.6e-05,0.02585,Graph State with 5 q-bits.
+5,32,graphstate,0,0.019175,0.25,1,1.5e-05,0.029373,Graph State with 5 q-bits.
+5,32,hhl,0,0.002474,0.125,1,6e-06,0.040092,Harrow–Hassidim–Lloyd Algorithm with 5 q-bits.
+5,32,hhl,0,0.002689,0.125,1,6e-06,0.043121,Harrow–Hassidim–Lloyd Algorithm with 5 q-bits.
+5,32,hhl,0,0.003044,0.125,1,1.3e-05,0.049361,Harrow–Hassidim–Lloyd Algorithm with 5 q-bits.
+5,32,hhl,0,0.001847,0.125,1,8e-06,0.039905,Harrow–Hassidim–Lloyd Algorithm with 5 q-bits.
+5,32,hhl,0,0.00165,0.125,1,1.4e-05,0.041885,Harrow–Hassidim–Lloyd Algorithm with 5 q-bits.
+5,32,pricingcall,0,0.003477,0.25,1,2e-05,0.013864,Pricing-Call with 5 q-bits.
+5,32,pricingcall,0,0.002705,0.25,1,2.3e-05,0.013644,Pricing-Call with 5 q-bits.
+5,32,pricingcall,0,0.002927,0.25,1,6.2e-05,0.011992,Pricing-Call with 5 q-bits.
+5,32,pricingcall,0,0.003906,0.25,1,2.4e-05,0.013531,Pricing-Call with 5 q-bits.
+5,32,pricingcall,0,0.002678,0.25,1,1.2e-05,0.012634,Pricing-Call with 5 q-bits.
+5,32,pricingput,0,0.002845,0.25,1,1.7e-05,0.013978,Pricing-Put with 5 q-bits.
+5,32,pricingput,0,0.003175,0.25,1,2.4e-05,0.012957,Pricing-Put with 5 q-bits.
+5,32,pricingput,0,0.002522,0.25,1,1.4e-05,0.011697,Pricing-Put with 5 q-bits.
+5,32,pricingput,0,0.002503,0.25,1,1.3e-05,0.012559,Pricing-Put with 5 q-bits.
+5,32,pricingput,0,0.002382,0.25,1,2.3e-05,0.011737,Pricing-Put with 5 q-bits.
+5,32,qwalk,0,0.007093,0.5,1,1.6e-05,0.054203,Quantum Walk with 5 q-bits.
+5,32,qwalk,0,0.012524,0.5,1,5.9e-05,0.068393,Quantum Walk with 5 q-bits.
+5,32,qwalk,0,0.008244,0.5,1,2.1e-05,0.059279,Quantum Walk with 5 q-bits.
+5,32,qwalk,0,0.019533,0.5,1,4e-05,0.073909,Quantum Walk with 5 q-bits.
+5,32,qwalk,0,0.006916,0.5,1,0.000129,0.081021,Quantum Walk with 5 q-bits.
+5,32,portfolioqaoa,0,0.108095,1,1,0.000129,0.152358,Portfolio QAOA with 5 q-bits.
+5,32,portfolioqaoa,0,0.089251,1,1,0.000115,0.127855,Portfolio QAOA with 5 q-bits.
+5,32,portfolioqaoa,0,0.086105,1,1,9.5e-05,0.136276,Portfolio QAOA with 5 q-bits.
+5,32,portfolioqaoa,0,0.078425,1,1,0.00011,0.117297,Portfolio QAOA with 5 q-bits.
+5,32,portfolioqaoa,0,0.083528,1,1,7.3e-05,0.136023,Portfolio QAOA with 5 q-bits.
+5,32,portfoliovqe,0,0.089551,1,1,6.5e-05,0.114625,Portfolio QVE with 5 q-bits.
+5,32,portfoliovqe,0,0.112678,1,1,0.000161,0.147995,Portfolio QVE with 5 q-bits.
+5,32,portfoliovqe,0,0.115594,1,1,0.00011,0.14496,Portfolio QVE with 5 q-bits.
+5,32,portfoliovqe,0,0.199351,1,1,0.000137,0.242232,Portfolio QVE with 5 q-bits.
+5,32,portfoliovqe,0,0.103928,1,1,0.000101,0.132523,Portfolio QVE with 5 q-bits.
+5,32,qnn,0,0.133305,1,1,0.000285,0.207214,Quantum Neural Network with 5 q-bits.
+5,32,qnn,0,0.11566,1,1,0.00036,0.160391,Quantum Neural Network with 5 q-bits.
+5,32,qnn,0,0.104015,1,1,0.0001,0.144846,Quantum Neural Network with 5 q-bits.
+5,32,qnn,0,0.100561,1,1,0.000233,0.139654,Quantum Neural Network with 5 q-bits.
+5,32,qnn,0,0.099374,1,1,0.000162,0.131926,Quantum Neural Network with 5 q-bits.
+5,32,qpeexact,0,0.079589,0.9375,1,6.2e-05,0.108118,Quantum Phase Estimation (exact) with 5 q-bits.
+5,32,qpeexact,0,0.038219,0.9375,1,8.5e-05,0.052245,Quantum Phase Estimation (exact) with 5 q-bits.
+5,32,qpeexact,0,0.031934,0.9375,1,0.000242,0.040791,Quantum Phase Estimation (exact) with 5 q-bits.
+5,32,qpeexact,0,0.034756,0.9375,1,0.000113,0.046349,Quantum Phase Estimation (exact) with 5 q-bits.
+5,32,qpeexact,0,0.036444,0.9375,1,0.000124,0.050263,Quantum Phase Estimation (exact) with 5 q-bits.
+5,32,qpeinexact,0,0.048546,1,1,0.000136,0.058556,Quantum Phase Estimation (inexact) with 5 q-bits.
+5,32,qpeinexact,0,0.035,1,1,7.7e-05,0.045898,Quantum Phase Estimation (inexact) with 5 q-bits.
+5,32,qpeinexact,0,0.057013,1,1,0.000353,0.081602,Quantum Phase Estimation (inexact) with 5 q-bits.
+5,32,qpeinexact,0,0.117118,1,1,0.009287,0.144778,Quantum Phase Estimation (inexact) with 5 q-bits.
+5,32,qpeinexact,0,0.072758,1,1,0.000165,0.088862,Quantum Phase Estimation (inexact) with 5 q-bits.
+5,32,vqe,0,0.114614,1,1,0.000242,0.140407,Variational Quantum Eigensolver with 5 q-bits.
+5,32,vqe,0,0.087312,1,1,8.7e-05,0.107861,Variational Quantum Eigensolver with 5 q-bits.
+5,32,vqe,0,0.098943,1,1,9.5e-05,0.124012,Variational Quantum Eigensolver with 5 q-bits.
+5,32,vqe,0,0.09264,1,1,0.000129,0.113529,Variational Quantum Eigensolver with 5 q-bits.
+5,32,vqe,0,0.079971,1,1,0.000221,0.110175,Variational Quantum Eigensolver with 5 q-bits.
+5,32,wstate,0,0.067687,1,1,4.4e-05,0.076954,W-State with 5 q-bits.
+5,32,wstate,0,0.112033,1,1,9.7e-05,0.120783,W-State with 5 q-bits.
+5,32,wstate,0,0.148278,1,1,0.000111,0.168003,W-State with 5 q-bits.
+5,32,wstate,0,0.090412,1,1,9.7e-05,0.101373,W-State with 5 q-bits.
+5,32,wstate,0,0.100077,1,1,8.6e-05,0.110512,W-State with 5 q-bits.
+6,64,ae,0,1.03967,1,1,0.000358,1.06806,Amplitude Estimation with 6 q-bits.
+6,64,ae,0,0.864109,1,1,0.000318,0.897105,Amplitude Estimation with 6 q-bits.
+6,64,ae,0,0.84029,1,1,0.000444,0.864423,Amplitude Estimation with 6 q-bits.
+6,64,ae,0,0.635978,1,1,0.000125,0.65638,Amplitude Estimation with 6 q-bits.
+6,64,ae,0,0.643616,1,1,0.000294,0.664948,Amplitude Estimation with 6 q-bits.
+6,64,dj,0,0.000234,0.015625,1,1.4e-05,0.007012,Deutsch-Jozsa with 6 q-bits.
+6,64,dj,0,0.000151,0.015625,1,5e-06,0.009037,Deutsch-Jozsa with 6 q-bits.
+6,64,dj,0,0.000201,0.015625,1,5e-06,0.007513,Deutsch-Jozsa with 6 q-bits.
+6,64,dj,0,0.000233,0.015625,1,6e-06,0.008598,Deutsch-Jozsa with 6 q-bits.
+6,64,dj,0,0.000446,0.015625,1,1.5e-05,0.011942,Deutsch-Jozsa with 6 q-bits.
+6,64,ghz,0,0.024508,0.25,1,2.3e-05,0.035193,Greenberger–Horne–Zeilinger  with 6 q-bits.
+6,64,ghz,0,0.021193,0.25,1,2.3e-05,0.028947,Greenberger–Horne–Zeilinger  with 6 q-bits.
+6,64,ghz,0,0.023372,0.25,1,2.4e-05,0.029214,Greenberger–Horne–Zeilinger  with 6 q-bits.
+6,64,ghz,0,0.019072,0.25,1,2.2e-05,0.025145,Greenberger–Horne–Zeilinger  with 6 q-bits.
+6,64,ghz,0,0.020213,0.25,1,2e-05,0.027387,Greenberger–Horne–Zeilinger  with 6 q-bits.
+6,64,graphstate,0,0.032016,0.09375,1,7e-06,0.040265,Graph State with 6 q-bits.
+6,64,graphstate,0,0.036569,0.09375,1,7e-06,0.043906,Graph State with 6 q-bits.
+6,64,graphstate,0,0.038579,0.09375,1,1.3e-05,0.047064,Graph State with 6 q-bits.
+6,64,graphstate,0,0.049017,0.09375,1,1.1e-05,0.060978,Graph State with 6 q-bits.
+6,64,graphstate,0,0.032125,0.09375,1,1.5e-05,0.040057,Graph State with 6 q-bits.
+6,64,qwalk,0,0.084514,0.5,1,5.5e-05,0.177148,Quantum Walk with 6 q-bits.
+6,64,qwalk,0,0.061503,0.5,1,5.3e-05,0.1596,Quantum Walk with 6 q-bits.
+6,64,qwalk,0,0.0756,0.5,1,7.9e-05,0.159612,Quantum Walk with 6 q-bits.
+6,64,qwalk,0,0.059491,0.5,1,5.9e-05,0.164886,Quantum Walk with 6 q-bits.
+6,64,qwalk,0,0.075924,0.5,1,9.8e-05,0.171126,Quantum Walk with 6 q-bits.
+6,64,portfolioqaoa,0,0.700293,1,1,0.000293,0.883097,Portfolio QAOA with 6 q-bits.
+6,64,portfolioqaoa,0,0.650293,1,1,0.000159,0.814279,Portfolio QAOA with 6 q-bits.
+6,64,portfolioqaoa,0,0.638949,1,1,0.000293,0.896736,Portfolio QAOA with 6 q-bits.
+6,64,portfolioqaoa,0,0.621592,1,1,0.000272,0.780095,Portfolio QAOA with 6 q-bits.
+6,64,portfolioqaoa,0,1.04694,1,1,0.002113,1.24228,Portfolio QAOA with 6 q-bits.
+6,64,portfoliovqe,0,1.25049,1,1,0.00038,1.49977,Portfolio QVE with 6 q-bits.
+6,64,portfoliovqe,0,0.939563,1,1,0.000362,1.06343,Portfolio QVE with 6 q-bits.
+6,64,portfoliovqe,0,1.09502,1,1,0.000321,1.29127,Portfolio QVE with 6 q-bits.
+6,64,portfoliovqe,0,0.869906,1,1,0.000259,0.982399,Portfolio QVE with 6 q-bits.
+6,64,portfoliovqe,0,1.15301,1,1,0.000167,1.25917,Portfolio QVE with 6 q-bits.
+6,64,qnn,0,0.737153,1,1,0.0002,0.851061,Quantum Neural Network with 6 q-bits.
+6,64,qnn,0,0.615719,1,1,0.000169,0.717677,Quantum Neural Network with 6 q-bits.
+6,64,qnn,0,0.583709,1,1,0.000776,0.683835,Quantum Neural Network with 6 q-bits.
+6,64,qnn,0,0.586971,1,1,0.000283,0.703457,Quantum Neural Network with 6 q-bits.
+6,64,qnn,0,0.683998,1,1,0.000118,0.806634,Quantum Neural Network with 6 q-bits.
+6,64,qpeexact,0,0.2116,1,1,0.00016,0.224318,Quantum Phase Estimation (exact) with 6 q-bits.
+6,64,qpeexact,0,0.226556,1,1,0.000708,0.242962,Quantum Phase Estimation (exact) with 6 q-bits.
+6,64,qpeexact,0,0.347036,1,1,0.000179,0.363312,Quantum Phase Estimation (exact) with 6 q-bits.
+6,64,qpeexact,0,0.2386,1,1,0.000231,0.25607,Quantum Phase Estimation (exact) with 6 q-bits.
+6,64,qpeexact,0,0.28159,1,1,0.00032,0.298739,Quantum Phase Estimation (exact) with 6 q-bits.
+6,64,qpeinexact,0,0.286644,1,1,0.000169,0.304063,Quantum Phase Estimation (inexact) with 6 q-bits.
+6,64,qpeinexact,0,0.2972,1,1,0.000268,0.314342,Quantum Phase Estimation (inexact) with 6 q-bits.
+6,64,qpeinexact,0,0.245639,1,1,0.000183,0.262491,Quantum Phase Estimation (inexact) with 6 q-bits.
+6,64,qpeinexact,0,0.246548,1,1,0.000163,0.260764,Quantum Phase Estimation (inexact) with 6 q-bits.
+6,64,qpeinexact,0,0.275804,1,1,0.000307,0.290401,Quantum Phase Estimation (inexact) with 6 q-bits.
+6,64,wstate,0,0.444255,1,1,0.000407,0.459182,W-State with 6 q-bits.
+6,64,wstate,0,0.390002,1,1,0.000174,0.403946,W-State with 6 q-bits.
+6,64,wstate,0,0.480496,1,1,0.000186,0.496577,W-State with 6 q-bits.
+6,64,wstate,0,0.439289,1,1,0.000376,0.453538,W-State with 6 q-bits.
+6,64,wstate,0,0.387163,1,1,0.000311,0.404123,W-State with 6 q-bits.
+7,128,ae,0,4.02328,1,1,0.000409,4.08811,Amplitude Estimation with 7 q-bits.
+7,128,ae,0,3.97921,1,1,0.000546,4.05539,Amplitude Estimation with 7 q-bits.
+7,128,ae,0,3.96704,1,1,0.000413,4.03549,Amplitude Estimation with 7 q-bits.
+7,128,ae,0,4.04665,1,1,0.000419,4.11873,Amplitude Estimation with 7 q-bits.
+7,128,ae,0,4.01416,1,1,0.000434,4.0894,Amplitude Estimation with 7 q-bits.
+7,128,dj,0,0.000179,0.0078125,1,2e-06,0.005787,Deutsch-Jozsa with 7 q-bits.
+7,128,dj,0,0.000181,0.0078125,1,2e-06,0.006188,Deutsch-Jozsa with 7 q-bits.
+7,128,dj,0,0.000204,0.0078125,1,2e-06,0.00567,Deutsch-Jozsa with 7 q-bits.
+7,128,dj,0,0.000213,0.0078125,1,3e-06,0.007246,Deutsch-Jozsa with 7 q-bits.
+7,128,dj,0,0.000265,0.0078125,1,3e-06,0.008103,Deutsch-Jozsa with 7 q-bits.
+7,128,ghz,0,0.027273,0.125,1,1.9e-05,0.032628,Greenberger–Horne–Zeilinger  with 7 q-bits.
+7,128,ghz,0,0.028726,0.125,1,2.6e-05,0.033971,Greenberger–Horne–Zeilinger  with 7 q-bits.
+7,128,ghz,0,0.027853,0.125,1,3.3e-05,0.032503,Greenberger–Horne–Zeilinger  with 7 q-bits.
+7,128,ghz,0,0.029705,0.125,1,1.8e-05,0.034231,Greenberger–Horne–Zeilinger  with 7 q-bits.
+7,128,ghz,0,0.027352,0.125,1,2.9e-05,0.034078,Greenberger–Horne–Zeilinger  with 7 q-bits.
+7,128,graphstate,0,0.143876,0.0625,1,4.6e-05,0.158945,Graph State with 7 q-bits.
+7,128,graphstate,0,0.153131,0.0625,1,2.9e-05,0.175622,Graph State with 7 q-bits.
+7,128,graphstate,0,0.152011,0.0625,1,2.2e-05,0.168685,Graph State with 7 q-bits.
+7,128,graphstate,0,0.14792,0.0625,1,5.5e-05,0.163925,Graph State with 7 q-bits.
+7,128,graphstate,0,0.157269,0.0625,1,2.2e-05,0.170257,Graph State with 7 q-bits.
+7,128,pricingcall,0,0.025991,0.125,1,1.8e-05,0.041269,Pricing-Call with 7 q-bits.
+7,128,pricingcall,0,0.027753,0.125,1,1.9e-05,0.04282,Pricing-Call with 7 q-bits.
+7,128,pricingcall,0,0.026846,0.125,1,1.8e-05,0.040594,Pricing-Call with 7 q-bits.
+7,128,pricingcall,0,0.026261,0.125,1,1.9e-05,0.044705,Pricing-Call with 7 q-bits.
+7,128,pricingcall,0,0.027463,0.125,1,1.6e-05,0.042692,Pricing-Call with 7 q-bits.
+7,128,pricingput,0,0.030314,0.125,1,4.4e-05,0.047562,Pricing-Put with 7 q-bits.
+7,128,pricingput,0,0.026788,0.125,1,6.2e-05,0.045789,Pricing-Put with 7 q-bits.
+7,128,pricingput,0,0.029407,0.125,1,2.3e-05,0.050029,Pricing-Put with 7 q-bits.
+7,128,pricingput,0,0.026205,0.125,1,2.6e-05,0.045019,Pricing-Put with 7 q-bits.
+7,128,pricingput,0,0.062683,0.125,1,3.7e-05,0.081805,Pricing-Put with 7 q-bits.
+7,128,qwalk,0,0.240346,0.5,1,0.000167,0.358816,Quantum Walk with 7 q-bits.
+7,128,qwalk,0,0.239806,0.5,1,0.000102,0.35787,Quantum Walk with 7 q-bits.
+7,128,qwalk,0,0.25096,0.5,1,0.000103,0.377153,Quantum Walk with 7 q-bits.
+7,128,qwalk,0,0.237234,0.5,1,0.00012,0.359174,Quantum Walk with 7 q-bits.
+7,128,qwalk,0,0.247274,0.5,1,0.000135,0.364615,Quantum Walk with 7 q-bits.
+7,128,portfolioqaoa,0,3.98691,1,1,0.000469,4.36186,Portfolio QAOA with 7 q-bits.
+7,128,portfolioqaoa,0,4.00398,1,1,0.000431,4.3866,Portfolio QAOA with 7 q-bits.
+7,128,portfolioqaoa,0,3.97184,1,1,0.000637,4.35707,Portfolio QAOA with 7 q-bits.
+7,128,portfolioqaoa,0,4.01964,1,1,0.000425,4.39666,Portfolio QAOA with 7 q-bits.
+7,128,portfolioqaoa,0,3.98932,1,1,0.000455,4.38365,Portfolio QAOA with 7 q-bits.
+7,128,portfoliovqe,0,3.91737,1,1,0.00043,4.1902,Portfolio QVE with 7 q-bits.
+7,128,portfoliovqe,0,3.87692,1,1,0.000424,4.13573,Portfolio QVE with 7 q-bits.
+7,128,portfoliovqe,0,4.01853,1,1,0.00074,4.28527,Portfolio QVE with 7 q-bits.
+7,128,portfoliovqe,0,3.90538,1,1,0.000437,4.17057,Portfolio QVE with 7 q-bits.
+7,128,portfoliovqe,0,3.9014,1,1,0.000675,4.16328,Portfolio QVE with 7 q-bits.
+7,128,qnn,0,4.07835,1,1,0.00043,4.34528,Quantum Neural Network with 7 q-bits.
+7,128,qnn,0,3.98322,1,1,0.000419,4.25847,Quantum Neural Network with 7 q-bits.
+7,128,qnn,0,4.00652,1,1,0.000403,4.2559,Quantum Neural Network with 7 q-bits.
+7,128,qnn,0,4.01265,1,1,0.000406,4.26453,Quantum Neural Network with 7 q-bits.
+7,128,qnn,0,4.01638,1,1,0.000417,4.2641,Quantum Neural Network with 7 q-bits.
+7,128,qpeexact,0,1.36268,1,1,0.000555,1.41314,Quantum Phase Estimation (exact) with 7 q-bits.
+7,128,qpeexact,0,1.31585,1,1,0.000579,1.36572,Quantum Phase Estimation (exact) with 7 q-bits.
+7,128,qpeexact,0,1.3502,1,1,0.000537,1.39984,Quantum Phase Estimation (exact) with 7 q-bits.
+7,128,qpeexact,0,1.31781,1,1,0.000608,1.36728,Quantum Phase Estimation (exact) with 7 q-bits.
+7,128,qpeexact,0,1.30626,1,1,0.000574,1.35553,Quantum Phase Estimation (exact) with 7 q-bits.
+7,128,qpeinexact,0,1.59075,1,1,0.000542,1.64358,Quantum Phase Estimation (inexact) with 7 q-bits.
+7,128,qpeinexact,0,1.58747,1,1,0.000546,1.64204,Quantum Phase Estimation (inexact) with 7 q-bits.
+7,128,qpeinexact,0,1.58851,1,1,0.000828,1.66512,Quantum Phase Estimation (inexact) with 7 q-bits.
+7,128,qpeinexact,0,1.63027,1,1,0.000829,1.68734,Quantum Phase Estimation (inexact) with 7 q-bits.
+7,128,qpeinexact,0,1.58072,1,1,0.000632,1.63363,Quantum Phase Estimation (inexact) with 7 q-bits.
+7,128,vqe,0,3.87495,1,1,0.000507,5.07043,Variational Quantum Eigensolver with 7 q-bits.
+7,128,vqe,0,3.8479,1,1,0.000428,5.0633,Variational Quantum Eigensolver with 7 q-bits.
+7,128,vqe,0,3.88014,1,1,0.000569,5.09567,Variational Quantum Eigensolver with 7 q-bits.
+7,128,vqe,0,3.92254,1,1,0.000427,5.18715,Variational Quantum Eigensolver with 7 q-bits.
+7,128,vqe,0,3.88948,1,1,0.000576,5.08248,Variational Quantum Eigensolver with 7 q-bits.
+7,128,wstate,0,2.27441,1,1,0.000437,2.32149,W-State with 7 q-bits.
+7,128,wstate,0,2.34787,1,1,0.000523,2.39604,W-State with 7 q-bits.
+7,128,wstate,0,2.2829,1,1,0.000423,2.32788,W-State with 7 q-bits.
+7,128,wstate,0,2.301,1,1,0.00044,2.34807,W-State with 7 q-bits.
+7,128,wstate,0,2.273,1,1,0.000483,2.31982,W-State with 7 q-bits.
+8,256,ae,0,32.5021,1,1,0.00142,32.9025,Amplitude Estimation with 8 q-bits.
+8,256,ae,0,32.5719,1,1,0.001438,32.9644,Amplitude Estimation with 8 q-bits.
+8,256,ae,0,32.9722,1,1,0.001859,33.3777,Amplitude Estimation with 8 q-bits.
+8,256,ae,0,32.6805,1,1,0.00142,33.086,Amplitude Estimation with 8 q-bits.
+8,256,ae,0,32.7263,1,1,0.001464,33.1286,Amplitude Estimation with 8 q-bits.
+8,256,dj,0,0.000551,0.00390625,1,5e-06,0.008779,Deutsch-Jozsa with 8 q-bits.
+8,256,dj,0,0.000296,0.00390625,1,2e-06,0.008644,Deutsch-Jozsa with 8 q-bits.
+8,256,dj,0,0.000444,0.00390625,1,4e-06,0.011977,Deutsch-Jozsa with 8 q-bits.
+8,256,dj,0,0.00034,0.00390625,1,3e-06,0.010669,Deutsch-Jozsa with 8 q-bits.
+8,256,dj,0,0.000396,0.00390625,1,2e-06,0.012476,Deutsch-Jozsa with 8 q-bits.
+8,256,ghz,0,0.275632,0.125,1,0.000437,0.288059,Greenberger–Horne–Zeilinger  with 8 q-bits.
+8,256,ghz,0,0.241872,0.125,1,0.000194,0.253,Greenberger–Horne–Zeilinger  with 8 q-bits.
+8,256,ghz,0,0.239004,0.125,1,0.000287,0.248798,Greenberger–Horne–Zeilinger  with 8 q-bits.
+8,256,ghz,0,0.235787,0.125,1,0.000144,0.245594,Greenberger–Horne–Zeilinger  with 8 q-bits.
+8,256,ghz,0,0.242789,0.125,1,0.000117,0.252696,Greenberger–Horne–Zeilinger  with 8 q-bits.
+8,256,graphstate,0,1.61533,0.09375,1,0.000109,1.65916,Graph State with 8 q-bits.
+8,256,graphstate,0,1.57013,0.09375,1,0.000107,1.61099,Graph State with 8 q-bits.
+8,256,graphstate,0,1.58376,0.09375,1,0.000127,1.65137,Graph State with 8 q-bits.
+8,256,graphstate,0,1.61399,0.09375,1,0.000114,1.65423,Graph State with 8 q-bits.
+8,256,graphstate,0,1.56627,0.09375,1,0.000119,1.60758,Graph State with 8 q-bits.
+8,256,hhl,0,13.0692,0.875,1,0.001287,17.7178,Harrow–Hassidim–Lloyd Algorithm with 8 q-bits.
+8,256,hhl,0,13.3017,0.875,1,0.001361,18.029,Harrow–Hassidim–Lloyd Algorithm with 8 q-bits.
+8,256,hhl,0,13.0107,0.875,1,0.001295,17.7413,Harrow–Hassidim–Lloyd Algorithm with 8 q-bits.
+8,256,hhl,0,13.0729,0.875,1,0.001332,17.7523,Harrow–Hassidim–Lloyd Algorithm with 8 q-bits.
+8,256,hhl,0,13.117,0.875,1,0.001381,17.8353,Harrow–Hassidim–Lloyd Algorithm with 8 q-bits.
+8,256,qwalk,0,7.24275,1,1,0.001855,7.81499,Quantum Walk with 8 q-bits.
+8,256,qwalk,0,7.31846,1,1,0.002067,7.88174,Quantum Walk with 8 q-bits.
+8,256,qwalk,0,7.24183,1,1,0.001908,7.80227,Quantum Walk with 8 q-bits.
+8,256,qwalk,0,7.23171,1,1,0.001821,7.8169,Quantum Walk with 8 q-bits.
+8,256,qwalk,0,7.29097,1,1,0.002034,7.84901,Quantum Walk with 8 q-bits.
+8,256,portfolioqaoa,0,33.2457,1,1,0.00201,35.7255,Portfolio QAOA with 8 q-bits.
+8,256,portfolioqaoa,0,32.9578,1,1,0.001653,35.6426,Portfolio QAOA with 8 q-bits.
+8,256,portfolioqaoa,0,32.7576,1,1,0.001461,35.2094,Portfolio QAOA with 8 q-bits.
+8,256,portfolioqaoa,0,32.8679,1,1,0.001833,35.4243,Portfolio QAOA with 8 q-bits.
+8,256,portfolioqaoa,0,32.8023,1,1,0.00141,35.2914,Portfolio QAOA with 8 q-bits.
+8,256,portfoliovqe,0,32.9319,1,1,0.001727,34.3602,Portfolio QVE with 8 q-bits.
+8,256,portfoliovqe,0,33.4817,1,1,0.001419,34.9604,Portfolio QVE with 8 q-bits.
+8,256,portfoliovqe,0,32.7224,1,1,0.001528,34.381,Portfolio QVE with 8 q-bits.
+8,256,portfoliovqe,0,32.6894,1,1,0.001517,34.1048,Portfolio QVE with 8 q-bits.
+8,256,portfoliovqe,0,32.8106,1,1,0.001551,34.2335,Portfolio QVE with 8 q-bits.
+8,256,qnn,0,32.9686,1,1,0.001514,34.324,Quantum Neural Network with 8 q-bits.
+8,256,qnn,0,32.9436,1,1,0.001487,34.2724,Quantum Neural Network with 8 q-bits.
+8,256,qnn,0,32.9002,1,1,0.001576,34.2581,Quantum Neural Network with 8 q-bits.
+8,256,qnn,0,32.955,1,1,0.001669,34.2741,Quantum Neural Network with 8 q-bits.
+8,256,qnn,0,33.1271,1,1,0.001504,34.4756,Quantum Neural Network with 8 q-bits.
+8,256,qpeexact,0,11.3166,1,1,0.001876,11.6617,Quantum Phase Estimation (exact) with 8 q-bits.
+8,256,qpeexact,0,11.3823,1,1,0.001841,11.7264,Quantum Phase Estimation (exact) with 8 q-bits.
+8,256,qpeexact,0,11.3338,1,1,0.001989,11.6701,Quantum Phase Estimation (exact) with 8 q-bits.
+8,256,qpeexact,0,11.4372,1,1,0.001959,11.783,Quantum Phase Estimation (exact) with 8 q-bits.
+8,256,qpeexact,0,11.3691,1,1,0.002136,11.7083,Quantum Phase Estimation (exact) with 8 q-bits.
+8,256,qpeinexact,0,13.7736,1,1,0.002305,14.1344,Quantum Phase Estimation (inexact) with 8 q-bits.
+8,256,qpeinexact,0,13.7833,1,1,0.001807,14.1427,Quantum Phase Estimation (inexact) with 8 q-bits.
+8,256,qpeinexact,0,13.7567,1,1,0.001889,14.1148,Quantum Phase Estimation (inexact) with 8 q-bits.
+8,256,qpeinexact,0,13.8681,1,1,0.001835,14.2271,Quantum Phase Estimation (inexact) with 8 q-bits.
+8,256,qpeinexact,0,13.6596,1,1,0.001981,14.0125,Quantum Phase Estimation (inexact) with 8 q-bits.
+8,256,vqe,0,32.722,1,1,0.001455,33.93,Variational Quantum Eigensolver with 8 q-bits.
+8,256,vqe,0,32.4446,1,1,0.001589,33.6683,Variational Quantum Eigensolver with 8 q-bits.
+8,256,vqe,0,32.583,1,1,0.001497,33.7559,Variational Quantum Eigensolver with 8 q-bits.
+8,256,vqe,0,32.6796,1,1,0.001554,33.905,Variational Quantum Eigensolver with 8 q-bits.
+8,256,vqe,0,32.6536,1,1,0.001371,33.8236,Variational Quantum Eigensolver with 8 q-bits.
+8,256,wstate,0,18.9022,1,1,0.001477,19.2305,W-State with 8 q-bits.
+8,256,wstate,0,19.2114,1,1,0.001635,19.5683,W-State with 8 q-bits.
+8,256,wstate,0,19.1042,1,1,0.001492,19.4395,W-State with 8 q-bits.
+8,256,wstate,0,18.9634,1,1,0.001564,19.2872,W-State with 8 q-bits.
+8,256,wstate,0,18.9053,1,1,0.001855,19.2371,W-State with 8 q-bits.
+9,512,ae,0,311.189,1,1,0.006737,314.591,Amplitude Estimation with 9 q-bits.
+9,512,ae,0,319.715,1,1,0.006991,323.184,Amplitude Estimation with 9 q-bits.
+9,512,ae,0,323.115,1,1,0.00702,326.681,Amplitude Estimation with 9 q-bits.
+9,512,ae,0,320.85,1,1,0.006475,324.329,Amplitude Estimation with 9 q-bits.
+9,512,ae,0,324.377,1,1,0.006831,327.936,Amplitude Estimation with 9 q-bits.
+9,512,dj,0,0.000543,0.00195312,1,3e-06,0.024688,Deutsch-Jozsa with 9 q-bits.
+9,512,dj,0,0.000595,0.00195312,1,3e-06,0.024147,Deutsch-Jozsa with 9 q-bits.
+9,512,dj,0,0.000634,0.00195312,1,3e-06,0.024241,Deutsch-Jozsa with 9 q-bits.
+9,512,dj,0,0.000531,0.00195312,1,2e-06,0.024123,Deutsch-Jozsa with 9 q-bits.
+9,512,dj,0,0.000735,0.00195312,1,3e-06,0.024989,Deutsch-Jozsa with 9 q-bits.
+9,512,ghz,0,0.545508,0.0625,1,4e-05,0.568945,Greenberger–Horne–Zeilinger  with 9 q-bits.
+9,512,ghz,0,0.567976,0.0625,1,4.8e-05,0.592252,Greenberger–Horne–Zeilinger  with 9 q-bits.
+9,512,ghz,0,0.58024,0.0625,1,9.5e-05,0.603211,Greenberger–Horne–Zeilinger  with 9 q-bits.
+9,512,ghz,0,0.580781,0.0625,1,4.1e-05,0.609781,Greenberger–Horne–Zeilinger  with 9 q-bits.
+9,512,ghz,0,0.739309,0.0625,1,4.7e-05,0.764094,Greenberger–Horne–Zeilinger  with 9 q-bits.
+9,512,graphstate,0,7.74482,0.0351562,1,2.2e-05,7.97593,Graph State with 9 q-bits.
+9,512,graphstate,0,5.87588,0.0351562,1,1.8e-05,6.12092,Graph State with 9 q-bits.
+9,512,graphstate,0,5.70384,0.0351562,1,2e-05,5.89525,Graph State with 9 q-bits.
+9,512,graphstate,0,5.55993,0.0351562,1,1.9e-05,5.74732,Graph State with 9 q-bits.
+9,512,graphstate,0,5.61753,0.0351562,1,1.9e-05,5.80083,Graph State with 9 q-bits.
+9,512,pricingcall,0,0.471711,0.0625,1,5.5e-05,0.551798,Pricing-Call with 9 q-bits.
+9,512,pricingcall,0,0.487647,0.0625,1,5.2e-05,0.563323,Pricing-Call with 9 q-bits.
+9,512,pricingcall,0,0.471711,0.0625,1,5.9e-05,0.55096,Pricing-Call with 9 q-bits.
+9,512,pricingcall,0,0.487321,0.0625,1,5.3e-05,0.607279,Pricing-Call with 9 q-bits.
+9,512,pricingcall,0,0.477807,0.0625,1,6e-05,0.555625,Pricing-Call with 9 q-bits.
+9,512,pricingput,0,0.48414,0.0625,1,0.000787,0.581503,Pricing-Put with 9 q-bits.
+9,512,pricingput,0,0.471084,0.0625,1,0.000769,0.564541,Pricing-Put with 9 q-bits.
+9,512,pricingput,0,0.479254,0.0625,1,0.00079,0.574013,Pricing-Put with 9 q-bits.
+9,512,pricingput,0,0.478647,0.0625,1,0.000953,0.574567,Pricing-Put with 9 q-bits.
+9,512,pricingput,0,0.498354,0.0625,1,0.000701,0.598617,Pricing-Put with 9 q-bits.
+9,512,qwalk,0,69.4551,0.996094,1,0.007482,73.2092,Quantum Walk with 9 q-bits.
+9,512,qwalk,0,68.8736,0.996094,1,0.008438,72.6308,Quantum Walk with 9 q-bits.
+9,512,qwalk,0,68.6345,0.996094,1,0.008139,72.3471,Quantum Walk with 9 q-bits.
+9,512,qwalk,0,68.284,0.996094,1,0.008788,72.026,Quantum Walk with 9 q-bits.
+9,512,qwalk,0,68.6171,0.996094,1,0.008601,72.3532,Quantum Walk with 9 q-bits.
+9,512,tsp,0,90.4536,0.414062,1,0.001283,95.8177,Travelling-Salesman Problem with 9 q-bits.
+9,512,tsp,0,89.8296,0.414062,1,0.00126,95.1877,Travelling-Salesman Problem with 9 q-bits.
+9,512,tsp,0,90.0352,0.414062,1,0.001219,95.5449,Travelling-Salesman Problem with 9 q-bits.
+9,512,tsp,0,90.0282,0.414062,1,0.001293,95.4906,Travelling-Salesman Problem with 9 q-bits.
+9,512,tsp,0,90.1668,0.414062,1,0.001318,95.6386,Travelling-Salesman Problem with 9 q-bits.
+9,512,portfolioqaoa,0,321.34,1,1,0.00705,347.203,Portfolio QAOA with 9 q-bits.
+9,512,portfolioqaoa,0,322.501,1,1,0.006597,351.805,Portfolio QAOA with 9 q-bits.
+9,512,portfolioqaoa,0,324.792,1,1,0.006719,354.595,Portfolio QAOA with 9 q-bits.
+9,512,portfolioqaoa,0,323.011,1,1,0.005931,351.272,Portfolio QAOA with 9 q-bits.
+9,512,portfolioqaoa,0,323.035,1,1,0.006362,351.327,Portfolio QAOA with 9 q-bits.
+9,512,portfoliovqe,0,323.986,1,1,0.006463,337.284,Portfolio QVE with 9 q-bits.
+9,512,portfoliovqe,0,322.924,1,1,0.007224,335.352,Portfolio QVE with 9 q-bits.
+9,512,portfoliovqe,0,322.738,1,1,0.007241,334.57,Portfolio QVE with 9 q-bits.
+9,512,portfoliovqe,0,323.9,1,1,0.007216,336.239,Portfolio QVE with 9 q-bits.
+9,512,portfoliovqe,0,324.814,1,1,0.00664,337.494,Portfolio QVE with 9 q-bits.
+9,512,qnn,0,323.35,1,1,0.008108,338.471,Quantum Neural Network with 9 q-bits.
+9,512,qnn,0,322.093,1,1,0.006753,337.031,Quantum Neural Network with 9 q-bits.
+9,512,qnn,0,323.9,1,1,0.006681,338.931,Quantum Neural Network with 9 q-bits.
+9,512,qnn,0,325.93,1,1,0.006896,340.861,Quantum Neural Network with 9 q-bits.
+9,512,qnn,0,323.76,1,1,0.006678,339.267,Quantum Neural Network with 9 q-bits.
+9,512,qpeexact,0,110.728,1,1,0.008826,114.089,Quantum Phase Estimation (exact) with 9 q-bits.
+9,512,qpeexact,0,107.899,1,1,0.009046,111.171,Quantum Phase Estimation (exact) with 9 q-bits.
+9,512,qpeexact,0,108.334,1,1,0.008167,111.553,Quantum Phase Estimation (exact) with 9 q-bits.
+9,512,qpeexact,0,107.727,1,1,0.008515,111.058,Quantum Phase Estimation (exact) with 9 q-bits.
+9,512,qpeexact,0,108.366,1,1,0.009744,111.596,Quantum Phase Estimation (exact) with 9 q-bits.
+9,512,qpeinexact,0,132.069,1,1,0.010122,135.452,Quantum Phase Estimation (inexact) with 9 q-bits.
+9,512,qpeinexact,0,132.398,1,1,0.009012,135.756,Quantum Phase Estimation (inexact) with 9 q-bits.
+9,512,qpeinexact,0,133.395,1,1,0.009218,136.752,Quantum Phase Estimation (inexact) with 9 q-bits.
+9,512,qpeinexact,0,132.323,1,1,0.008801,135.711,Quantum Phase Estimation (inexact) with 9 q-bits.
+9,512,qpeinexact,0,131.692,1,1,0.008819,135.056,Quantum Phase Estimation (inexact) with 9 q-bits.
+9,512,wstate,0,183.562,1,1,0.006021,186.786,W-State with 9 q-bits.
+9,512,wstate,0,186.501,1,1,0.006514,189.73,W-State with 9 q-bits.
+9,512,wstate,0,186.564,1,1,0.006686,189.799,W-State with 9 q-bits.
+9,512,wstate,0,186.634,1,1,0.006722,189.819,W-State with 9 q-bits.
+9,512,wstate,0,187.565,1,1,0.007077,190.782,W-State with 9 q-bits.
+10,1024,dj,0,0.001354,0.000976562,1,4e-06,0.077037,Deutsch-Jozsa with 10 q-bits.
+10,1024,dj,0,0.001037,0.000976562,1,2e-06,0.078123,Deutsch-Jozsa with 10 q-bits.
+10,1024,dj,0,0.001262,0.000976562,1,4e-06,0.08004,Deutsch-Jozsa with 10 q-bits.
+10,1024,dj,0,0.001159,0.000976562,1,3e-06,0.081421,Deutsch-Jozsa with 10 q-bits.
+10,1024,dj,0,0.001131,0.000976562,1,3e-06,0.078722,Deutsch-Jozsa with 10 q-bits.
+10,1024,ghz,0,1.08963,0.03125,1,3.8e-05,1.16786,Greenberger–Horne–Zeilinger  with 10 q-bits.
+10,1024,ghz,0,1.22967,0.03125,1,0.000126,1.31341,Greenberger–Horne–Zeilinger  with 10 q-bits.
+10,1024,ghz,0,1.49047,0.03125,1,9.6e-05,1.59799,Greenberger–Horne–Zeilinger  with 10 q-bits.
+10,1024,ghz,0,1.50519,0.03125,1,5.1e-05,1.61423,Greenberger–Horne–Zeilinger  with 10 q-bits.
+10,1024,ghz,0,1.45612,0.03125,1,4.9e-05,1.5613,Greenberger–Horne–Zeilinger  with 10 q-bits.
+10,1024,graphstate,0,13.0057,0.00976562,1,9e-06,13.7582,Graph State with 10 q-bits.
+10,1024,graphstate,0,12.7657,0.00976562,1,9e-06,13.5134,Graph State with 10 q-bits.
+10,1024,graphstate,0,12.6846,0.00976562,1,1e-05,13.4368,Graph State with 10 q-bits.
+10,1024,graphstate,0,12.7643,0.00976562,1,1e-05,13.5398,Graph State with 10 q-bits.
+10,1024,graphstate,0,12.8082,0.00976562,1,1.8e-05,13.5265,Graph State with 10 q-bits.
+11,2048,dj,0,0.002487,0.000488281,1,3e-06,0.281622,Deutsch-Jozsa with 11 q-bits.
+11,2048,dj,0,0.002439,0.000488281,1,3e-06,0.334328,Deutsch-Jozsa with 11 q-bits.
+11,2048,dj,0,0.002092,0.000488281,1,3e-06,0.280044,Deutsch-Jozsa with 11 q-bits.
+11,2048,dj,0,0.002275,0.000488281,1,3e-06,0.273868,Deutsch-Jozsa with 11 q-bits.
+11,2048,dj,0,0.002376,0.000488281,1,3e-06,0.278199,Deutsch-Jozsa with 11 q-bits.
+11,2048,ghz,0,2.12728,0.015625,1,4.6e-05,2.41822,Greenberger–Horne–Zeilinger  with 11 q-bits.
+11,2048,ghz,0,2.15155,0.015625,1,3.9e-05,2.4436,Greenberger–Horne–Zeilinger  with 11 q-bits.
+11,2048,ghz,0,2.18277,0.015625,1,9.2e-05,2.47438,Greenberger–Horne–Zeilinger  with 11 q-bits.
+11,2048,ghz,0,2.08511,0.015625,1,4e-05,2.37272,Greenberger–Horne–Zeilinger  with 11 q-bits.
+11,2048,ghz,0,2.17403,0.015625,1,4.2e-05,2.47175,Greenberger–Horne–Zeilinger  with 11 q-bits.
+11,2048,graphstate,0,237.195,0.0234375,1,0.000513,240.176,Graph State with 11 q-bits.
+11,2048,graphstate,0,236.274,0.0234375,1,0.00057,239.296,Graph State with 11 q-bits.
+11,2048,graphstate,0,236.484,0.0234375,1,0.000333,239.469,Graph State with 11 q-bits.
+11,2048,graphstate,0,236.801,0.0234375,1,0.000367,239.775,Graph State with 11 q-bits.
+11,2048,graphstate,0,237.415,0.0234375,1,0.000476,240.385,Graph State with 11 q-bits.
+11,2048,pricingcall,0,8.2418,0.0317383,1,0.000131,8.89576,Pricing-Call with 11 q-bits.
+11,2048,pricingcall,0,8.28864,0.0317383,1,0.000133,8.94157,Pricing-Call with 11 q-bits.
+11,2048,pricingcall,0,8.34141,0.0317383,1,0.000135,9.00278,Pricing-Call with 11 q-bits.
+11,2048,pricingcall,0,8.33263,0.0317383,1,0.000152,8.96986,Pricing-Call with 11 q-bits.
+11,2048,pricingcall,0,8.36815,0.0317383,1,0.00025,9.01223,Pricing-Call with 11 q-bits.
+11,2048,pricingput,0,8.25342,0.0317383,1,0.000147,9.01027,Pricing-Put with 11 q-bits.
+11,2048,pricingput,0,8.17908,0.0317383,1,0.000126,8.92492,Pricing-Put with 11 q-bits.
+11,2048,pricingput,0,8.28824,0.0317383,1,0.000136,9.0375,Pricing-Put with 11 q-bits.
+11,2048,pricingput,0,8.2704,0.0317383,1,0.000154,8.99749,Pricing-Put with 11 q-bits.
+11,2048,pricingput,0,8.36769,0.0317383,1,0.000127,9.16772,Pricing-Put with 11 q-bits.
+12,4096,dj,0,0.005372,0.000244141,1,4e-06,1.09033,Deutsch-Jozsa with 12 q-bits.
+12,4096,dj,0,0.004479,0.000244141,1,4e-06,1.15659,Deutsch-Jozsa with 12 q-bits.
+12,4096,dj,0,0.004577,0.000244141,1,3e-06,1.09343,Deutsch-Jozsa with 12 q-bits.
+12,4096,dj,0,0.004364,0.000244141,1,3e-06,1.09066,Deutsch-Jozsa with 12 q-bits.
+12,4096,dj,0,0.004648,0.000244141,1,3e-06,1.06121,Deutsch-Jozsa with 12 q-bits.
+12,4096,ghz,0,4.15173,0.0078125,1,3.7e-05,5.31422,Greenberger–Horne–Zeilinger  with 12 q-bits.
+12,4096,ghz,0,4.21753,0.0078125,1,3.9e-05,5.41739,Greenberger–Horne–Zeilinger  with 12 q-bits.
+12,4096,ghz,0,4.1723,0.0078125,1,3.7e-05,5.31964,Greenberger–Horne–Zeilinger  with 12 q-bits.
+12,4096,ghz,0,4.16803,0.0078125,1,8.6e-05,5.29163,Greenberger–Horne–Zeilinger  with 12 q-bits.
+12,4096,ghz,0,4.1899,0.0078125,1,4.3e-05,5.31865,Greenberger–Horne–Zeilinger  with 12 q-bits.
+12,4096,graphstate,0,249.473,0.00292969,1,1.2e-05,261.466,Graph State with 12 q-bits.
+12,4096,graphstate,0,252.984,0.00292969,1,2e-05,265.561,Graph State with 12 q-bits.
+12,4096,graphstate,0,250.084,0.00292969,1,1e-05,262.235,Graph State with 12 q-bits.
+12,4096,graphstate,0,248.004,0.00292969,1,1.2e-05,260.223,Graph State with 12 q-bits.
+12,4096,graphstate,0,247.246,0.00292969,1,1.1e-05,259.324,Graph State with 12 q-bits.
+13,8192,dj,0,0.008929,0.00012207,1,3e-06,4.4274,Deutsch-Jozsa with 13 q-bits.
+13,8192,dj,0,0.009576,0.00012207,1,4e-06,4.44392,Deutsch-Jozsa with 13 q-bits.
+13,8192,dj,0,0.009492,0.00012207,1,3e-06,4.41328,Deutsch-Jozsa with 13 q-bits.
+13,8192,dj,0,0.010143,0.00012207,1,3.4e-05,4.38852,Deutsch-Jozsa with 13 q-bits.
+13,8192,dj,0,0.010252,0.00012207,1,4e-06,4.39502,Deutsch-Jozsa with 13 q-bits.
+13,8192,ghz,0,8.40404,0.00390625,1,4.1e-05,13.0149,Greenberger–Horne–Zeilinger  with 13 q-bits.
+13,8192,ghz,0,8.29737,0.00390625,1,4.1e-05,12.8114,Greenberger–Horne–Zeilinger  with 13 q-bits.
+13,8192,ghz,0,8.4665,0.00390625,1,3.9e-05,13.0611,Greenberger–Horne–Zeilinger  with 13 q-bits.
+13,8192,ghz,0,8.29959,0.00390625,1,4.3e-05,12.8247,Greenberger–Horne–Zeilinger  with 13 q-bits.
+13,8192,ghz,0,8.42508,0.00390625,1,4.3e-05,12.9983,Greenberger–Horne–Zeilinger  with 13 q-bits.
+13,8192,pricingput,0,129.76,0.0157471,1,0.00043,136.068,Pricing-Put with 13 q-bits.
+13,8192,pricingput,0,138.848,0.0157471,1,0.000526,145.637,Pricing-Put with 13 q-bits.
+13,8192,pricingput,0,143.18,0.0157471,1,0.000504,150.503,Pricing-Put with 13 q-bits.
+13,8192,pricingput,0,138.855,0.0157471,1,0.000511,145.56,Pricing-Put with 13 q-bits.
+13,8192,pricingput,0,141.94,0.0157471,1,0.000503,149.232,Pricing-Put with 13 q-bits.
+13,8192,pricingcall,0,143.033,0.0157471,1,0.000577,149.752,Pricing-Call with 13 q-bits.
+13,8192,pricingcall,0,147.144,0.0157471,1,0.000554,154.147,Pricing-Call with 13 q-bits.
+13,8192,pricingcall,0,148.589,0.0157471,1,0.00049,155.985,Pricing-Call with 13 q-bits.
+13,8192,pricingcall,0,149.117,0.0157471,1,0.000699,156.379,Pricing-Call with 13 q-bits.
+13,8192,pricingcall,0,150.378,0.0157471,1,0.000508,157.733,Pricing-Call with 13 q-bits.
+14,16384,dj,0,0.031302,6.10352e-05,1,5e-06,24.8595,Deutsch-Jozsa with 14 q-bits.
+14,16384,dj,0,0.029577,6.10352e-05,1,4e-06,22.5209,Deutsch-Jozsa with 14 q-bits.
+14,16384,dj,0,0.029741,6.10352e-05,1,5e-06,20.0896,Deutsch-Jozsa with 14 q-bits.
+14,16384,dj,0,0.031172,6.10352e-05,1,5e-06,19.806,Deutsch-Jozsa with 14 q-bits.
+14,16384,dj,0,0.028119,6.10352e-05,1,4e-06,19.7572,Deutsch-Jozsa with 14 q-bits.
+14,16384,ghz,0,18.5968,0.00195312,1,4.9e-05,39.2558,Greenberger–Horne–Zeilinger  with 14 q-bits.
+14,16384,ghz,0,18.2265,0.00195312,1,5.1e-05,38.6718,Greenberger–Horne–Zeilinger  with 14 q-bits.
+14,16384,ghz,0,17.9749,0.00195312,1,4.6e-05,38.1707,Greenberger–Horne–Zeilinger  with 14 q-bits.
+14,16384,ghz,0,18.0396,0.00195312,1,4.4e-05,38.1634,Greenberger–Horne–Zeilinger  with 14 q-bits.
+14,16384,ghz,0,18.1936,0.00195312,1,9.3e-05,37.9824,Greenberger–Horne–Zeilinger  with 14 q-bits.
+15,32768,dj,0,0.046864,3.05176e-05,1,4e-06,70.0462,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.04525,3.05176e-05,1,6e-06,71.642,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.045874,3.05176e-05,1,3e-06,72.9665,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.046223,3.05176e-05,1,5e-06,68.5477,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.047271,3.05176e-05,1,3e-06,71.7842,Deutsch-Jozsa with 15 q-bits.
+15,32768,ghz,0,46.3866,0.000976562,1,4.6e-05,121.627,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,43.9169,0.000976562,1,5.1e-05,139.27,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,43.241,0.000976562,1,5.6e-05,139.625,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,44.5597,0.000976562,1,7e-05,142.138,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,44.9694,0.000976562,1,8.6e-05,140.676,Greenberger–Horne–Zeilinger  with 15 q-bits.
+3,8,qft,0,0.000224,0.25,1,3e-06,0.004299,Quantum Fourier Transform with 3 q-bits.
+3,8,qft,0,0.000238,0.25,1,2e-06,0.004198,Quantum Fourier Transform with 3 q-bits.
+3,8,qft,0,0.000215,0.25,1,3e-06,0.00342,Quantum Fourier Transform with 3 q-bits.
+3,8,qft,0,0.000272,0.25,1,3e-06,0.005972,Quantum Fourier Transform with 3 q-bits.
+3,8,qft,0,0.000217,0.25,1,2e-06,0.004293,Quantum Fourier Transform with 3 q-bits.
+4,16,qft,0,0.000693,0.125,1,3e-06,0.005252,Quantum Fourier Transform with 4 q-bits.
+4,16,qft,0,0.000743,0.125,1,1.3e-05,0.005702,Quantum Fourier Transform with 4 q-bits.
+4,16,qft,0,0.001006,0.125,1,3e-06,0.00694,Quantum Fourier Transform with 4 q-bits.
+4,16,qft,0,0.001079,0.125,1,6e-06,0.007856,Quantum Fourier Transform with 4 q-bits.
+4,16,qft,0,0.000684,0.125,1,2e-06,0.005248,Quantum Fourier Transform with 4 q-bits.
+5,32,qft,0,0.002645,0.0625,1,5e-06,0.009843,Quantum Fourier Transform with 5 q-bits.
+5,32,qft,0,0.003421,0.0625,1,9e-06,0.009469,Quantum Fourier Transform with 5 q-bits.
+5,32,qft,0,0.002712,0.0625,1,3e-06,0.009117,Quantum Fourier Transform with 5 q-bits.
+5,32,qft,0,0.002571,0.0625,1,4e-06,0.009643,Quantum Fourier Transform with 5 q-bits.
+5,32,qft,0,0.002456,0.0625,1,3e-06,0.009401,Quantum Fourier Transform with 5 q-bits.
+6,64,qft,0,0.010778,0.03125,1,5e-06,0.024154,Quantum Fourier Transform with 6 q-bits.
+6,64,qft,0,0.013747,0.03125,1,4e-06,0.026098,Quantum Fourier Transform with 6 q-bits.
+6,64,qft,0,0.012336,0.03125,1,3e-06,0.02631,Quantum Fourier Transform with 6 q-bits.
+6,64,qft,0,0.012192,0.03125,1,3e-06,0.026556,Quantum Fourier Transform with 6 q-bits.
+6,64,qft,0,0.010872,0.03125,1,4e-06,0.024955,Quantum Fourier Transform with 6 q-bits.
+7,128,qft,0,0.052193,0.015625,1,4e-06,0.084956,Quantum Fourier Transform with 7 q-bits.
+7,128,qft,0,0.053574,0.015625,1,4e-06,0.088937,Quantum Fourier Transform with 7 q-bits.
+7,128,qft,0,0.047072,0.015625,1,3e-06,0.081982,Quantum Fourier Transform with 7 q-bits.
+7,128,qft,0,0.047649,0.015625,1,4e-06,0.081709,Quantum Fourier Transform with 7 q-bits.
+7,128,qft,0,0.048538,0.015625,1,4e-06,0.083181,Quantum Fourier Transform with 7 q-bits.
+8,256,qft,0,0.188839,0.0078125,1,4e-06,0.310904,Quantum Fourier Transform with 8 q-bits.
+8,256,qft,0,0.176839,0.0078125,1,4e-06,0.29758,Quantum Fourier Transform with 8 q-bits.
+8,256,qft,0,0.183553,0.0078125,1,3e-06,0.293438,Quantum Fourier Transform with 8 q-bits.
+8,256,qft,0,0.182802,0.0078125,1,3e-06,0.290557,Quantum Fourier Transform with 8 q-bits.
+8,256,qft,0,0.181002,0.0078125,1,3e-06,0.284115,Quantum Fourier Transform with 8 q-bits.
+9,512,qft,0,0.77216,0.00390625,1,4e-06,1.22283,Quantum Fourier Transform with 9 q-bits.
+9,512,qft,0,0.76653,0.00390625,1,6e-06,1.23445,Quantum Fourier Transform with 9 q-bits.
+9,512,qft,0,0.752209,0.00390625,1,4e-06,1.17453,Quantum Fourier Transform with 9 q-bits.
+9,512,qft,0,0.757763,0.00390625,1,3e-06,1.20366,Quantum Fourier Transform with 9 q-bits.
+9,512,qft,0,0.77082,0.00390625,1,3e-06,1.21045,Quantum Fourier Transform with 9 q-bits.
+10,1024,qft,0,3.15328,0.00195312,1,4e-06,5.18534,Quantum Fourier Transform with 10 q-bits.
+10,1024,qft,0,3.17484,0.00195312,1,5e-06,5.2105,Quantum Fourier Transform with 10 q-bits.
+10,1024,qft,0,3.16482,0.00195312,1,5e-06,5.20726,Quantum Fourier Transform with 10 q-bits.
+10,1024,qft,0,3.19134,0.00195312,1,4e-06,5.30628,Quantum Fourier Transform with 10 q-bits.
+10,1024,qft,0,3.23506,0.00195312,1,5e-06,5.25967,Quantum Fourier Transform with 10 q-bits.
+11,2048,qft,0,13.2915,0.000976562,1,3e-06,25.8249,Quantum Fourier Transform with 11 q-bits.
+11,2048,qft,0,13.0072,0.000976562,1,4e-06,25.947,Quantum Fourier Transform with 11 q-bits.
+11,2048,qft,0,13.7402,0.000976562,1,3e-06,27.3463,Quantum Fourier Transform with 11 q-bits.
+11,2048,qft,0,14.3412,0.000976562,1,4e-06,33.0193,Quantum Fourier Transform with 11 q-bits.
+11,2048,qft,0,14.8794,0.000976562,1,8e-06,29.8496,Quantum Fourier Transform with 11 q-bits.
+12,4096,qft,0,93.1586,0.000488281,1,5e-06,234.139,Quantum Fourier Transform with 12 q-bits.
+12,4096,qft,0,61.669,0.000488281,1,5e-06,203.347,Quantum Fourier Transform with 12 q-bits.
+12,4096,qft,0,61.9934,0.000488281,1,4e-06,227.71,Quantum Fourier Transform with 12 q-bits.
+12,4096,qft,0,64.3411,0.000488281,1,5e-06,218.555,Quantum Fourier Transform with 12 q-bits.
+12,4096,qft,0,60.6453,0.000488281,1,4e-06,201,Quantum Fourier Transform with 12 q-bits.
+15,32768,dj,0,0.062637,3.05176e-05,1,4e-06,84.8366,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.055234,3.05176e-05,1,4e-06,83.3661,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.047273,3.05176e-05,1,3e-06,79.996,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.052201,3.05176e-05,1,4e-06,81.544,Deutsch-Jozsa with 15 q-bits.
+15,32768,dj,0,0.046438,3.05176e-05,1,4e-06,74.9244,Deutsch-Jozsa with 15 q-bits.
+15,32768,ghz,0,40.5401,0.000976562,1,4.4e-05,124.804,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,41.8751,0.000976562,1,7.1e-05,131.278,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,40.1388,0.000976562,1,4.8e-05,140.073,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,37.974,0.000976562,1,4e-05,118.929,Greenberger–Horne–Zeilinger  with 15 q-bits.
+15,32768,ghz,0,42.309,0.000976562,1,0.000101,127.642,Greenberger–Horne–Zeilinger  with 15 q-bits.

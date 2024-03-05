@@ -82,3 +82,4 @@ docs/_sources
 
 tests/quantum/packages
 tests/quantum/*.zip
+tests/quantum/**.tex
