@@ -6,7 +6,7 @@
 QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterations, ExperimentType eType, dd::Package<>* ePackage) : Experiment("Grover", "H", eIterations, eType, ePackage) {
     this->qbits = nQbits;
     luint bound = static_cast<luint>(pow(2UL, nQbits-1));
-    for (luint el : success) { 
+    for (luint el : success) {
         if (el >= bound) { throw domain_error("The value for success is out of bound"); }
         else { this->success_set.insert(el); }
     }
@@ -62,7 +62,7 @@ void QuantumSearch::quantum_oracle(qc::QuantumComputation& circuit) {
     for (boost::dynamic_bitset<> element : success_bitchains) {
         controls.clear();
         for (luint i = 0; i < this->size()-1; ++i) {
-            controls.emplace(qc::Control{static_cast<qc::Qubit>(i), (element[i] ? qc::Control::Type::Pos : qc::Control::Type::Neg)});
+            controls.emplace(static_cast<qc::Qubit>(i), (element[i] ? qc::Control::Type::Pos : qc::Control::Type::Neg));
         }
         circuit.mcx(controls, static_cast<qc::Qubit>(this->size()-1));
     }
@@ -79,19 +79,21 @@ void QuantumSearch::quantum_oracle(qc::QuantumComputation& circuit) {
  * over the ancillary qubit with negative controls all over other qubits.
  * 
 */
-void QuantumSearch::quantum_diffusion(qc::QuantumComputation& circuit) { 
+void QuantumSearch::quantum_diffusion(qc::QuantumComputation& circuit) {
     // Code taken from mqt-core/algorithms/Grover.cpp
-    for (luint i = 0; i < this->size()-1; ++i) {
+    for (luint i = 1; i < this->size()-1; ++i) {
         circuit.h(static_cast<qc::Qubit>(i));
     }
 
     qc::Controls controls{};
-    for (qc::Qubit j = 0; j < this->size()-1; ++j) {
-        controls.emplace(qc::Control{j, qc::Control::Type::Neg});
+    for (qc::Qubit j = 1; j < this->size()-1; ++j) {
+        controls.emplace(j, qc::Control::Type::Neg);
     }
-    circuit.mcx(controls, static_cast<qc::Qubit>(this->size()-1));
+    circuit.z(0); // X-H-X
+    circuit.mcx(controls, 0);
+    circuit.z(0); // X-H-X
 
-    for (luint i = this->size()-2; i < this->size()-1; --i) {
+    for (luint i = this->size()-2; i > 0; --i) {
         circuit.h(static_cast<qc::Qubit>(i));
     }
 }
@@ -153,7 +155,7 @@ dd::CMat QuantumSearch::matrix_B(dd::CMat& U) {
     return identity_matrix(U.size()); // There is no begin hamiltonian: we use the identity
 }
 qc::QuantumComputation* QuantumSearch::quantum(double) {
-    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->size()); 
+    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->size());
 
     this->quantum_oracle(*circuit);
     this->quantum_diffusion(*circuit);
@@ -161,7 +163,7 @@ qc::QuantumComputation* QuantumSearch::quantum(double) {
     return circuit;
 }
 qc::QuantumComputation* QuantumSearch::quantum_B(double) {
-    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->size()); 
+    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->size());
     return circuit; // Identity circuit
 }
 QuantumSearch* QuantumSearch::change_exec_type(ExperimentType new_type) {

@@ -218,18 +218,15 @@ dd::CMat UndirectedGraph::matrix_B(dd::CMat& Uhat) {
     return result;
 }
 qc::QuantumComputation* UndirectedGraph::quantum(double par_val) {
-    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->n_vertices());
+    auto* circuit = new qc::QuantumComputation(this->n_vertices());
 
     for (luint src : this->vertices) {
-        qc::Qubit s_bit = static_cast<qc::Qubit>(src);
+        auto s_bit = static_cast<qc::Qubit>(src);
         for (luint trg : this->edges[src]) {
-            qc::Qubit t_bit = static_cast<qc::Qubit>(trg);
-            if (s_bit < t_bit) { // we avoid repeatng as (u,v) = (v,u)
-                circuit->x(s_bit);
-                circuit->cp(-par_val, s_bit, t_bit);
-                circuit->x(s_bit); circuit->x(t_bit);
-                circuit->cp(-par_val, t_bit, s_bit);
-                circuit->x(t_bit);
+            auto t_bit = static_cast<qc::Qubit>(trg);
+            if (s_bit < t_bit) { // we avoid repeating as (u,v) = (v,u)
+                circuit->cp(-par_val, {s_bit, qc::Control::Type::Neg}, t_bit);
+                circuit->cp(-par_val, {t_bit, qc::Control::Type::Neg}, s_bit);
             }
         }
     }
@@ -238,11 +235,11 @@ qc::QuantumComputation* UndirectedGraph::quantum(double par_val) {
 }
 qc::QuantumComputation* UndirectedGraph::quantum_B(double par_val) {
     // Create a circuit with the appropriate number of qbits
-    qc::QuantumComputation* circuit = new qc::QuantumComputation(this->n_vertices()); 
+    auto* circuit = new qc::QuantumComputation(this->n_vertices());
 
     // We create the new gates
     for (luint i = 0; i < this->n_vertices(); i++) {
-        qc::Qubit i_bit = static_cast<qc::Qubit>(i);
+        auto i_bit = static_cast<qc::Qubit>(i);
         circuit->h(i_bit);
         circuit->p(-par_val, i_bit);
         circuit->x(i_bit);
