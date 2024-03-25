@@ -301,56 +301,10 @@ dd::CMat matrix_power(vector<CCSparseVector>& M, luint t) {
     return matrix_power(denseM, t);
 }
 
-dd::vEdge* conjugate_edge(dd::vEdge*, dd::Package<>*);
-dd::vNode* conjugate_node(dd::vNode*, dd::Package<>*);
-
-dd::vEdge* conjugate_edge(dd::vEdge* v, dd::Package<>* package) {
-    dd::vEdge* result = new dd::vEdge{conjugate_node(v->p, package), package->cn.conj(v->w)};
-    return result;
-}
-dd::vNode* conjugate_node(dd::vNode* p, dd::Package<>* package) {
-    if (dd::vNode::isTerminal(p)) {
-        return p;
-    }
-
-    // The node is not terminal
-    dd::vNode* result = new dd::vNode();
-    dd::vEdge* zero_out = nullptr;
-    dd::vEdge* one_out = nullptr;
-    
-    // Creating the zero edge
-    if (p->e[0].w.approximatelyZero()) { // We create a zero edge
-        zero_out = new dd::vEdge{conjugate_node(p->e[0].p, package), package->cn.lookup(0)};
-    } else {
-        zero_out = conjugate_edge(&p->e[0], package);
-    }
-    // Creating the one edge
-    if (&p->e[0] == &p->e[1]) {
-        one_out = zero_out;
-    } else if (p->e[1].w.approximatelyZero()) { // We create a zero edge
-        one_out = new dd::vEdge{conjugate_node(p->e[1].p, package), package->cn.lookup(0)};
-    } else {
-        one_out = conjugate_edge(&p->e[1], package);
-    }
-
-    dd::vNode* next = nullptr;
-    // Conjugating also the reference if exits
-    if (p->next != nullptr) {
-        next = conjugate_node(p->next, package);
-    }
-
-    // We assign all the elements
-    result->e[0] = *zero_out;
-    result->e[1] = *one_out;
-    result->next = next;
-    result->v = p->v;
-
-    return result;    
-}
 /******************************************************************************************************************/
 // DDSubspace
 double DDSubspace::norm(dd::vEdge* v) {
-    return sqrt(this->package->innerProduct(*v, *v).r);
+    return dd::ComplexNumbers::mag(v->w);
 }
 dd::ComplexValue DDSubspace::coeff(double c) {
     return dd::ComplexValue(c);
@@ -359,9 +313,7 @@ dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {
     luint old_dim = this->vector_dim(v);
     dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, *this->package));
     this->package->incRef(*result); // Trying to increase the references count for the copied edge
-    if(old_dim != this->vector_dim(v)) {
-        assert(false);
-    }
+
     return result;
 }
 dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
@@ -379,7 +331,6 @@ dd::ComplexValue DDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
     return this->package->innerProduct(*u, *v);
 }
 dd::vEdge* DDSubspace::conjugate(dd::vEdge* v) {
-    dd::vEdge* conj = conjugate_edge(v, this->package);
-    this->package->incRef(*conj);
+    dd::vEdge* conj = new dd::vEdge(this->package->conjugate(*v));
     return conj;
 }
