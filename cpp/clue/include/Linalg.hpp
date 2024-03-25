@@ -264,7 +264,7 @@ class DDSubspace : public Subspace<dd::vEdge, qc::QuantumComputation, dd::Comple
         dd::vEdge* add(dd::vEdge*, dd::vEdge*); // Compute the addition of two vectors
         dd::ComplexValue inner_product(dd::vEdge*, dd::vEdge*); // Compute the inner product of two vectors
         dd::vEdge* conjugate(dd::vEdge*); // Conjugate a vector
-        void free_vector(dd::vEdge*) { return; }
+        void free_vector(dd::vEdge*); // Free a vector
         string print_vector(dd::vEdge* vector) { dd::CVec v = vector->getVector(); return vector_to_string(v); }
     
     public:
