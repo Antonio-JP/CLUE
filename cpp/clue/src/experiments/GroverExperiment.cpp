@@ -178,13 +178,13 @@ QuantumSearch* QuantumSearch::change_exec_type(ExperimentType new_type) {
 
 string QuantumSearch::to_string() {
     stringstream stream;
-    stream << "Grover Search Algorithm of " << this->size() << " q-bits (1 is a flag) of [";
+    stream << "\"Grover Search Algorithm of " << this->size() << " q-bits (1 is a flag) of [";
     std::unordered_set<luint>::iterator it = this->success_set.begin();
     if (it != this->success_set.end()) { stream << *it; it++; }
     while (it != this->success_set.end()) {
         stream << ", " << *it;
         it++;
     }
-    stream << "]";
+    stream << "]\"";
     return stream.str();
 }
