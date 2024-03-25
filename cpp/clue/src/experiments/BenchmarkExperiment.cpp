@@ -164,7 +164,7 @@ array<dd::CMat, 2U> BenchmarkExperiment::direct() {
 vector<CCSparseVector> BenchmarkExperiment::matrix() {
     this->quantum(0.0);
     dd::mEdge circuit_dd = buildFunctionality(this->circuit, *this->package);
-    dd::CMat unitary = circuit_dd.getMatrix(); 
+    dd::CMat unitary = circuit_dd.getMatrix(this->size()); 
     luint N = unitary.size();
     vector<CCSparseVector> U = vector<CCSparseVector>(N, N); // Initializing the final matrix
     for (luint i = 0; i < N; i++) {
