@@ -312,7 +312,7 @@ dd::ComplexValue DDSubspace::coeff(double c) {
 dd::vEdge* DDSubspace::apply(dd::vEdge* v, qc::QuantumComputation& M) {    
     luint old_dim = this->vector_dim(v);
     dd::vEdge* result = new dd::vEdge(dd::simulate<>(&M, *v, *this->package));
-    this->package->incRef(*result);
+    // this->package->incRef(*result);
     return result;
 }
 dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
@@ -323,7 +323,7 @@ dd::vEdge* DDSubspace::scale(dd::vEdge* v, dd::ComplexValue c) {
 }
 dd::vEdge* DDSubspace::add(dd::vEdge* u, dd::vEdge* v) {
     dd::vEdge* result = new dd::vEdge(this->package->add(*u, *v));
-    this->package->incRef(*result);
+    // this->package->incRef(*result);
     return result;
 }
 dd::ComplexValue DDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
@@ -331,11 +331,11 @@ dd::ComplexValue DDSubspace::inner_product(dd::vEdge* u, dd::vEdge* v) {
 }
 dd::vEdge* DDSubspace::conjugate(dd::vEdge* v) {
     dd::vEdge* conj = new dd::vEdge(this->package->conjugate(*v));
-    this->package->incRef(*conj);
+    // this->package->incRef(*conj);
     return conj;
 }
 void DDSubspace::free_vector(dd::vEdge* v) {
-    this->package->decRef(*v);
-    this->package->garbageCollect();
-    delete v;
+    // this->package->decRef(*v);
+    // this->package->garbageCollect();
+    // delete v;
 }
