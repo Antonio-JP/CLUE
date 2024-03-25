@@ -11,7 +11,7 @@ EXPERIMENTS="search sat maxcut"
 TESTS="DDSIM_ALONE DDSIM CLUE"
 REPEATS=50
 MIN=5
-MAX=50
+MAX=15
 TIMEOUT=500s
 
 cd ../../cpp/clue/build/apps
@@ -25,7 +25,7 @@ do
         do
             for test in $TESTS
             do
-                echo "timeout $TIMEOUT $MY_SCRIPT $experiment -m $size -M $size -r 1 -t $test"
+                timeout $TIMEOUT $MY_SCRIPT $experiment -m $size -M $size -r 1 -t $test
             done
         done
     done
