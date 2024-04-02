@@ -140,7 +140,17 @@ def table1(*, cpp:bool=False, out:str="text", formt="sci"):
     else: # We need to format the output
         styler = data.style
         ## Place for formatting the table
-        styler = styler.format({k: '{:.2f}' if k[1].startswith("d") or any(v == "d" for v in k) else '{:.3E}' for k in data.columns})
+        styler = styler.format(
+            {k: 
+                '{:.2f}' if k[1].startswith("d") or any(v == "d" for v in k) else 
+                '{:.3E}' if formt == "sci" else
+                '{:.4f}'
+            for k in data.columns
+        })
+        ## Highligh the minimum in each case
+        styler.highlight_min(subset=[("Grover","CLUE"), ("Grover","DDSIM+CLUE"), ("Grover","DDSIM")], axis=1, props="font-weight:bold;")
+        styler.highlight_min(subset=[("SAT","CLUE"), ("SAT","DDSIM+CLUE"), ("SAT","DDSIM")], axis=1, props="font-weight:bold;")
+        styler.highlight_min(subset=[("MAXCUT","CLUE"), ("MAXCUT","DDSIM+CLUE"), ("MAXCUT","DDSIM")], axis=1, props="font-weight:bold;")
         
         ## Deciding the output of the table
         if out == "latex":
