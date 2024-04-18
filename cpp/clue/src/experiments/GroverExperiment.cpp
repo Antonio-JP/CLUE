@@ -17,7 +17,7 @@ QuantumSearch::QuantumSearch(luint nQbits, vector<luint> success, luint eIterati
     luint iterations = static_cast<luint>(ceil(pow(2., static_cast<double>(nQbits-1)/2.)));
 
     // RANDOM WITH SEVERAL SUCCESS VALUES
-    luint number_of_successes = (static_cast<luint>(rand())%(nQbits-1))+1;
+    luint number_of_successes = 1U; //(static_cast<luint>(rand())%(nQbits-1))+1;
     vector<luint> success_set = vector<luint>();
     for (luint i = 0; i < number_of_successes; i++) {
         success_set.push_back(static_cast<luint>(rand())%half_size);
