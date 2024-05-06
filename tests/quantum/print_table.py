@@ -278,6 +278,14 @@ def table3(*, cpp:bool=False, out:str="text", formt="sci"):
         while len(count_per_column) < len(data.columns.levels[0]):
             count_per_column += [len([c for c in data.columns if c[0] == data.columns[sum(count_per_column)][0]])]
 
+        ## Filtering rows that are "too fast"
+        from numpy import isnan
+        data = data[
+            (data[("CLUE", "Time (s)")] > 1) | 
+            (data[("CLUE", "Time (s)")].apply(isnan)) | 
+            (data[("DDSIM+CLUE", "Time (s)")] > 1) | 
+            (data[("DDSIM+CLUE", "Time (s)")].apply(isnan))]
+
     ## Now 'data' contains the table to be formatted
     data.index.names = [None, None]
     for column in data.columns:
@@ -293,7 +301,13 @@ def table3(*, cpp:bool=False, out:str="text", formt="sci"):
     else: # We need to format the output
         styler = data.style
         ## Place for formatting the table
-        styler = styler.format({k: '{:.2f}\%' if "RR" in k or any("RR" in v for v in k) else '{:.3E}' for k in data.columns})
+        styler = styler.format(
+            {k: 
+                '{:.2f}\%' if k[1].startswith("RR") or any(v == "RR" for v in k) else 
+                '{:.3E}' if formt == "sci" else
+                '{:.4f}'
+            for k in data.columns
+        })
         if cpp: # we mark the minimum between the two avg. times
             styler = styler.highlight_min(subset=[("CLUE","Time (s)"), ("DDSIM+CLUE","Time (s)")], axis=1, props="font-weight:bold;")
         
