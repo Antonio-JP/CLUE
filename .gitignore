@@ -80,5 +80,8 @@ docs/_sources
 *.log
 *.png
 
+*.qasm
+*.tex
+
 tests/quantum/packages
 tests/quantum/*.zip

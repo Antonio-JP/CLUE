@@ -1748,4 +1748,4 @@ def find_smallest_common_subspace(
                     primes_used += 1
     return __CACHE_FSCS[cache_key]
 
-__all__ = ["SparseVector", "SparseRowMatrix", "Subspace", "OrthogonalSubspace", "NumericalSubspace", "find_smallest_common_subspace"]
+__all__ = ["SparseVector", "SparseRowMatrix", "Subspace", "OrthogonalSubspace", "NumericalSubspace", "find_smallest_common_subspace", "CC"]

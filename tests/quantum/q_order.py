@@ -89,26 +89,43 @@ class QuantumOrder(Experiment):
     def matrix(self) -> SparseRowMatrix: return self.order_matrix()
     def data(self): return [self.N]
 
+    @staticmethod
+    def generate_example(_: str, size: int) -> QuantumOrder:
+        print(f"%%% [GEN] Generating a valid Order finding instance...")
+        return QuantumOrder.random(size)
+
+    @staticmethod
+    def generate_header(csv_writer, ttype):
+        if ttype in ("clue", "ddsim"):
+            csv_writer.writerow(["size", "N", "red. ratio", "time_lumping", "memory (MB)", "problem"])
+        elif ttype == "full_clue":
+            csv_writer.writerow(["size", "N", "time_lumping", "kappa", "time_iteration", "memory (MB)", "problem"])
+        elif ttype == "full_ddsim":
+            csv_writer.writerow(["size", "N", "kappa", "time_iteration", "memory (MB)", "problem"])
+        else:
+            raise NotImplementedError(f"Type of file {ttype} not recognized")
+
+    ## METHODS TO GENERATE OBSERVABLES
+    @staticmethod
+    def generate_observable_clue(order: QuantumOrder, *_) -> tuple[SparseVector]:
+        return tuple([SparseVector.from_list([0,1] + (2**order.size()-2)*[1], field=CC)])
+
+    @staticmethod
+    def generate_observable_ddsim(order: QuantumOrder, *_) -> bool:
+        raise NotImplementedError
+
 def generate_example(_: str, size: int) -> QuantumOrder:
-    print(f"%%% [GEN] Generating a valid Order finding instance...")
-    return QuantumOrder.random(size)
+    return QuantumOrder.generate_example(_, size)
 
 def generate_header(csv_writer, ttype):
-    if ttype in ("clue", "ddsim"):
-        csv_writer.writerow(["size", "N", "red. ratio", "time_lumping", "memory (MB)", "problem"])
-    elif ttype == "full_clue":
-        csv_writer.writerow(["size", "N", "time_lumping", "kappa", "time_iteration", "memory (MB)", "problem"])
-    elif ttype == "full_ddsim":
-        csv_writer.writerow(["size", "N", "kappa", "time_iteration", "memory (MB)", "problem"])
-    else:
-        raise NotImplementedError(f"Type of file {ttype} not recognized")
+    return QuantumOrder.generate_header(csv_writer, ttype)
 
 ## METHODS TO GENERATE OBSERVABLES
 def generate_observable_clue(order: QuantumOrder, *_) -> tuple[SparseVector]:
-    return tuple([SparseVector.from_list([0,1] + (2**order.size()-2)*[1], field=CC)])
+    return QuantumOrder.generate_observable_clue(order, *_)
 
 def generate_observable_ddsim(order: QuantumOrder, *_) -> bool:
-    raise NotImplementedError
+    return QuantumOrder.generate_observable_ddsim(order, *_)
 
 if __name__ == "__main__":
    ## Processing the arguments

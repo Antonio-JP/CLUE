@@ -77,55 +77,80 @@ class QuantumBenchmark(Experiment):
     def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.circuit, None
     def data(self): return [self.full_name, self.observable]
 
+    ## Static methods
+    @staticmethod
+    def generate_example(name: str, size: int, obs) -> QuantumBenchmark:
+        return QuantumBenchmark.random(name, size)
+
+    @staticmethod
+    def generate_header(csv_writer, ttype):
+        if ttype in ("clue", "ddsim"):
+            csv_writer.writerow(["size", "name", "obs", "red. ratio", "time_lumping", "memory (MB)", "problem"])
+        elif ttype == "full_clue":
+            csv_writer.writerow(["size", "name", "obs", "time_lumping", "kappa", "time_iteration", "memory (MB)", "problem"])
+        elif ttype == "full_ddsim":
+            csv_writer.writerow(["size", "name", "obs", "kappa", "time_iteration", "memory (MB)", "problem"])
+        else:
+            raise NotImplementedError(f"Type of file {ttype} not recognized")
+
+    ## METHODS TO GENERATE OBSERVABLES
+    @staticmethod
+    def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple[SparseVector]:
+        size = example.size()
+        if isinstance(obs, int) and obs >= 0 and obs < 2**size:
+            example.observable = obs
+            list_to_obs = (2**size)*[0]; list_to_obs[obs] = 1
+            obs = SparseVector.from_list(list_to_obs)
+        elif isinstance(obs, str) and "H" in obs:
+            example.observable = obs
+            obs = SparseVector.from_list((2**size)*[1])
+        else:
+            raise ValueError(f"%%% [clue @ {example.name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
+        return tuple([obs])
+
+    @staticmethod
+    def generate_observable_ddsim(example: QuantumBenchmark, size: int, obs) -> bool:
+        example.observable = obs
+        return obs == "H"
+
+    @staticmethod
+    ### SCRIPT ARGUMENT PROCCESS METHOD
+    def get_benchmark_args(*argv) -> tuple[str, list[Any]]:
+        name = None; obs = list()
+        for (i, arg) in enumerate(argv):
+            if arg == "-n": # name
+                name = argv[i+1]
+            elif arg == "-obs":
+                try:
+                    observable = int(argv[i+1])
+                except:
+                    observable = argv[i+1]
+                obs.append(observable)
+        
+        ## Checking correctness of arguments
+        if name is None:
+            raise ValueError(f"Script argument [-n] not well used: we required a follow-up name.")
+
+        return name, obs
+
+## Making public the static method (to use in a script)    
 def generate_example(name: str, size: int, obs) -> QuantumBenchmark:
-    return QuantumBenchmark.random(name, size)
+    return QuantumBenchmark.generate_example(name, size, obs)
 
 def generate_header(csv_writer, ttype):
-    if ttype in ("clue", "ddsim"):
-        csv_writer.writerow(["size", "name", "obs", "red. ratio", "time_lumping", "memory (MB)", "problem"])
-    elif ttype == "full_clue":
-        csv_writer.writerow(["size", "name", "obs", "time_lumping", "kappa", "time_iteration", "memory (MB)", "problem"])
-    elif ttype == "full_ddsim":
-        csv_writer.writerow(["size", "name", "obs", "kappa", "time_iteration", "memory (MB)", "problem"])
-    else:
-        raise NotImplementedError(f"Type of file {ttype} not recognized")
+    return QuantumBenchmark.generate_header(csv_writer, ttype)
 
 ## METHODS TO GENERATE OBSERVABLES
 def generate_observable_clue(example: QuantumBenchmark, size: int, obs) -> tuple[SparseVector]:
-    size = example.size()
-    if isinstance(obs, int) and obs >= 0 and obs < 2**size:
-        example.observable = obs
-        list_to_obs = (2**size)*[0]; list_to_obs[obs] = 1
-        obs = SparseVector.from_list(list_to_obs)
-    elif isinstance(obs, str) and "H" in obs:
-        example.observable = obs
-        obs = SparseVector.from_list((2**size)*[1])
-    else:
-        raise ValueError(f"%%% [clue @ {example.name}] The observable (given {obs=}) must be ain integer between 0 and {2**size-1} or a string containing 'H'")
-    return tuple([obs])
+    return QuantumBenchmark.generate_observable_clue(example, size, obs)
 
 def generate_observable_ddsim(example: QuantumBenchmark, size: int, obs) -> bool:
-    example.observable = obs
-    return obs == "H"
+    return QuantumBenchmark.generate_observable_ddsim(example, size, obs)
 
 ### SCRIPT ARGUMENT PROCCESS METHOD
 def get_benchmark_args(*argv) -> tuple[str, list[Any]]:
-    name = None; obs = list()
-    for (i, arg) in enumerate(argv):
-        if arg == "-n": # name
-            name = argv[i+1]
-        elif arg == "-obs":
-            try:
-                observable = int(argv[i+1])
-            except:
-                observable = argv[i+1]
-            obs.append(observable)
-    
-    ## Checking correctness of arguments
-    if name is None:
-        raise ValueError(f"Script argument [-n] not well used: we required a follow-up name.")
+    return QuantumBenchmark.get_benchmark_args(*argv)
 
-    return name, obs
 
 if __name__ == "__main__":
     ## Processing the arguments

@@ -239,29 +239,47 @@ class UndirectedGraph(defaultdict, Experiment):
     def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cutB()
     def data(self): return [len(self.edges)]
 
+    ## METHODS TO GENERATE THE EXAMPLES OR DATA HEADER
+    @staticmethod
+    def generate_example(_: str, size: int) -> UndirectedGraph:
+        graph = UndirectedGraph.random(size, density=1/3)    
+        while(len(graph.edges) == 0):
+            graph = UndirectedGraph.random(size, density=1/3)    
+        return graph
+
+    @staticmethod
+    def generate_header(csv_writer, ttype):
+        if ttype in ("clue", "ddsim", "direct"):
+            csv_writer.writerow(["size", "edges", "red. ratio", "time_lumping", "memory (MB)", "graph"])
+        elif ttype in ("full_clue", "full_direct"):
+            csv_writer.writerow(["size", "edges", "time_lumping", "kappa", "time_iteration", "memory (MB)", "graph"])
+        elif ttype == "full_ddsim":
+            csv_writer.writerow(["size", "edges", "kappa", "time_iteration", "memory (MB)", "graph"])
+        else:
+            raise NotImplementedError(f"Type of file {ttype} not recognized")
+
+    ## METHODS TO GENERATE OBSERVABLES
+    @staticmethod
+    def generate_observable_clue(graph: UndirectedGraph, *_) -> tuple[SparseVector]:
+        return tuple([SparseVector.from_list(2**graph.size()*[1], field=CC)])
+
+    @staticmethod
+    def generate_observable_ddsim(graph: UndirectedGraph, *_) -> bool:
+        return bool(graph)
+
 ## METHODS TO GENERATE THE EXAMPLES OR DATA HEADER
 def generate_example(_: str, size: int) -> UndirectedGraph:
-    graph = UndirectedGraph.random(size, density=1/3)    
-    while(len(graph.edges) == 0):
-        graph = UndirectedGraph.random(size, density=1/3)    
-    return graph
+    return UndirectedGraph.generate_example(_, size)
 
 def generate_header(csv_writer, ttype):
-    if ttype in ("clue", "ddsim", "direct"):
-        csv_writer.writerow(["size", "edges", "red. ratio", "time_lumping", "memory (MB)", "graph"])
-    elif ttype in ("full_clue", "full_direct"):
-        csv_writer.writerow(["size", "edges", "time_lumping", "kappa", "time_iteration", "memory (MB)", "graph"])
-    elif ttype == "full_ddsim":
-        csv_writer.writerow(["size", "edges", "kappa", "time_iteration", "memory (MB)", "graph"])
-    else:
-        raise NotImplementedError(f"Type of file {ttype} not recognized")
+    return UndirectedGraph.generate_header(csv_writer, ttype)
 
 ## METHODS TO GENERATE OBSERVABLES
 def generate_observable_clue(graph: UndirectedGraph, *_) -> tuple[SparseVector]:
-    return tuple([SparseVector.from_list(2**graph.size()*[1], field=CC)])
+    return UndirectedGraph.generate_observable_clue(graph, *_)
 
 def generate_observable_ddsim(graph: UndirectedGraph, *_) -> bool:
-    return bool(graph)
+    return UndirectedGraph.generate_observable_ddsim(graph, *_)
 
 if __name__ == "__main__":
     ## Processing the arguments

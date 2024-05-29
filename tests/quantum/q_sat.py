@@ -360,29 +360,46 @@ class SATFormula(set[Clause], Experiment):
     def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.eval_quantumB()
     def data(self): return [len(self)]
 
-def generate_example(_:str, size: int) -> SATFormula:
-    formula = SATFormula.random(size, randint(size, 3*size))
-    while len(formula.variables) != formula.total_size:
+    @staticmethod
+    def generate_example(_:str, size: int) -> SATFormula:
         formula = SATFormula.random(size, randint(size, 3*size))
-    
-    return formula
+        while len(formula.variables) != formula.total_size:
+            formula = SATFormula.random(size, randint(size, 3*size))
+        
+        return formula
+
+    @staticmethod
+    def generate_header(csv_writer, ttype):
+        if ttype in ("clue", "ddsim", "direct"):
+            csv_writer.writerow(["size", "clauses", "red. ratio", "time_lumping", "memory (MB)", "formula"])
+        elif ttype in ("full_clue", "full_direct"):
+            csv_writer.writerow(["size", "clauses", "time_lumping", "kappa", "time_iteration", "memory (MB)", "formula"])
+        elif ttype == "full_ddsim":
+            csv_writer.writerow(["size", "clauses", "kappa", "time_iteration", "memory (MB)", "formula"])
+        else:
+            raise NotImplementedError(f"Type of file {ttype} not recognized")
+
+    ## METHODS TO GENERATE OBSERVABLES
+    @staticmethod
+    def generate_observable_clue(formula: SATFormula, *_) -> tuple[SparseVector]:
+        return tuple([SparseVector.from_list(2**formula.size()*[1], field=CC)])
+
+    @staticmethod
+    def generate_observable_ddsim(formula: SATFormula, *_) -> bool:
+        return bool(formula)
+
+def generate_example(_:str, size: int) -> SATFormula:
+    return SATFormula.generate_example(_, size)
 
 def generate_header(csv_writer, ttype):
-    if ttype in ("clue", "ddsim", "direct"):
-        csv_writer.writerow(["size", "clauses", "red. ratio", "time_lumping", "memory (MB)", "formula"])
-    elif ttype in ("full_clue", "full_direct"):
-        csv_writer.writerow(["size", "clauses", "time_lumping", "kappa", "time_iteration", "memory (MB)", "formula"])
-    elif ttype == "full_ddsim":
-        csv_writer.writerow(["size", "clauses", "kappa", "time_iteration", "memory (MB)", "formula"])
-    else:
-        raise NotImplementedError(f"Type of file {ttype} not recognized")
+    return SATFormula.generate_header(csv_writer, ttype)
 
 ## METHODS TO GENERATE OBSERVABLES
 def generate_observable_clue(formula: SATFormula, *_) -> tuple[SparseVector]:
-    return tuple([SparseVector.from_list(2**formula.size()*[1], field=CC)])
+    return SATFormula.generate_observable_clue(formula, *_)
 
 def generate_observable_ddsim(formula: SATFormula, *_) -> bool:
-    return bool(formula)
+    return SATFormula.generate_observable_ddsim(formula, *_)
 
 if __name__ == "__main__":
     ## Processing the arguments
