@@ -1,6 +1,8 @@
 r'''
     Some auxiliary methods
 '''
+from __future__ import annotations
+
 from clue import FODESystem, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from math import ceil,inf,sqrt
@@ -101,6 +103,23 @@ class Experiment:
     def quantum(self) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum circuit' not implemented")
     def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum begin' not implemented")
     def data(self): pass
+
+    @staticmethod
+    def generate_example(name: str, size: int) -> Experiment:
+        raise NotImplementedError
+
+    @staticmethod
+    def generate_header(csv_writer, ttype):
+        raise NotImplementedError
+
+    ## METHODS TO GENERATE OBSERVABLES
+    @staticmethod
+    def generate_observable_clue(graph: Experiment, size: int, obs: int) -> tuple[SparseVector]:
+        raise NotImplementedError
+
+    @staticmethod
+    def generate_observable_ddsim(graph: Experiment, size: int, obs: int) -> bool:
+        raise NotImplementedError
 
 ## Different execution methods
 def clue_reduction(name: str, 
