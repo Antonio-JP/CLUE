@@ -1750,14 +1750,14 @@ class FODESystem:
             diff_bound = [b[1]-b[0] for b in bound]
             rhs_point = [array([random()*diff_bound[i] + bound[i][0] for i in range(self.size)]) for _ in range(num_points)] # evaluation points
             logger.debug("[_deviation] Getting the L^+Lx values...")
-            lhs_point = [array([sum(float(pi_L.row(i)[j])*p[j] for j in pi_L.row(i).nonzero) for i in range(pi_L.nrows)]) for p in rhs_point]
+            lhs_point = [array([sum((pi_L.row(i)[j])*p[j] for j in pi_L.row(i).nonzero) for i in range(pi_L.nrows)]) for p in rhs_point]
 
             deviations = []
             
             logger.debug("[_deviation] Computing deviation for each point")
             for (lhs, rhs) in zip(lhs_point, rhs_point):
                 diff_evals = self.derivative(..., lhs) - self.derivative(..., rhs)
-                diff = array([sum(float(L.row(i)[j])*(diff_evals[j]) for j in L.row(i).nonzero) for i in range(L.nrows)])
+                diff = array([sum((L.row(i)[j])*(diff_evals[j]) for j in L.row(i).nonzero) for i in range(L.nrows)])
                 deviations.append(norm(diff, ord=2))
 
             logger.debug("[_deviation] Returning the average deviation")
@@ -1839,7 +1839,7 @@ class FODESystem:
                     if row.nonzero_count():
                         rows.append(row)
             logger.debug(f"[find_maximal_threshold] Need to check {len(rows)} vectors")
-            logger.debug(f"[find_maximal_threshold] Maximal norm of the rows: {math.sqrt(max([el.inner_product(el) for el in rows], default=0))}")
+            logger.debug(f"[find_maximal_threshold] Maximal norm of the rows: {max([el.norm() for el in rows], default=0)}")
             logger.debug(f"[find_maximal_threshold] Dimension of the subspace: {subspace.dim()}")
             ## vectors to check
             if len(rows) == 0:
@@ -1847,9 +1847,9 @@ class FODESystem:
             else:
                 for row in rows: row.reduce(-self.field.one, row.apply_matrix(subspace.projector))
                 logger.debug("[find_maximal_threshold] Computing maximal norm")
-                epsilon = math.sqrt(max(el.inner_product(el) for el in rows))
-                deviation = self._deviation(subspace, bound, num_points)
-                self.__cache_thresholds[key] = epsilon, deviation
+                epsilon = max(el.norm() for el in rows)
+                # deviation = self._deviation(subspace, bound, num_points)
+                self.__cache_thresholds[key] = epsilon#, deviation
         
         return self.__cache_thresholds[key]
 
