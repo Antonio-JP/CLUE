@@ -479,6 +479,13 @@ class SparseVector(object):
 
         return result
 
+    def norm(self):
+        norm_squared = self.inner_product(self)
+        if hasattr(norm_squared, "real"): 
+            norm_squared = norm_squared.real
+        
+        return math.sqrt(norm_squared)
+
     def apply_matrix(self, matr : SparseRowMatrix):
         r'''
             Method to compute the application of a matrix to self to the left (`M\cdot v`)
@@ -662,8 +669,10 @@ class SparseRowMatrix(object):
     @classmethod
     def from_list(cls, entries_list : list | tuple, field : Domain = QQ):
         r'''Method to build a new :class:`SparseRowMatrix` from a dense representation (i.e., a list or tuple)'''
-        result = cls(len(entries_list), field)
-        for i, j in product(range(len(entries_list)), repeat=2):
+        nrows = len(entries_list)
+        ncols = len(entries_list[0])
+        result = cls((nrows, ncols), field)
+        for i, j in product(range(nrows), range(ncols)):
             result.increment(i,j, field.convert(entries_list[i][j]))
         return result
 
@@ -887,6 +896,12 @@ class SparseRowMatrix(object):
     def __radd__(self, other): 
         try: return self._add_(other)
         except TypeError: return NotImplemented
+    def __sub__(self, other): 
+        try: return self._sub_(other)
+        except TypeError: return NotImplemented
+    def __isub__(self, other): 
+        try: return self._isub_(other)
+        except TypeError: return NotImplemented
     def __mul__(self, other): 
         try: return self._mul_(other)
         except TypeError: return NotImplemented
@@ -922,6 +937,36 @@ class SparseRowMatrix(object):
         for i in other.nonzero:
             for j in other[i].nonzero:
                 self.increment(i,j,other[i,j])
+        return self
+    
+    def _sub_(self, other: SparseRowMatrix) -> SparseRowMatrix:
+        if not isinstance(other, SparseRowMatrix):
+            if self.is_square() and other in self.field:
+                other = self.eye(self.dim[0], self.field)*other
+            else:
+                raise TypeError(f"[sub] Only valid for SparseRowMatrix")
+        elif self.dim != other.dim:
+            raise TypeError(f"[sub] Substraction must be defined for matrices with same dimension")
+        elif self.field != other.field:
+            raise TypeError(f"[sub] Substraction must be defined for matrices over the same field")
+
+        M = SparseRowMatrix(self.dim, self.field)
+        for i in self.nonzero.union(other.nonzero):
+            for j in self[i].nonzero.union(other[i].nonzero):
+                M.increment(i,j, self[i,j]-other[i,j])
+        return M
+    
+    def _isub_(self, other: SparseRowMatrix) -> SparseRowMatrix:
+        if not isinstance(other, SparseRowMatrix):
+            raise TypeError(f"[sub] Only valid for SparseRowMatrix")
+        elif self.dim != other.dim:
+            raise TypeError(f"[sub] Substraction must be defined for matrices with same dimension")
+        elif self.field != other.field:
+            raise TypeError(f"[sub] Substraction must be defined for matrices over the same field")
+        
+        for i in other.nonzero:
+            for j in other[i].nonzero:
+                self.increment(i,j,-other[i,j])
         return self
     
     def _mul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
