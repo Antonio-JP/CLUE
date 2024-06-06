@@ -83,5 +83,5 @@ docs/_sources
 *.qasm
 *.tex
 
-tests/quantum/packages
-tests/quantum/*.zip
+papers/quantum/packages
+papers/quantum/*.zip
