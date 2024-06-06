@@ -59,9 +59,10 @@ sys.setrecursionlimit(10000000)
 
 from natsort import natsorted
 
-from sympy import QQ, RR, parse_expr, symbols
+from sympy import QQ, parse_expr, symbols
 from sympy.parsing.sympy_parser import standard_transformations, rationalize
 
+from .numerical_domains import RR
 from .rational_function import SparsePolynomial, RationalFunction, to_rational
 
 __transformations_parser = standard_transformations + (rationalize,)
@@ -350,12 +351,12 @@ def parse_reactions(lines, varnames, parser="sympy", domain=QQ):
             monomial = SparsePolynomial(
                 varnames,
                 domain,
-                {tuple((var_dict[v], mult) for v, mult in ldict.items()): domain(1)},
+                {tuple((var_dict[v], mult) for v, mult in ldict.items()): domain.one},
             )
         else:
             raise NotImplementedError(f"Parser {parser} not implemented")
 
-        # reaction_poly = rate_poly * SparsePolynomial(varnames, QQ, {monomial : QQ(1)})
+        # reaction_poly = rate_poly * SparsePolynomial(varnames, QQ, {monomial : QQ.one})
         reaction_poly = rate_poly * monomial
         for v, mult in rdict.items():
             eqs[v] += reaction_poly * mult

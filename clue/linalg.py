@@ -20,11 +20,13 @@ from collections import deque
 from itertools import combinations, product
 from typing import Any
 
-from sympy import GF, CC, QQ, QQ_I, RR, gcd, nextprime, symbols
+from sympy import GF, QQ, QQ_I, gcd, nextprime, symbols
 from sympy.core.symbol import Symbol
 from sympy.ntheory.modular import isprime
 from sympy.polys.domains.domain import Domain
 from sympy.polys.fields import FracElement
+
+from .numerical_domains import NumericalField, RR, CC
 
 logger = logging.getLogger(__name__)
 
@@ -360,6 +362,8 @@ class SparseVector():
     def to_numpy(self, dtype=None):
         r'''Return the Sparse matrix as a numpy ndarray (dense representation)'''
         from numpy import array
+
+        dtype = self.field.dtype if (isinstance(self.field, NumericalField) and dtype is None) else dtype
         return array(self.to_list(), dtype=dtype)
 
     def reduce_mod(self, mod : int):
@@ -407,6 +411,7 @@ class SparseVector():
             Examples::
 
                 >>> from clue.linalg import SparseVector
+                >>> from clue.numerical_domains import CC
                 >>> v = SparseVector.from_list([1+1j,1-1j], field=CC)
                 >>> w = v.conjugate()
                 >>> w is v
@@ -422,7 +427,7 @@ class SparseVector():
                 >>> v2 is v
                 True
                 >>> v.to_list()
-                [(1.0 - 1.0j), (1.0 + 1.0j)]
+                [(1-1j), (1+1j)]
         '''
         result = self if _inplace else self.copy() 
         if self.field == CC:
@@ -438,49 +443,47 @@ class SparseVector():
         r'''
             Scalar product of two vectors
 
-        [Optimized] This method is optimized to exploit the sparseness of the vectors.
+            [Optimized] This method is optimized to exploit the sparseness of the vectors.
 
-        Input:
-
-        * ``rhs``: vector that will be used for the scalar product with ``self``.
-
-            Remark:
-
-            * This method takes into account whether the :func:`field` is the complex numbers or not.
-              If that is the case, the inner product is defined by `\langle u, v \rangle = \sum u_i \bar{v_i}`,
-              where `\bar{v_i}` is the complex conjugate. 
-            * This method **does not** work for :class:`sympy.Quaternion`.
-
-            Input: 
+            Input:
 
             * ``rhs``: vector that will be used for the scalar product with ``self``.
-            * ``_conjugate``: boolean indicating whether or not to conjugate the vector ``rhs``. This is
-              not supposed to be used by the users since it is only used to reuse the code for matrix multiplication,
-              where the conjugation is not necessary.
 
-            Output:
+                Remark:
 
-            The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
+                * This method takes into account whether the :func:`field` is the complex numbers or not.
+                If that is the case, the inner product is defined by `\langle u, v \rangle = \sum u_i \bar{v_i}`,
+                where `\bar{v_i}` is the complex conjugate. 
+                * This method **does not** work for :class:`sympy.Quaternion`.
 
-        Examples::
+                Input: 
 
-            >>> from clue.linalg import *
-            >>> v = SparseVector.from_list([2,1,1])
-            >>> u = SparseVector.from_list([1,-1,-1])
-            >>> v.inner_product(u)
-            MPQ(0,1)
-            >>> v = SparseVector.from_list([1,1,1,1])
-            >>> v.inner_product(v)
-            MPQ(4,1)
-            >>> v = SparseVector.from_list([2,1,1])
-            >>> u = SparseVector.from_list([0,0,0])
-            >>> v.inner_product(u)
-            MPQ(0,1)
+                * ``rhs``: vector that will be used for the scalar product with ``self``.
+                * ``_conjugate``: boolean indicating whether or not to conjugate the vector ``rhs``. This is
+                not supposed to be used by the users since it is only used to reuse the code for matrix multiplication,
+                where the conjugation is not necessary.
+
+                Output:
+
+                The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
 
             Examples::
 
-                >>> from sympy import I, QQ_I, RR, CC
-                >>> from clue.linalg import SparseVector
+                >>> from clue.linalg import *
+                >>> v = SparseVector.from_list([2,1,1])
+                >>> u = SparseVector.from_list([1,-1,-1])
+                >>> v.inner_product(u)
+                MPQ(0,1)
+                >>> v = SparseVector.from_list([1,1,1,1])
+                >>> v.inner_product(v)
+                MPQ(4,1)
+                >>> v = SparseVector.from_list([2,1,1])
+                >>> u = SparseVector.from_list([0,0,0])
+                >>> v.inner_product(u)
+                MPQ(0,1)
+
+            Examples::
+
                 >>> u = SparseVector.from_list([0,1,1,0]) # the domain is QQ
                 >>> v = SparseVector.from_list([1,0,2,0])
                 >>> u.inner_product(v)
@@ -496,6 +499,7 @@ class SparseVector():
 
             This can also work for real numbers::
 
+                >>> from clue.numerical_domains import RR, CC
                 >>> u = SparseVector.from_list([0,1.1,3.5,2.0], RR)
                 >>> v = SparseVector.from_list([0,1,0,0], RR)
                 >>> u*v
@@ -508,23 +512,23 @@ class SparseVector():
 
             And, finally, this also works for complex numbers and the gaussian rationals::
 
-                >>> u = SparseVector.from_list([QQ_I(1,1), QQ_I(2,-2)], QQ_I) # (1+i, 2-2*i)
-                >>> v = SparseVector.from_list([QQ_I(3,-1), QQ_I(5,1)], QQ_I) # (3-i, 5+i)
+                >>> from sympy import QQ_I
+                >>> u = SparseVector.from_list([QQ_I(1,1), QQ_I(2,-2)], QQ_I) # (1+j, 2-2*j)
+                >>> v = SparseVector.from_list([QQ_I(3,-1), QQ_I(5,1)], QQ_I) # (3-j, 5+j)
                 >>> u*v
                 QQ_I(10, -8)
                 >>> v*u # scalar product is anti-symmetric for complex
                 QQ_I(10, 8)
                 >>> v*v # square of the 2-norm of v
                 QQ_I(36, 0)
-                >>> i = CC(I) # imaginary unit
-                >>> u = SparseVector.from_list([1+i, 2-2*i], CC)
-                >>> v = SparseVector.from_list([3-i, 5+i], CC)
+                >>> u = SparseVector.from_list([1+1j, 2-2j], CC)
+                >>> v = SparseVector.from_list([3-1j, 5+1j], CC)
                 >>> u*v
-                (10.0 - 8.0j)
+                (10-8j)
                 >>> v*u
-                (10.0 + 8.0j)
+                (10+8j)
                 >>> v*v
-                (36.0 + 0.0j)
+                (36+0j)
         '''
         rhs = rhs.conjugate() if _conjugate else rhs # we conjugate the vector (in case the field is CC) if indicated by argument
         if self.is_zero() or rhs.is_zero():
@@ -606,8 +610,74 @@ class SparseVector():
         r"""Method to compute the number of non-zero entries of a vector"""
         return len(self.nonzero)
 
-    #--------------------------------------------------------------------------
-    # Method for rational reconstruction
+    # --------------------------------------------------------------------------
+
+    def reduce_mod(self, mod: int):
+        r"""
+        Method to compute a reduction of ``self`` using a modulus.
+
+        This method computes a reduction of ``self`` where every input has been reduced using a prime modulus.
+        This means that for every entry, for both numerator and denominator we compute the value modulus ``mod``.
+        This, combined with a reconstruction method (see :func:`rational_reconstruction`), allows to perform
+        operations with smaller size and obtain the true final result.
+        This method works best for a large enough prime ``mod``.
+
+        This method only works if ``self.field`` are the rational numbers.
+
+        Input:
+
+        * ``mod``: a prime over which we will compute the modulus.
+
+        Output:
+
+        A :class:`SparseVector` over a finite field whose entries are the reduction modulo ``mod`` of ``self``.
+
+        Examples::
+
+            >>> from clue.linalg import *
+            >>> v = SparseVector.from_list([2,1])
+            >>> v.reduce_mod(487).to_list()
+            [SymmetricModularIntegerMod487(2), SymmetricModularIntegerMod487(1)]
+            >>> v = SparseVector.from_list([7/6,5/3])
+            >>> v.reduce_mod(487).to_list()
+            [SymmetricModularIntegerMod487(407), SymmetricModularIntegerMod487(164)]
+        """
+        if self.field != QQ:
+            raise ValueError(
+                f"Reduction can be done only for a vector over rationals but the field is {self.field}"
+            )
+        mod_field = GF(mod)
+        result = SparseVector(self.dim, mod_field)
+        for i in self.nonzero:
+            entry = self.__data[i]
+            red_den = mod_field.convert(entry.denominator)
+            if red_den == 0:
+                raise ZeroDivisionError(f"Division by zero while taking modulo {mod}")
+            result[i] = (
+                mod_field.convert(entry.numerator) / red_den
+            )  # __setitem__ checks if it is zero
+        return result
+
+    # --------------------------------------------------------------------------
+
+    @classmethod
+    def from_list(cls, entries_list: list | tuple, field: Domain = QQ):
+        r"""Method to build a new :class:`SparseVector` from a dense representation (i.e., a list or tuple)"""
+        result = cls(len(entries_list), field)
+        for i, num in enumerate(entries_list):
+            to_insert = field.convert(num)
+            if to_insert:
+                result[i] = to_insert  # __setitem__ updates the nonzero attribute
+        return result
+
+    @classmethod
+    def cannonical_basis_element(cls, index:int , dimension: int, field: Domain = QQ):
+        result = cls(dimension, field)
+        result[index] = field.one
+        return result
+
+    # --------------------------------------------------------------------------
+
     def rational_reconstruction(self):
         r"""
         Method to make a rational reconstruction from a modular expression.
@@ -837,7 +907,8 @@ class SparseRowMatrix():
         Examples::
 
             >>> from clue.clue import SparseVector, SparseRowMatrix
-            >>> from sympy import QQ, RR
+            >>> from sympy import QQ
+            >>> from clue.numerical_domains import RR
             >>> M = SparseRowMatrix.from_list([[1/2,2/4],[3/4,4/5]], QQ)
             >>> print(M.change_base(RR).pretty_print())
             [  0.5 0.5 ]
@@ -1123,7 +1194,8 @@ class SparseRowMatrix():
     def to_numpy(self, dtype=None):
         r"""Return the Sparse matrix as a numpy ndarray (dense representation)"""
         from numpy import array
-
+        
+        dtype = self.field.dtype if (isinstance(self.field, NumericalField) and dtype is None) else dtype
         return array(self.to_list(), dtype=dtype)
 
     def pretty_print(self):
@@ -1659,7 +1731,7 @@ class Subspace(object):
                 for monom, coef in p.dataiter():
                     new_monom = []
                     skip = False
-                    for var, exp in monom:
+                    for var, exp in monom.items():
                         if var not in pivots:
                             skip = True
                             break
@@ -1682,7 +1754,7 @@ class Subspace(object):
                 for monom, coef in rf.numer.dataiter():
                     new_monom = []
                     skip = False
-                    for var, exp in monom:
+                    for var, exp in monom.items():
                         if var not in pivots:
                             skip = True
                             break
@@ -1697,7 +1769,7 @@ class Subspace(object):
                 for monom, coef in rf.denom.dataiter():
                     new_monom = []
                     skip = False
-                    for var, exp in monom:
+                    for var, exp in monom.items():
                         if var not in pivots:
                             skip = True
                             break
@@ -1761,6 +1833,15 @@ class Subspace(object):
         result = Subspace(QQ)
         for pivot, vector in self.echelon_form.items():
             result.echelon_form[pivot] = vector.rational_reconstruction()
+        return result
+
+    # --------------------------------------------------------------------------
+
+    @classmethod
+    def identity_subspace(cls, dimension: int, domain: Domain = QQ):
+        result = cls(dimension)
+        for i in range(dimension):
+            result.absorb_new_vector(SparseVector.cannonical_basis_element(i, dimension, domain))
         return result
 
 
@@ -1956,7 +2037,7 @@ class OrthogonalSubspace(Subspace):
         logger.debug("[perform_change_of_variables] Constructing new rhs")
         x = (
             [
-                SparsePolynomial.var_from_string(var, old_vars, self.field)
+                SparsePolynomial.variable(var, old_vars, self.field)
                 for var in old_vars
             ]
             if isinstance(rhs[0], (SparsePolynomial, RationalFunction))
