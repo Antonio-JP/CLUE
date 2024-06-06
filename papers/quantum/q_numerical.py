@@ -72,7 +72,7 @@ def app_lumping(E: Experiment, delta: float=1e-4) -> LDESystem:
 def max_epsilon(G, threshold=1e-10):
     U = quantum_matrix(G)
     system = FODESystem.LinearSystem(U, lumping_subspace=NumericalSubspace, lumping_subspace_kwds={"delta": threshold**2})
-    return system.find_maximal_threshold((observable(G),), 1/threshold, 2000, threshold)+10*threshold
+    return system.find_maximal_threshold((observable(G),))
 
 ###################################################################################
 ###

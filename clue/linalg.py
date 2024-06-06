@@ -541,12 +541,15 @@ class SparseVector():
 
         return result
 
-    def norm(self):
-        norm_squared = self.inner_product(self)
-        if hasattr(norm_squared, "real"): 
-            norm_squared = norm_squared.real
+    def norm_squared(self):
+        result = self.inner_product(self)
+        if hasattr(result, "real"): 
+            result = result.real
         
-        return math.sqrt(norm_squared)
+        return result
+
+    def norm(self):
+        return math.sqrt(self.norm_squared())
 
     def apply_matrix(self, matr: SparseRowMatrix):
         r"""
@@ -2105,10 +2108,10 @@ class NumericalSubspace(OrthogonalSubspace):
     def contains(self, vector: SparseVector):
         r"""Checks whether a vector is in ``self`` or not."""
         self_proj = self.reduce_vector(vector.copy())
-        return float(self_proj.inner_product(self_proj)) < 1e-15
+        return self_proj.norm_squared() < 1e-15
 
     def _should_absorb(self, vector: SparseVector):
-        norm_squared = float(vector.inner_product(vector))
+        norm_squared = vector.norm_squared()
         logger.log(
             5, f"[_should_absorb - Numerical] {norm_squared}) >? {self.__delta2}"
         )

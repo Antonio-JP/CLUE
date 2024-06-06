@@ -2413,7 +2413,7 @@ class FODESystem:
             else:
                 for row in rows:
                     row.reduce(-self.field.one, row.apply_matrix(subspace.projector)) # r - Pr
-                epsilon = math.sqrt(max(el.inner_product(el) for el in rows))
+                epsilon = math.sqrt(max(el.norm_squared() for el in rows))
                 logger.debug(f"[find_maximal_threshold] Computed maximal epsilon: {epsilon}")
                 self.__cache_thresholds[key] = epsilon
 
