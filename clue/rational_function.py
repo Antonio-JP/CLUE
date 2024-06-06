@@ -139,10 +139,13 @@ class SparseMonomial(dict):
         return self.__hash
     
     def __setitem__(self, key: Any, value: Any) -> None:
-        if not self.__blocked:
+        try:
+            if not self.__blocked:
+                return super().__setitem__(key, value)
+            else:
+                raise NotImplementedError("SparseMonomial are inmutable")
+        except AttributeError:
             return super().__setitem__(key, value)
-        else:
-            raise NotImplementedError("SparseMonomial are inmutable")
         
     def to_string(self, *varnames: str) -> str:
         if len(varnames) == 1 and isinstance(varnames, (tuple, list)):
