@@ -175,9 +175,9 @@ def lumping_from_analysis(A: Analysis, size: int) -> LDESystem:
 def save_analysis(E: Experiment, A: Analysis):
     __CACHED_ANALYSIS.append((E, float("inf"), A))
 
-def epsilon_intervals(E: Experiment | Analysis) -> tuple[float,float]:
+def epsilon_intervals(E: Experiment | Analysis, threshold=1e-10) -> tuple[float,float]:
     if isinstance(E, Experiment):
-        E = analysis(E)
+        E = analysis(E, threshold)
     
     return dict(zip(sorted(E.keys(), reverse=True), _epsilon_interval(E)))
 
@@ -219,9 +219,9 @@ def matrix_power(A: SparseRowMatrix, power:int) -> SparseRowMatrix:
         return A
     return matrix_power(A, power // 2) * matrix_power(A, power // 2 + (power % 2))
 
-def matrices_example(E: Experiment, size: int) -> tuple[SparseRowMatrix, SparseRowMatrix, SparseRowMatrix, SparseRowMatrix]:
+def matrices_example(E: Experiment, size: int, threshold=1e-10) -> tuple[SparseRowMatrix, SparseRowMatrix, SparseRowMatrix, SparseRowMatrix]:
     r'''For a given size, this returns L, L_+, U, U_hat'''
-    A = analysis(E) # This is only computed once
+    A = analysis(E, threshold) # This is only computed once
     al = lumping_from_analysis(A, size)
 
     U = quantum_matrix(E)
@@ -235,7 +235,7 @@ def closest_unitary(Uhat) -> SparseRowMatrix:
     W, _, V = svd(Uhat.to_numpy(dtype="complex"))
     return SparseRowMatrix.from_list(matmul(W, V), CC)
 
-def direct_error(E: Experiment, size: int, iter_size: int = None) -> dict[int, SparseVector]:
+def direct_error(E: Experiment, size: int, iter_size: int = None, *, threshold) -> dict[int, SparseVector]:
     r'''
         When we compute a lumping `L` for a circuit `U`, we can build a reduced model by
 
@@ -259,7 +259,7 @@ def direct_error(E: Experiment, size: int, iter_size: int = None) -> dict[int, S
             ||(U^k - L^+ \hat U^k L)|x\rangle||_2
     '''
     print(f"[direct @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
-    L, L_plus, U, Uhat = matrices_example(E, size)
+    L, L_plus, U, Uhat = matrices_example(E, size, threshold)
     x = SparseVector.from_list(observable(E).to_list(), L.field)
     
     k_values = sample_ks(E.size() if iter_size is None else iter_size)
@@ -275,7 +275,7 @@ def direct_error(E: Experiment, size: int, iter_size: int = None) -> dict[int, S
     print(f"[direct @ {size}] COMPLETED".ljust(get_terminal_size()[0]))
     return dict(zip(k_values, differences))
 
-def closest_unitary_error(E: Experiment, size: int, iter_size: int = None) -> dict[int, SparseVector]:
+def closest_unitary_error(E: Experiment, size: int, iter_size: int = None, *, threshold) -> dict[int, SparseVector]:
     r'''
         In :func:`direct_error`, we simply rolled with the approximate lumping we obtained. However, the reduced system 
         `\hat U` was not unitary, i.e., it was not a quantum circuit anymore. Since this matrix should be "close" to a 
@@ -284,7 +284,7 @@ def closest_unitary_error(E: Experiment, size: int, iter_size: int = None) -> di
         This can be achieve using the polar decomposition of a matrix (see [here](https://en.wikipedia.org/wiki/Polar_decomposition))
     '''
     print(f"[unitary @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
-    L, L_plus, U, Uhat = matrices_example(E, size)
+    L, L_plus, U, Uhat = matrices_example(E, size, threshold)
     print("[unitary @ {size}] Computing closes unitary...".ljust(get_terminal_size()[0]), end="\r")
     nU = closest_unitary(Uhat)
     x = SparseVector.from_list(observable(E).to_list(), L.field)
@@ -304,9 +304,9 @@ def closest_unitary_error(E: Experiment, size: int, iter_size: int = None) -> di
 
 def generate_error_graph(E: Experiment, method=direct_error, name="\hat{U}", 
                          yscale=None, xscale = None, 
-                         bound_lump : int |tuple[int,int] = None, iter_size: int = None):
+                         bound_lump : int |tuple[int,int] = None, iter_size: int = None, *, threshold):
     print(f"[graph] Generating the Error graph for {method.__name__}".ljust(get_terminal_size()[0]), end="\r")
-    A = analysis(E) # this is done just once
+    A = analysis(E, threshold) # this is done just once
     if isinstance(bound_lump, (tuple,list)):
         m_bound, M_bound = bound_lump
     elif isinstance(bound_lump, int):
@@ -314,7 +314,7 @@ def generate_error_graph(E: Experiment, method=direct_error, name="\hat{U}",
     elif bound_lump is None:
         m_bound, M_bound = 0, 2**E.size()
 
-    d = [(s,method(E, s, iter_size)) for s in A if s < M_bound and s > m_bound]
+    d = [(s,method(E, s, iter_size, threshold=threshold)) for s in A if s < M_bound and s > m_bound]
     for (s,e) in d:
         x = e.keys()
         y = [v.norm() for v in e.values()]
