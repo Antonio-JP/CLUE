@@ -79,6 +79,9 @@ class NumericalField:
     
     def __eq__(self, other):
         return isinstance(other, NumericalField) and self.dtype == other.dtype
+    
+    def __call__(self, element):
+        return self.convert(element)
 
 RR = NumericalField(float64)
 RR16 = NumericalField(float16)
