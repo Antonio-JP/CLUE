@@ -14,7 +14,7 @@ from shutil import get_terminal_size
 
 from clue import FODESystem, LDESystem
 from clue.linalg import CC, OrthogonalSubspace, NumericalSubspace, SparseVector, SparseRowMatrix
-from math import ceil
+from math import ceil, sqrt
 from numpy.linalg import svd
 from numpy import matmul
 from misc import Experiment
@@ -201,8 +201,9 @@ def _epsilon_interval(A: Analysis) -> list[tuple[float, float]]:
 ###
 ###################################################################################
 def sample_ks(size=10, num_samples:int = 10):
-    up_bound = 2**(int(ceil(size/2)))
+    return sample_linear_ks(2**(int(ceil(size/2))), num_samples)
 
+def sample_linear_ks(up_bound, num_samples:int = 50):
     return [int(ceil(j*(up_bound-1)/(num_samples-1)))+1 for j in range(num_samples)]
 
 @lru_cache(maxsize=512)
@@ -262,7 +263,8 @@ def direct_error(E: Experiment, size: int, iter_size: int = None, *, threshold) 
     L, L_plus, U, Uhat = matrices_example(E, size, threshold)
     x = SparseVector.from_list(observable(E).to_list(), L.field)
     
-    k_values = sample_ks(E.size() if iter_size is None else iter_size)
+    # k_values = sample_ks(E.size() if iter_size is None else iter_size)
+    k_values = sample_linear_ks(max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size)
     differences = []
     for k in k_values:
         print(f"[direct @ {size}] Computing error after {k}/{k_values[-1]} iterations...".ljust(get_terminal_size()[0]), end="\r")
@@ -289,7 +291,8 @@ def closest_unitary_error(E: Experiment, size: int, iter_size: int = None, *, th
     nU = closest_unitary(Uhat)
     x = SparseVector.from_list(observable(E).to_list(), L.field)
     
-    k_values = sample_ks(E.size() if iter_size is None else iter_size)
+    # k_values = sample_ks(E.size() if iter_size is None else iter_size)
+    k_values = sample_linear_ks(max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size)
     differences = []
     for k in k_values:
         print(f"[unitary @ {size}] Computing error after {k}/{k_values[-1]} iterations...".ljust(get_terminal_size()[0]), end="\r")
