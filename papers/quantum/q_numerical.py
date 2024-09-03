@@ -20,10 +20,13 @@ from numpy import matmul
 from misc import Experiment
 from q_sat import SATFormula
 from q_maxcut import UndirectedGraph
+from q_benchmark import QuantumBenchmark
 
+from csv import writer
 import pickle
 from pickle import PicklingError
 from numpy import exp, pi
+from time import process_time
 
 Analysis = dict[int, tuple[float,LDESystem]]
 
@@ -82,22 +85,23 @@ def max_epsilon(G, threshold=1e-10):
 __CACHED_ANALYSIS = []
 def analysis(E: Experiment, threshold=1e-10, min_epsilon=0) -> Analysis:
     tot_lumpings = 0
+    ctime = process_time()
 
     ## Looking into CACHE
     for (e, th, A) in __CACHED_ANALYSIS:
         if (e == E) and (th >= threshold):
-            print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (from CACHE)".ljust(get_terminal_size()[0]))
+            #print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (from CACHE)".ljust(get_terminal_size()[0]))
             return A
 
     ## Looking in the files
     path_name = f"./analysis/{f'{E.name}_{E.size()}' if hasattr(E, 'name') else f'(({E}))'}[{threshold:.2E}]({min_epsilon:.2f}).an"
-    if os.path.exists(path_name):
-        with open(path_name, "rb") as file:
-            print(f"[analysis] Loading analysis from file...".ljust(get_terminal_size()[0]), end="\r")
-            A = pickle.load(file)
+    # if os.path.exists(path_name):
+    #     with open(path_name, "rb") as file:
+    #         print(f"[analysis] Loading analysis from file...".ljust(get_terminal_size()[0]), end="\r")
+    #         A = pickle.load(file)
 
-            print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (Read from file)".ljust(get_terminal_size()[0]))
-            return A
+    #         print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (Read from file)".ljust(get_terminal_size()[0]))
+    #         return A
     
     ## Computing the ANALYSIS
     print(f"[analysis] Computing maximum epsilon".ljust(get_terminal_size()[0]), end="\r")
@@ -146,6 +150,9 @@ def analysis(E: Experiment, threshold=1e-10, min_epsilon=0) -> Analysis:
         tot_lumpings += 1
         A[s] = (eps, lum)
         
+    ## Sorting results
+    A = dict(sorted(A.items()))
+
     print(f"[analysis] COMPLETED: Saving to CACHE".ljust(get_terminal_size()[0]), end="\r")
     if cache:
         __CACHED_ANALYSIS.append((E, threshold, A))
@@ -153,13 +160,15 @@ def analysis(E: Experiment, threshold=1e-10, min_epsilon=0) -> Analysis:
     print(f"[analysis] COMPLETED: Saving to FILE".ljust(get_terminal_size()[0]), end="\r")
     with open(path_name, "wb") as file:
         try:
-            print(f"[analysis] Saving analysis into file for future use...".ljust(get_terminal_size()[0]), end="\r")
+            print(f"[analysis] Saving analysis into file for future use... ".ljust(get_terminal_size()[0]), end="\r")
             pickle.dump(A, file)
         except PicklingError as e:
-            print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (Error saving in file)".ljust(get_terminal_size()[0]))
+            ttime = process_time() - ctime
+            print(f"[analysis] COMPLETED (with {tot_lumpings} lumpings) (Error saving in file) ({ttime:.4f} s., {tot_lumpings} lumpings, {len(A)} dist. lumpings)".ljust(get_terminal_size()[0]))
             os.remove(path_name)
             return A
-    print(f"[analysis] COMPLETED: Saved in file".ljust(get_terminal_size()[0]))
+    ttime = process_time() - ctime
+    print(f"[analysis] COMPLETED: Saved in file ({ttime:.4f} s., {tot_lumpings} lumpings, {len(A)} dist. lumpings)".ljust(get_terminal_size()[0]))
     return A
 
 def epsilon_for_analysis(A: Analysis, size: int) -> float:
@@ -236,7 +245,7 @@ def closest_unitary(Uhat) -> SparseRowMatrix:
     W, _, V = svd(Uhat.to_numpy(dtype="complex"))
     return SparseRowMatrix.from_list(matmul(W, V), CC)
 
-def direct_error(E: Experiment, size: int, iter_size: int = None, *, threshold) -> dict[int, SparseVector]:
+def backward_error(E: Experiment, size: int, iter_size: int = None, *, threshold) -> dict[int, SparseVector]:
     r'''
         When we compute a lumping `L` for a circuit `U`, we can build a reduced model by
 
@@ -259,32 +268,37 @@ def direct_error(E: Experiment, size: int, iter_size: int = None, *, threshold) 
         
             ||(U^k - L^+ \hat U^k L)|x\rangle||_2
     '''
-    print(f"[direct @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
+    ctime = process_time()
+    print(f"[backward @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
     L, L_plus, U, Uhat = matrices_example(E, size, threshold)
     x = SparseVector.from_list(observable(E).to_list(), L.field)
     
     # k_values = sample_ks(E.size() if iter_size is None else iter_size)
-    k_values = sample_linear_ks(max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size)
+    bound = max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size
+    k_values = sample_linear_ks(bound)
     differences = []
     for k in k_values:
-        print(f"[direct @ {size}] Computing error after {k}/{k_values[-1]} iterations...".ljust(get_terminal_size()[0]), end="\r")
+        print(f"[backward @ {size}] Computing error after {k}/{k_values[-1]} iterations...".ljust(get_terminal_size()[0]), end="\r")
     
         Up = matrix_power(U, k)
         Uhp = matrix_power(Uhat, k)
         
         differences.append((Up - L_plus.matmul(Uhp.matmul(L))).dot(x))
         
-    print(f"[direct @ {size}] COMPLETED".ljust(get_terminal_size()[0]))
+    ttime = process_time() - ctime
+    print(f"[backward @ {size}] COMPLETED ({ttime:.4f} sec, {bound} iters.)".ljust(get_terminal_size()[0]))
     return dict(zip(k_values, differences))
 
 def closest_unitary_error(E: Experiment, size: int, iter_size: int = None, *, threshold) -> dict[int, SparseVector]:
     r'''
-        In :func:`direct_error`, we simply rolled with the approximate lumping we obtained. However, the reduced system 
+        In :func:`backward_error`, we simply rolled with the approximate lumping we obtained. However, the reduced system 
         `\hat U` was not unitary, i.e., it was not a quantum circuit anymore. Since this matrix should be "close" to a 
         unitary matrix (the true lumped system) we can try to compute the closest unitary matrix.
 
         This can be achieve using the polar decomposition of a matrix (see [here](https://en.wikipedia.org/wiki/Polar_decomposition))
     '''
+    ctime = process_time()
+
     print(f"[unitary @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
     L, L_plus, U, Uhat = matrices_example(E, size, threshold)
     print("[unitary @ {size}] Computing closes unitary...".ljust(get_terminal_size()[0]), end="\r")
@@ -292,7 +306,8 @@ def closest_unitary_error(E: Experiment, size: int, iter_size: int = None, *, th
     x = SparseVector.from_list(observable(E).to_list(), L.field)
     
     # k_values = sample_ks(E.size() if iter_size is None else iter_size)
-    k_values = sample_linear_ks(max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size)
+    bound = max(int(ceil(1.5*L.nrows)), L.nrows + int(ceil(sqrt(L.ncols)))) if iter_size is None else iter_size
+    k_values = sample_linear_ks(bound)
     differences = []
     for k in k_values:
         print(f"[unitary @ {size}] Computing error after {k}/{k_values[-1]} iterations...".ljust(get_terminal_size()[0]), end="\r")
@@ -302,12 +317,69 @@ def closest_unitary_error(E: Experiment, size: int, iter_size: int = None, *, th
 
         differences.append((Up - L_plus.matmul(nUp.matmul(L))).dot(x))
         
-    print(f"[unitary @ {size}] COMPLETED".ljust(get_terminal_size()[0]))
+    ttime = process_time() - ctime
+    print(f"[unitary @ {size}] COMPLETED ({ttime:.4f} sec, {bound} iters.)".ljust(get_terminal_size()[0]))
     return dict(zip(k_values, differences))
 
-def generate_error_graph(E: Experiment, method=direct_error, name="\hat{U}", 
+def forward_error(E: Experiment, size: int, _: int = None, num_samples: int = 100, density = 0.5, *, threshold) -> dict[str,float]:
+    r'''
+        When we compute a lumping `L` for a circuit `U`, we can build a reduced model by
+
+        .. MATH::
+
+            \hat U = L U L^+,
+
+        where `L` projects `\mathbb{C}^N` to `\mathbb{C}^m` orthogonally and `L^+` embedded the subspace generated by `L` into the ambient space `\mathbb{C}^N`.
+
+        In particular, `L^+ \in \mathbb{C}^{n \times m}` is the right pseudo-inverse of `L`, providing `LL^+ = I_m`. Moreover, for any `|x\rangle \in \mathbb{C}^n`, we have that 
+        
+        .. MATH::
+        
+            L U |x\rangle = \hat{U} L |x\rangle.
+
+        If `L` is not a lumping, then this property does not hold. So we can measure how far we get from the true value of the lumped simulation. Namely:
+
+        .. MATH::
+        
+            ||(L U - \hat{U} L)|x\rangle||_2
+    '''
+    from random import random
+    ctime = process_time()
+    print(f"[forward @ {size}] Computing the matrices to compare the error...".ljust(get_terminal_size()[0]), end="\r")
+    L, _, U, Uhat = matrices_example(E, size, threshold)
+
+    print(f"[forward @ {size}] Generating sample points for computing the error statistics...".ljust(get_terminal_size()[0]), end="\r")
+    Z = [SparseVector.from_list([CC(random()+random()*1j) if random() < density else CC.convert(0) for _ in range(L.ncols)],CC) for _ in range(num_samples)] ## Sampling randomly for points with around "density" entries
+    for v in Z: 
+        v.scale(1/v.norm())
+
+    print(f"[forward @ {size} Computing the desired quantity".ljust(get_terminal_size()[0]), end="\r")
+    real = L * U
+    approx = Uhat * L
+
+    true_values = [real * v for v in Z]
+    error = [(true_values[i] - approx * v).norm() for (i,v) in enumerate(Z)]
+    true_norms = [true_value.norm() for true_value in true_values]
+    relative_error = [e/n for (e,n) in zip(error, true_norms)]
+
+    print(f"[forward @ {size} Computing the different statistics".ljust(get_terminal_size()[0]), end="\r")
+    result = {
+        "avg. error": sum(error)/len(error),
+        "avg. rel. error": sum(relative_error)/len(relative_error),
+        "max. error": max(error),
+        "max. rel. error": max(relative_error),
+        "min. error": min(error),
+        "min. rel. error": min(relative_error)
+    }
+
+    ttime = process_time() - ctime
+    print(f"[forward @ {size} COMPLETED ({ttime:.4f} sec)".ljust(get_terminal_size()[0]))
+
+    return result
+
+def generate_error_graph(E: Experiment, method=backward_error, name="\hat{U}", 
                          yscale=None, xscale = None, 
-                         bound_lump : int |tuple[int,int] = None, iter_size: int = None, *, threshold):
+                         bound_lump : int |tuple[int,int] = None, iter_size: int = None, num_samples: int = 100, density: float = 0.5, *, threshold):
     print(f"[graph] Generating the Error graph for {method.__name__}".ljust(get_terminal_size()[0]), end="\r")
     A = analysis(E, threshold) # this is done just once
     if isinstance(bound_lump, (tuple,list)):
@@ -317,23 +389,78 @@ def generate_error_graph(E: Experiment, method=direct_error, name="\hat{U}",
     elif bound_lump is None:
         m_bound, M_bound = 0, 2**E.size()
 
-    d = [(s,method(E, s, iter_size, threshold=threshold)) for s in A if s < M_bound and s > m_bound]
-    for (s,e) in d:
-        x = e.keys()
-        y = [v.norm() for v in e.values()]
-        plt.plot(x, y, label=f"s={s}", linestyle="-") 
-        
-    plt.legend()
-    plt.xlabel('Number of iterations (k)')
-    plt.ylabel(f'$||U^k - L^+ {name}^k L||_2$')
-    if yscale is not None: plt.yscale(yscale)
-    if xscale is not None: plt.xscale(xscale)
-    
-    plt.show()
-    print(f"[graph] COMPLETED".ljust(get_terminal_size()[0]))
+    if method != forward_error: ## These are backwards errors -> graph is X: iterations, Y: error, lines: lumpings
+        with open(f"./analysis/{E.name if isinstance(E, QuantumBenchmark) else str(E)}_{E.size()}[backward].csv", "w") as data_file:
+            csv_writer = writer(data_file)
+            d = sorted([(s,method(E, s, iter_size=iter_size, threshold=threshold)) for s in A if s < M_bound and s > m_bound])
+
+            ## Writing the header in the CSV
+            header = ["Lumping size"] + list(range(1,max(d[-1][1].keys())+1))
+            csv_writer.writerow(header)
+            for (s,e) in d:
+                x = e.keys()
+                y = [v.norm() for v in e.values()]
+                plt.plot(x, y, label=f"s={s}", linestyle="-") 
+                ## Writing the new line for this lumping
+                last = max(e.keys())
+                csv_writer.writerow([s] + [None if i not in e else e[i].norm() for i in range(1,last+1)] + [None for _ in range(len(header) - last - 1)])
+                
+            plt.legend()
+            plt.xlabel('Number of iterations (k)')
+            plt.ylabel(f'$||U^k - L^+ {name}^k L||_2$')
+            if yscale is not None: plt.yscale(yscale)
+            if xscale is not None: plt.xscale(xscale)
+            
+            plt.savefig(f"./analysis/{E.name if isinstance(E, QuantumBenchmark) else str(E)}_{E.size()}[backward].jpg", bbox_inches='tight', dpi=150)
+            plt.show()
+            print(f"[graph] COMPLETED".ljust(get_terminal_size()[0]))
+    else:  ## These are forward errors -> graph is X: lumpings, Y: error, lines: statistics
+        with open(f"./analysis/{E.name if isinstance(E, QuantumBenchmark) else str(E)}_{E.size()}[forward].csv", "w") as data_file:
+            csv_writer = writer(data_file)
+
+            d = [(s,method(E, s, num_samples=num_samples, density=density, threshold=threshold)) for s in A if s < M_bound and s > m_bound]
+            x = [e[0] for e in d] # the X coordinate will always be the lumping sizes
+
+            ## Writing the header in the CSV file
+            header = ["Statistic"] + x
+            csv_writer.writerow(header)
+
+            ## Absolute statistics
+            for statistic in "avg. error", "max. error", "min. error":
+                y = [e[1][statistic] for e in d]
+                plt.plot(x, y, label=statistic, linestyle="-", marker="o")
+                csv_writer.writerow([statistic] + y + [None for _ in range(len(header) - len(y) - 1)])
+
+            plt.title(f"Forward Error for {E.name}")
+            plt.legend()
+            plt.xlabel("Lumping size")
+            plt.ylabel(f"Error")
+            if yscale is not None: plt.yscale(yscale)
+            if xscale is not None: plt.xscale(xscale)
+
+            plt.savefig(f"./analysis/{E.name if isinstance(E, QuantumBenchmark) else str(E)}_{E.size()}[forward-absolute].jpg", bbox_inches='tight', dpi=150)
+            plt.show()
+
+            ## Relative statistics
+            for statistic in "avg. rel. error", "max. rel. error", "min. rel. error":
+                y = [e[1][statistic] for e in d]
+                plt.plot(x, y, label=statistic, linestyle="-", marker="o")
+                csv_writer.writerow([statistic] + y + [None for _ in range(len(header) - len(y) - 1)])
+
+            plt.title(f"Relative Forward Error for {E.name}")
+            plt.legend()
+            plt.xlabel("Lumping size")
+            plt.ylabel(f"Relative error")
+            plt.ylim((0,1.1))
+            if yscale is not None: plt.yscale(yscale)
+            if xscale is not None: plt.xscale(xscale)
+
+            plt.savefig(f"./analysis/{E.name if isinstance(E, QuantumBenchmark) else str(E)}_{E.size()}[forward-relative].jpg", bbox_inches='tight', dpi=150)
+            plt.show()
 
 __all__ = [
     "observable", "quantum_matrix", "app_lumping", "max_epsilon",
     "analysis", "save_analysis", "epsilon_intervals",
-    "matrices_example", "closest_unitary", "direct_error", "closest_unitary_error", "generate_error_graph"
+    "matrices_example", "closest_unitary", "backward_error", "closest_unitary_error", "forward_error",
+    "generate_error_graph"
 ]
