@@ -765,6 +765,8 @@ class SparseVector():
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
             self.apply_matrix(other.transpose())
+        elif other in self.field:
+            return self.scale(other)
         else:
             return NotImplemented
             
@@ -778,6 +780,8 @@ class SparseVector():
             return other.inner_product(self)
         elif isinstance(other, SparseRowMatrix):
             return self.apply_matrix(other)
+        elif other in self.field:
+            return self.scale(other)
         else:
             return NotImplemented
     #--------------------------------------------------------------------------
