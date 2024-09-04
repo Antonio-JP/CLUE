@@ -262,6 +262,11 @@ class SparseVector():
             for i in self.nonzero:
                 self.__data[i] = self.__data[i] * coef
 
+    def scale_outplace(self, coef) -> SparseVector:
+        output = self.copy()
+        output.scale(coef)
+        return output
+
     #--------------------------------------------------------------------------
     # Getters and setters
     def __getitem__(self, i : int):
@@ -766,7 +771,7 @@ class SparseVector():
         elif isinstance(other, SparseRowMatrix):
             self.apply_matrix(other.transpose())
         elif other in self.field:
-            return self.scale(other)
+            return self.scale_outplace(other)
         else:
             return NotImplemented
             
@@ -781,7 +786,7 @@ class SparseVector():
         elif isinstance(other, SparseRowMatrix):
             return self.apply_matrix(other)
         elif other in self.field:
-            return self.scale(other)
+            return self.scale_outplace(other)
         else:
             return NotImplemented
     #--------------------------------------------------------------------------
@@ -2025,7 +2030,7 @@ class OrthogonalSubspace(Subspace):
         if self.__pinv is None:
             L = self.matrix().copy()
             for i in L.nonzero:
-                v = L.row(i)
+                v = L.row(i).copy()
                 v.scale(self.field.one / v.inner_product(v))
                 v.conjugate(_inplace=True)
             

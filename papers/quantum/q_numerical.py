@@ -236,7 +236,7 @@ def matrices_example(E: Experiment, size: int, threshold=1e-10) -> tuple[SparseR
 
     U = quantum_matrix(E)
     L = al.lumping_matrix
-    L_plus = SparseRowMatrix.from_list([[L[i][j].conjugate() for i in range(L.nrows)] for j in range(L.ncols)], field=L.field)
+    L_plus = al._subspace.pinv()
     U_hat = L.matmul(U).matmul(L_plus)
     
     return L, L_plus, U, U_hat
@@ -461,6 +461,6 @@ def generate_error_graph(E: Experiment, method=backward_error, name="\hat{U}",
 __all__ = [
     "observable", "quantum_matrix", "app_lumping", "max_epsilon",
     "analysis", "save_analysis", "epsilon_intervals",
-    "matrices_example", "closest_unitary", "backward_error", "closest_unitary_error", "forward_error",
+    "lumping_from_analysis", "matrices_example", "closest_unitary", "backward_error", "closest_unitary_error", "forward_error",
     "generate_error_graph"
 ]
