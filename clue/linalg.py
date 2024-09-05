@@ -132,6 +132,12 @@ class SparseVector():
                 result[i] = to_insert # __setitem__ updates the nonzero attribute
         return result
 
+    @classmethod
+    def canonical_basis_element(cls, index:int , dimension: int, field: Domain = QQ):
+        result = cls(dimension, field)
+        result[index] = field.one
+        return result
+    
     #--------------------------------------------------------------------------
     # size methods
     def digits(self):
@@ -390,7 +396,13 @@ class SparseVector():
 
             A :class:`SparseVector` over a finite field whose entries are the reduction modulo ``mod`` of ``self``.
 
-            TODO: add examples
+                        >>> from clue.linalg import *
+            >>> v = SparseVector.from_list([2,1])
+            >>> v.reduce_mod(487).to_list()
+            [SymmetricModularIntegerMod487(2), SymmetricModularIntegerMod487(1)]
+            >>> v = SparseVector.from_list([7/6,5/3])
+            >>> v.reduce_mod(487).to_list()
+            [SymmetricModularIntegerMod487(407), SymmetricModularIntegerMod487(164)]
         '''
         if self.field != QQ:
             raise ValueError(f"Reduction can be done only for a vector over rationals but the field is {self.field}")
@@ -570,7 +582,7 @@ class SparseVector():
 
         Output:
 
-        The scalar product of ``self`` and ``rhs`` as an element in ``self.field``.
+        The new vector `Mv`.
 
         Examples::
 
@@ -617,72 +629,6 @@ class SparseVector():
     def nonzero_count(self):
         r"""Method to compute the number of non-zero entries of a vector"""
         return len(self.nonzero)
-
-    # --------------------------------------------------------------------------
-
-    def reduce_mod(self, mod: int):
-        r"""
-        Method to compute a reduction of ``self`` using a modulus.
-
-        This method computes a reduction of ``self`` where every input has been reduced using a prime modulus.
-        This means that for every entry, for both numerator and denominator we compute the value modulus ``mod``.
-        This, combined with a reconstruction method (see :func:`rational_reconstruction`), allows to perform
-        operations with smaller size and obtain the true final result.
-        This method works best for a large enough prime ``mod``.
-
-        This method only works if ``self.field`` are the rational numbers.
-
-        Input:
-
-        * ``mod``: a prime over which we will compute the modulus.
-
-        Output:
-
-        A :class:`SparseVector` over a finite field whose entries are the reduction modulo ``mod`` of ``self``.
-
-        Examples::
-
-            >>> from clue.linalg import *
-            >>> v = SparseVector.from_list([2,1])
-            >>> v.reduce_mod(487).to_list()
-            [SymmetricModularIntegerMod487(2), SymmetricModularIntegerMod487(1)]
-            >>> v = SparseVector.from_list([7/6,5/3])
-            >>> v.reduce_mod(487).to_list()
-            [SymmetricModularIntegerMod487(407), SymmetricModularIntegerMod487(164)]
-        """
-        if self.field != QQ:
-            raise ValueError(
-                f"Reduction can be done only for a vector over rationals but the field is {self.field}"
-            )
-        mod_field = GF(mod)
-        result = SparseVector(self.dim, mod_field)
-        for i in self.nonzero:
-            entry = self.__data[i]
-            red_den = mod_field.convert(entry.denominator)
-            if red_den == 0:
-                raise ZeroDivisionError(f"Division by zero while taking modulo {mod}")
-            result[i] = (
-                mod_field.convert(entry.numerator) / red_den
-            )  # __setitem__ checks if it is zero
-        return result
-
-    # --------------------------------------------------------------------------
-
-    @classmethod
-    def from_list(cls, entries_list: list | tuple, field: Domain = QQ):
-        r"""Method to build a new :class:`SparseVector` from a dense representation (i.e., a list or tuple)"""
-        result = cls(len(entries_list), field)
-        for i, num in enumerate(entries_list):
-            to_insert = field.convert(num)
-            if to_insert:
-                result[i] = to_insert  # __setitem__ updates the nonzero attribute
-        return result
-
-    @classmethod
-    def cannonical_basis_element(cls, index:int , dimension: int, field: Domain = QQ):
-        result = cls(dimension, field)
-        result[index] = field.one
-        return result
 
     # --------------------------------------------------------------------------
 
@@ -1072,34 +1018,6 @@ class SparseRowMatrix():
 
     # --------------------------------------------------------------------------
 
-    def matmul(self, other: SparseRowMatrix) -> SparseRowMatrix:
-        r"""
-        Computes the product of two sparse matrices (``self``*``other``)
-
-            Examples::
-                >>> from clue.clue import SparseRowMatrix
-                >>> from sympy import QQ
-                >>> M = SparseRowMatrix.from_list([[1,2,3],[4,5,6]], QQ)
-                >>> N = SparseRowMatrix.from_list([[0,1],[1,0]], QQ)
-                >>> print(M.matmul(N).pretty_print())
-                [ 2 1 ]
-                [ 5 4 ]
-
-        """
-        srows, scols = self.dim
-        orows, ocols = other.dim
-        if scols != orows:
-            raise TypeError(
-                f"The dimension of the matrices do not match for multiplication: ({srows}x{scols}) - ({orows}x{ocols})"
-            )
-        result = SparseRowMatrix((srows, ocols), self.field)
-        other = other.transpose()
-        for i in self.nonzero:
-            result.set_row(i, self.row(i).apply_matrix(other))
-        return result
-
-    # --------------------------------------------------------------------------
-
     def reduce_mod(self, modulus: int):
         r"""
         Method to compute a reduction of ``self`` using a modulus.
@@ -1361,11 +1279,24 @@ class SparseRowMatrix():
             raise TypeError(f"Unknown type for multiplication")
 
     def matmul(self, other : SparseRowMatrix) -> SparseRowMatrix:
-        r'''Computes the product of two sparse matrices (``self``*``other``)'''
-        srows, scols = self.dim; orows, ocols = other.dim
+        r'''
+            Computes the product of two sparse matrices (``self``*``other``)
+
+            Examples::
+                >>> from clue.clue import SparseRowMatrix
+                >>> from sympy import QQ
+                >>> M = SparseRowMatrix.from_list([[1,2,3],[4,5,6]], QQ)
+                >>> N = SparseRowMatrix.from_list([[0,1],[1,0]], QQ)
+                >>> print(M.matmul(N).pretty_print())
+                [ 2 1 ]
+                [ 5 4 ]
+        '''
+        srows, scols = self.dim
+        orows, ocols = other.dim
         if scols != orows:
             raise TypeError(f"The dimension of the matrices do not match for multiplication: ({srows}x{scols}) - ({orows}x{ocols})")
-        result = SparseRowMatrix((srows,ocols), self.field); other = other.transpose()
+        result = SparseRowMatrix((srows, ocols), self.field)
+        other = other.transpose()
         for i in self.nonzero:
             result.set_row(i, self.row(i).apply_matrix(other))
         return result
@@ -1486,7 +1417,7 @@ class Subspace(object):
             Output:
 
             A :class:`SparseVector` with a vector `w` such that `wL = v` for `L` the matrix of the basis of ``self`` and
-            `v` the orivinal vector given by ``vector``.
+            `v` the original vector given by ``vector``.
         '''
         in_vector = vector.copy()
         result = SparseVector(self.dim(), self.field)
@@ -1853,12 +1784,10 @@ class Subspace(object):
     def identity_subspace(cls, dimension: int, domain: Domain = QQ):
         result = cls(domain)
         for i in range(dimension):
-            result.absorb_new_vector(SparseVector.cannonical_basis_element(i, dimension, domain))
+            result.absorb_new_vector(SparseVector.canonical_basis_element(i, dimension, domain))
         return result
 
-
 # ------------------------------------------------------------------------------
-
 
 class OrthogonalSubspace(Subspace):
     r"""
@@ -1944,12 +1873,13 @@ class OrthogonalSubspace(Subspace):
 
         TODO: add examples
         """
-        if not vector.is_zero() and self.dim() > 0:
-            # first we compute the projection of the vector
-            pi_v = vector.apply_matrix(self.projector)
-            # we then compute the difference
-            vector.reduce(-self.field.one, pi_v)
-
+        ## This is a modified Gram-Schmidt algorithm
+        for (_, basis) in self.echelon_form.items():
+            if vector.is_zero():
+                break
+            proj = basis*(vector.inner_product(basis) / basis.inner_product(basis))
+            vector.reduce(-1, proj)
+        
         return vector
 
     def find_in(self, vector: SparseVector) -> SparseVector:
@@ -1981,13 +1911,18 @@ class OrthogonalSubspace(Subspace):
         # we update the orthogonal projector
         norm2 = new_vector.inner_product(new_vector)
         new_vector_conj = new_vector.conjugate()
-        # updating outside the diagonal
+        # updating the projector outside the diagonal
+        ## new[i][j] = old[i][j] + u_conj[i]*u[j]/norm(u)
+        ## new[j][i] = old[i][j] + conj(u_conj[i]*u[j]/norm(u))
         for i, j in combinations(new_vector.nonzero, 2):
-            to_add = (
-                new_vector._SparseVector__data[i] * new_vector_conj._SparseVector__data[j]
+            to_add_ij = (
+                new_vector_conj._SparseVector__data[i] * new_vector._SparseVector__data[j]
             ) / norm2
-            self.projector.increment(i, j, to_add)
-            self.projector.increment(j, i, to_add)
+            to_add_ji = (
+                new_vector_conj._SparseVector__data[j] * new_vector._SparseVector__data[i]
+            ) / norm2
+            self.projector.increment(i, j, to_add_ij)
+            self.projector.increment(j, i, to_add_ji)
         # updating the diagonal
         for i in new_vector.nonzero:
             to_add = (
@@ -2030,7 +1965,7 @@ class OrthogonalSubspace(Subspace):
         if self.__pinv is None:
             L = self.matrix().copy()
             for i in L.nonzero:
-                v = L.row(i).copy()
+                v = L.row(i)
                 v.scale(self.field.one / v.inner_product(v))
                 v.conjugate(_inplace=True)
             
