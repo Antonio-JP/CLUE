@@ -396,7 +396,7 @@ class SparseVector():
 
             A :class:`SparseVector` over a finite field whose entries are the reduction modulo ``mod`` of ``self``.
 
-                        >>> from clue.linalg import *
+            >>> from clue.linalg import *
             >>> v = SparseVector.from_list([2,1])
             >>> v.reduce_mod(487).to_list()
             [SymmetricModularIntegerMod487(2), SymmetricModularIntegerMod487(1)]
@@ -715,9 +715,12 @@ class SparseVector():
             
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
+            ## v * M == (M^T * v^T)^T
             self.apply_matrix(other.transpose())
         elif other in self.field:
-            return self.scale_outplace(other)
+            result = self.copy()
+            result.scale(other)
+            return result
         else:
             return NotImplemented
             
@@ -1306,7 +1309,7 @@ class SparseRowMatrix():
             raise TypeError(f"Matrix-vector multiplication required appropriate dimensions")
         result = SparseVector(self.dim[0], self.field)
         for i in self.nonzero:
-            result[i] = self[i].inner_product(other)
+            result[i] = self[i].inner_product(other, _conjugate=False)
         return result
 
     def scalar(self, other) -> SparseRowMatrix:
@@ -1873,12 +1876,17 @@ class OrthogonalSubspace(Subspace):
 
         TODO: add examples
         """
+        if not vector.is_zero() and self.dim() > 0:
+            # first we compute the projection of the vector
+            pi_v = vector.apply_matrix(self.projector)
+            # we then compute the difference
+            vector.reduce(-self.field.one, pi_v)
         ## This is a modified Gram-Schmidt algorithm
-        for (_, basis) in self.echelon_form.items():
-            if vector.is_zero():
-                break
-            proj = basis*(vector.inner_product(basis) / basis.inner_product(basis))
-            vector.reduce(-1, proj)
+        # for (_, basis) in self.echelon_form.items():
+        #     if vector.is_zero():
+        #         break
+        #     proj = basis*(vector.inner_product(basis) / basis.inner_product(basis))
+        #     vector.reduce(-1, proj)
         
         return vector
 
