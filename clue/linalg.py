@@ -268,11 +268,6 @@ class SparseVector():
             for i in self.nonzero:
                 self.__data[i] = self.__data[i] * coef
 
-    def scale_outplace(self, coef) -> SparseVector:
-        output = self.copy()
-        output.scale(coef)
-        return output
-
     #--------------------------------------------------------------------------
     # Getters and setters
     def __getitem__(self, i : int):
@@ -708,6 +703,7 @@ class SparseVector():
 
     def __mul__(self, other):
         if isinstance(other, SparseVector):
+            ## < self, other >
             if other.dim != self.dim:
                 return NotImplemented
             elif self.field != other.field:
@@ -715,9 +711,10 @@ class SparseVector():
             
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
-            ## v * M == (M^T * v^T)^T
-            self.apply_matrix(other.transpose())
+            ## self * M == (M^T * self^T)^T
+            return self.apply_matrix(other.transpose())
         elif other in self.field:
+            ## self * c
             result = self.copy()
             result.scale(other)
             return result
@@ -726,6 +723,7 @@ class SparseVector():
             
     def __rmul__(self, other):
         if isinstance(other, SparseVector):
+            ## < other , self >
             if other.dim != self.dim:
                 return NotImplemented
             elif self.field != other.field:
@@ -733,9 +731,13 @@ class SparseVector():
             
             return other.inner_product(self)
         elif isinstance(other, SparseRowMatrix):
+            ## M * self
             return self.apply_matrix(other)
         elif other in self.field:
-            return self.scale_outplace(other)
+            ## c * self
+            result = self.copy()
+            result.scale(other)
+            return result
         else:
             return NotImplemented
     #--------------------------------------------------------------------------
@@ -1263,20 +1265,26 @@ class SparseRowMatrix():
     
     def _mul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
         if isinstance(other, SparseRowMatrix): # matrix multiplication
+            ## self * M
             return self.matmul(other)
         elif isinstance(other, SparseVector): # matrix-vector multiplication
+            ## self * v
             return self.dot(other)
         elif other in self.field: # scalar multiplication
+            ## self * c
             return self.scalar(other)
         else:
             raise TypeError(f"Unknown type for multiplication")
 
     def _rmul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
         if isinstance(other, SparseRowMatrix): # matrix multiplication
+            ## M * self
             return other.matmul(self)
         elif isinstance(other, SparseVector): # matrix-vector multiplication
+            ## v * self == (self^T * v^T)^T
             return self.transpose().dot(other)
         elif other in self.field: # scalar multiplication
+            ## c * self
             return self.scalar(other)
         else:
             raise TypeError(f"Unknown type for multiplication")
