@@ -803,7 +803,185 @@ class SparseVector(Vector):
 
 # ------------------------------------------------------------------------------
 
-class SparseRowMatrix():
+class Matrix():
+    r'''
+        Generic class for matrices of arbitrary dimension.
+
+        Abstract methods to be implemented:
+
+        * ``eye``: class method to create identity matrix
+        * ``transpose``: method to create the transpose of a matrix
+        * ``conjugate``: method to compute the conjugate (entry-wise) of a matrix
+        * ``_add_matrix_``: receives another matrix and computes the addition
+        * ``_add_matrix_inplace_``: same as before, but do computations inplace
+        * ``_matmul_``: performs matrix multiplication.
+        * ``scalar``: scales a matrix using a scalar number
+    '''
+    def __init__(self, dim: int | list[int] | tuple[int, int], field: Domain = QQ):
+        if not isinstance(dim, (list, tuple)):
+            dim = (dim, dim)
+
+        self.nrows: int = dim[0]
+        self.ncols: int = dim[1]
+        self.nonzero: set[int] = set()
+        self.field: Domain = field
+
+    @property
+    def dim(self):
+        return self.nrows, self.ncols
+    
+    @classmethod
+    def eye(cls, dim: int, field: Domain = QQ):
+        raise NotImplementedError(f"Method not implemented")
+    
+    def transpose(self) -> Matrix:
+        r"""
+        Method that returns the transposed matrix of ``self``
+        """
+        raise NotImplementedError(f"Method not implemented")
+    
+    def conjugate(self) -> Matrix:
+        r"""
+            Method that returns the conjugated matrix of ``self`` entry-wise
+        """
+        raise NotImplementedError(f"Method not implemented")
+
+    def dagger(self) -> Matrix: 
+        return self.transpose().conjugate()
+
+    def is_square(self):
+        return self.dim[0] == self.dim[1]
+    
+    # Arithmetic methods
+    def __add__(self, other): 
+        try: return self._add_(other)
+        except TypeError: return NotImplemented
+    def __iadd__(self, other): 
+        try: return self._iadd_(other)
+        except TypeError: return NotImplemented
+    def __radd__(self, other): 
+        try: return self._add_(other)
+        except TypeError: return NotImplemented
+    def __sub__(self, other): 
+        try: return self._sub_(other)
+        except TypeError: return NotImplemented
+    def __isub__(self, other): 
+        try: return self._isub_(other)
+        except TypeError: return NotImplemented
+    def __mul__(self, other): 
+        try: return self._mul_(other)
+        except TypeError: return NotImplemented
+    def __rmul__(self, other): 
+        try: return self._rmul_(other)
+        except TypeError: return NotImplemented
+
+    def _add_(self, other: Matrix) -> Matrix:
+        if not isinstance(other, self.__class__):
+            if self.is_square() and other in self.field:
+                other = self.eye(self.dim[0], self.field)*other
+            else:
+                raise TypeError(f"[add] Only valid for Matrix")
+        elif self.dim != other.dim:
+            raise TypeError(f"[add] Addition must be defined for matrices with same dimension")
+        elif self.field != other.field:
+            raise TypeError(f"[add] Addition must be defined for matrices over the same field")
+
+        return self._add_matrix_(other)
+      
+    def _iadd_(self, other: SparseRowMatrix) -> SparseRowMatrix:
+        if not isinstance(other, SparseRowMatrix):
+            raise TypeError(f"[add] Only valid for SparseRowMatrix")
+        elif self.dim != other.dim:
+            raise TypeError(f"[add] Addition must be defined for matrices with same dimension")
+        elif self.field != other.field:
+            raise TypeError(f"[add] Addition must be defined for matrices over the same field")
+        
+        self._add_matrix_inplace_(other)
+        return self
+    
+    def _sub_(self, other: Matrix) -> Matrix:
+        return self + (-other)
+    
+    def _isub_(self, other: Matrix) -> Matrix:
+        return self._iadd_(-other)
+    
+    def _mul_(self, other: Matrix | Vector) -> Matrix | Vector:
+        if isinstance(other, Matrix): # matrix multiplication
+            ## self * M
+            return self.matmul(other)
+        elif isinstance(other, SparseVector): # matrix-vector multiplication
+            ## self * v
+            return self.dot(other)
+        elif other in self.field: # scalar multiplication
+            ## self * c
+            return self.scalar(other)
+        else:
+            raise TypeError(f"Unknown type for multiplication")
+
+    def _rmul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
+        if isinstance(other, SparseRowMatrix): # matrix multiplication
+            ## M * self
+            return other.matmul(self)
+        elif isinstance(other, SparseVector): # matrix-vector multiplication
+            ## v * self == (self^T * v^T)^T
+            return self.transpose().dot(other)
+        elif other in self.field: # scalar multiplication
+            ## c * self
+            return self.scalar(other)
+        else:
+            raise TypeError(f"Unknown type for multiplication")
+    
+    ### Final arithmetic methods (all checks and cases are split)
+    def _add_matrix_(self, other: Matrix) -> Matrix:
+        r'''
+            Method to compute the addition between two matrices
+        '''
+        raise NotImplementedError(f"Method not implemented")
+    
+    def _add_matrix_inplace_(self, other: Matrix):
+        r'''
+            Method to compute inplace the addition of two matrices
+        '''
+        raise NotImplementedError(f"Method not implemented")
+
+    def matmul(self, other : SparseRowMatrix) -> SparseRowMatrix:
+        r'''
+            Computes the product of two sparse matrices (``self``*``other``)
+
+            Examples::
+                >>> from clue.clue import SparseRowMatrix
+                >>> from sympy import QQ
+                >>> M = SparseRowMatrix.from_list([[1,2,3],[4,5,6]], QQ)
+                >>> N = SparseRowMatrix.from_list([[0,1],[1,0]], QQ)
+                >>> print(M.matmul(N).pretty_print())
+                [ 2 1 ]
+                [ 5 4 ]
+        '''
+        srows, scols = self.dim
+        orows, ocols = other.dim
+        if scols != orows:
+            raise TypeError(f"The dimension of the matrices do not match for multiplication: ({srows}x{scols}) - ({orows}x{ocols})")
+        
+        return self._matmul_(other)
+    
+    def _matmul_(self, other: Matrix) -> Matrix:
+        r'''
+            Method for matrix multiplication (all dimension checks are done)
+        '''
+        raise NotImplementedError("Method not implemented")
+    
+    def dot(self, other: Vector) -> Vector:
+        r'''
+            Method that computes the matrix application ``self * other`` 
+        '''
+        if self.dim[1] != other.dim:
+            raise TypeError(f"Matrix-vector multiplication required appropriate dimensions")
+        return other.apply_matrix(self)
+
+    def scalar(self, other) -> SparseRowMatrix:
+        raise NotImplementedError("Method not implemented")
+
+class SparseRowMatrix(Matrix):
     r"""
     Class for representing Sparse Matrices by rows.
 
@@ -840,16 +1018,9 @@ class SparseRowMatrix():
 
     TODO: add examples of matrices, how they are created and some operations with them
     """
-
     def __init__(self, dim: int | list[int] | tuple[int, int], field: Domain = QQ):
-        if not isinstance(dim, (list, tuple)):
-            dim = (dim, dim)
-
-        self.nrows: int = dim[0]
-        self.ncols: int = dim[1]
+        super().__init__(dim, field)
         self.__data: dict[int, SparseVector] = dict()
-        self.nonzero: set[int] = set()
-        self.field: Domain = field
 
     @classmethod
     def eye(cls, dim: int, field: Domain = QQ):
@@ -885,10 +1056,6 @@ class SparseRowMatrix():
         for i, j in product(range(nrows), range(ncols)):
             result.increment(i,j, field.convert(entries_list[i][j]))
         return result
-
-    @property
-    def dim(self):
-        return self.nrows, self.ncols
 
     def copy(self):
         r"""
@@ -933,28 +1100,6 @@ class SparseRowMatrix():
             new_matrix.set_row(i, self[i].change_base(new_field))
         return new_matrix
 
-    def transpose(self):
-        r"""
-        Method that returns the transposed matrix of ``self``
-
-        Examples::
-
-            >>> from clue.clue import SparseRowMatrix
-            >>> from sympy import QQ
-            >>> M = SparseRowMatrix.from_list([[1,2],[3,4]], QQ)
-            >>> print(M.transpose().pretty_print())
-            [ 1  3 ]
-            [ 2  4 ]
-
-        """
-        result = SparseRowMatrix((self.ncols, self.nrows), self.field)
-        for j in range(self.ncols):
-            jth_col = self.column(j)
-            if not jth_col.is_zero():
-                result.__data[j] = jth_col
-                result.nonzero.add(j)
-        return result
-
     # --------------------------------------------------------------------------
     def nonzero_count(self):
         r"""Method to compute the number of non-zero entries of a matrix"""
@@ -964,9 +1109,6 @@ class SparseRowMatrix():
         r'''Method to measure the sparseness density of a matrix'''
         return self.nonzero_count() / (self.nrows*self.ncols)
 
-    def is_square(self):
-        return self.dim[0] == self.dim[1]
-    
     #--------------------------------------------------------------------------
 
     def __setitem__(self, cell: tuple[int, int] | list[int], value: Any):
@@ -1228,58 +1370,6 @@ class SparseRowMatrix():
 
     #--------------------------------------------------------------------------
     # Arithmetic methods
-    def __add__(self, other): 
-        try: return self._add_(other)
-        except TypeError: return NotImplemented
-    def __iadd__(self, other): 
-        try: return self._iadd_(other)
-        except TypeError: return NotImplemented
-    def __radd__(self, other): 
-        try: return self._add_(other)
-        except TypeError: return NotImplemented
-    def __sub__(self, other): 
-        try: return self._sub_(other)
-        except TypeError: return NotImplemented
-    def __isub__(self, other): 
-        try: return self._isub_(other)
-        except TypeError: return NotImplemented
-    def __mul__(self, other): 
-        try: return self._mul_(other)
-        except TypeError: return NotImplemented
-    def __rmul__(self, other): 
-        try: return self._rmul_(other)
-        except TypeError: return NotImplemented
-
-    def _add_(self, other: SparseRowMatrix) -> SparseRowMatrix:
-        if not isinstance(other, SparseRowMatrix):
-            if self.is_square() and other in self.field:
-                other = self.eye(self.dim[0], self.field)*other
-            else:
-                raise TypeError(f"[add] Only valid for SparseRowMatrix")
-        elif self.dim != other.dim:
-            raise TypeError(f"[add] Addition must be defined for matrices with same dimension")
-        elif self.field != other.field:
-            raise TypeError(f"[add] Addition must be defined for matrices over the same field")
-
-        M = SparseRowMatrix(self.dim, self.field)
-        for i in self.nonzero.union(other.nonzero):
-            for j in self[i].nonzero.union(other[i].nonzero):
-                M.increment(i,j, self[i,j]+other[i,j])
-        return M
-    
-    def _iadd_(self, other: SparseRowMatrix) -> SparseRowMatrix:
-        if not isinstance(other, SparseRowMatrix):
-            raise TypeError(f"[add] Only valid for SparseRowMatrix")
-        elif self.dim != other.dim:
-            raise TypeError(f"[add] Addition must be defined for matrices with same dimension")
-        elif self.field != other.field:
-            raise TypeError(f"[add] Addition must be defined for matrices over the same field")
-        
-        for i in other.nonzero:
-            for j in other[i].nonzero:
-                self.increment(i,j,other[i,j])
-        return self
-    
     def _sub_(self, other: SparseRowMatrix) -> SparseRowMatrix:
         if not isinstance(other, SparseRowMatrix):
             if self.is_square() and other in self.field:
@@ -1310,69 +1400,74 @@ class SparseRowMatrix():
                 self.increment(i,j,-other[i,j])
         return self
     
-    def _mul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
-        if isinstance(other, SparseRowMatrix): # matrix multiplication
-            ## self * M
-            return self.matmul(other)
-        elif isinstance(other, SparseVector): # matrix-vector multiplication
-            ## self * v
-            return self.dot(other)
-        elif other in self.field: # scalar multiplication
-            ## self * c
-            return self.scalar(other)
-        else:
-            raise TypeError(f"Unknown type for multiplication")
+    #--------------------------------------------------------------------------
+    # Abstract methods from Matrix
+    def transpose(self) -> SparseRowMatrix:
+        r"""
+        Method that returns the transposed matrix of ``self``
 
-    def _rmul_(self, other: SparseRowMatrix | SparseVector) -> SparseRowMatrix | SparseVector:
-        if isinstance(other, SparseRowMatrix): # matrix multiplication
-            ## M * self
-            return other.matmul(self)
-        elif isinstance(other, SparseVector): # matrix-vector multiplication
-            ## v * self == (self^T * v^T)^T
-            return self.transpose().dot(other)
-        elif other in self.field: # scalar multiplication
-            ## c * self
-            return self.scalar(other)
-        else:
-            raise TypeError(f"Unknown type for multiplication")
+        Examples::
 
-    def matmul(self, other : SparseRowMatrix) -> SparseRowMatrix:
+            >>> from clue.clue import SparseRowMatrix
+            >>> from sympy import QQ
+            >>> M = SparseRowMatrix.from_list([[1,2],[3,4]], QQ)
+            >>> print(M.transpose().pretty_print())
+            [ 1  3 ]
+            [ 2  4 ]
+
+        """
+        result = SparseRowMatrix((self.ncols, self.nrows), self.field)
+        for j in range(self.ncols):
+            jth_col = self.column(j)
+            if not jth_col.is_zero():
+                result.__data[j] = jth_col
+                result.nonzero.add(j)
+        return result
+
+    def conjugate(self) -> SparseRowMatrix:
+        if self.field is not CC:
+            return self.copy()
+        else:
+            result = SparseRowMatrix(self.dim, self.field)
+            for row in self.nonzero:
+                R = self.row(row)
+                for column in R.nonzero:
+                    d = R[column]
+                    result.increment(row, column, CC(d).conjugate())
+            return result
+    
+    def _add_matrix_(self, other: SparseRowMatrix) -> SparseRowMatrix:
         r'''
-            Computes the product of two sparse matrices (``self``*``other``)
-
-            Examples::
-                >>> from clue.clue import SparseRowMatrix
-                >>> from sympy import QQ
-                >>> M = SparseRowMatrix.from_list([[1,2,3],[4,5,6]], QQ)
-                >>> N = SparseRowMatrix.from_list([[0,1],[1,0]], QQ)
-                >>> print(M.matmul(N).pretty_print())
-                [ 2 1 ]
-                [ 5 4 ]
+            Method to compute the addition between two matrices
         '''
-        srows, scols = self.dim
-        orows, ocols = other.dim
-        if scols != orows:
-            raise TypeError(f"The dimension of the matrices do not match for multiplication: ({srows}x{scols}) - ({orows}x{ocols})")
-        result = SparseRowMatrix((srows, ocols), self.field)
+        M = SparseRowMatrix(self.dim, self.field)
+        for i in self.nonzero.union(other.nonzero):
+            for j in self[i].nonzero.union(other[i].nonzero):
+                M.increment(i,j, self[i,j]+other[i,j])
+        return M
+    
+    def _add_matrix_inplace_(self, other: SparseRowMatrix):
+        for i in other.nonzero:
+            for j in other[i].nonzero:
+                self.increment(i,j,other[i,j])
+    
+    def _matmul_(self, other: Matrix) -> Matrix:
+        r'''
+            Method for matrix multiplication (all dimension checks are done)
+        '''
+        result = SparseRowMatrix((self.nrows, other.ncols), self.field)
         other = other.transpose()
         for i in self.nonzero:
             result.set_row(i, self.row(i).apply_matrix(other))
         return result
     
-    def dot(self, other: SparseVector) -> SparseVector:
-        if self.dim[1] != other.dim:
-            raise TypeError(f"Matrix-vector multiplication required appropriate dimensions")
-        result = SparseVector(self.dim[0], self.field)
-        for i in self.nonzero:
-            result[i] = self[i].inner_product(other, _conjugate=False)
-        return result
-
     def scalar(self, other) -> SparseRowMatrix:
         M = SparseRowMatrix(self.dim, self.field)
         for i in self.nonzero:
             for j in self[i].nonzero:
                 M.increment(i,j, self[i,j]*other)
         return M
+
 #------------------------------------------------------------------------------
 
 class Subspace(object):
