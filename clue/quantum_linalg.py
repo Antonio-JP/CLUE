@@ -1,3 +1,4 @@
+from __future__ import annotations
 r"""
     Module for dedicated operations related with Linear Algebra in the Quantum setup
 
@@ -46,9 +47,15 @@ class DensityVector(Vector):
     
     def apply_matrix(self, matr):
         if isinstance(matr, DensityOperator):
-            return NotImplemented
+            if matr.is_ensembled(): # base case -> sum of probabilities * apply circuits
+                return NotImplemented # TODO: by Thomas
+            else: # composed case -> we apply one by one
+                v = self
+                for operator in matr.operators():
+                    v = v.apply_matrix(operator)
+                return v
         elif isinstance(matr, SparseRowMatrix):
-            return NotImplemented
+            return NotImplemented # TODO: by Thomas
         else:
             return NotImplemented
         #if we get densityoperator we do the inner loop (should go down to sparserowmatrix)
@@ -73,8 +80,6 @@ class DensityVector(Vector):
             raise IndexError(f"Element {i} out of dimension")
         return self.__data[i]
         
-
-
 class DensityOperator(Matrix):
     r'''
         Class for representing superoperators in noisy quantum circuits.
@@ -89,41 +94,121 @@ class DensityOperator(Matrix):
         At the end of the day, when we combine several gates, we still get a set `((\pi_i, C_i))` where we get to apply
         the full circuit `C_i` with probability `\pi_i`.
     '''
-    def __init__(self, circuits: tuple[SparseRowMatrix], probabilities: tuple, dim:int = None):
-        # Same length of two arguments
-        if len(circuits) != len(probabilities):
-            raise ValueError(f"`circuits` and `probabilities` must be tuples of same length")
-        if len(circuits) == 0: # no circuits - identity case - we use dimension
-            if dim is None:
-                raise ValueError(f"Identity matrix without dimension")
-            super().__init__(dim, CC)
-            self.__data = tuple()
-        else:
-            ## The circuits must have all the same dimension
-            if not all(c.dim == circuits[0].dim for c in circuits[1:]):
-                raise TypeError("We have different circuits in each probability")
-            if any(not c.is_square() for c in circuits):
-                raise TypeError(f"A circuit must always be a square matrix")
-            
-            N = circuits[0].nrows
-            if dim is not None and dim != N**2:
-                raise ValueError(f"Dimension provided with circuits is not compatible")
-            
-            super().__init__(N**2, CC)
+    def __init__(self, *,
+                circuits: tuple[SparseRowMatrix] = None, probabilities: tuple = None, 
+                operators : tuple[DensityOperator],
+                dim:int = None):
+        self.__data = None
+        self.__operators = None
+        # We have three options to create a density operator:
+        ## it is a ensemble operator --> given by a tuple of circuits and probabilities
+        if circuits is not None and probabilities is not None:
+            # Same length of two arguments
+            if len(circuits) != len(probabilities):
+                raise ValueError(f"`circuits` and `probabilities` must be tuples of same length")
+            if len(circuits) == 0: # no circuits - identity case - we use dimension
+                if dim is None:
+                    raise ValueError(f"Identity matrix without dimension")
+                super().__init__(dim, CC)
+                self.__data = tuple()
+            else:
+                ## The circuits must have all the same dimension
+                if not all(c.dim == circuits[0].dim for c in circuits[1:]):
+                    raise TypeError("We have different circuits in each probability")
+                if any(not c.is_square() for c in circuits):
+                    raise TypeError(f"A circuit must always be a square matrix")
+                
+                N = circuits[0].nrows
+                if dim is not None and dim != N**2:
+                    raise ValueError(f"Dimension provided with circuits is not compatible")
+                
+                super().__init__(N**2, CC)
 
-            self.__data = tuple(zip(circuits,probabilities))
+                self.__data = tuple(zip(circuits,probabilities))
+        elif circuits is not None or probabilities is not None:
+            raise ValueError(f"Either both or none 'circuits' and 'probabilities' are provided.")
+        elif operators != None:
+            if any(not isinstance(op, DensityOperator) or not op.is_ensembled() for op in operators):
+                raise ValueError(f"Composite operator: must have as pieces all ensembled density operators")
+            elif any(op.dim != operators[0].dim for op in operators):
+                raise TypeError(f"Composite operator: all operators must have the same dimension")
+            
+            super().__init__(operators[0].dim, CC)
+            self.__operators = operators
+        else:
+            raise ValueError(f"Density Operator: incompatible input for class")
     
     def data(self):
         return self.__data
 
+    def operators(self) -> tuple[DensityOperator]:
+        r'''
+            Return a tuple of ensembled density operators that represent self
+        '''
+        if self.is_ensembled():
+            return (self,)
+        return self.__operators
+    
+    ## Methods for Density Operators
+    def is_ensembled(self) -> bool:
+        return self.__operators is None
+    
+    def is_identity(self) -> bool:
+        return self.__data is not None and len(self.__data) == 0
+
+    ## Abstract methods from Matrix
     @classmethod
     def eye(cls, dim: int):
         return cls(dim=dim)
     
-        # * ``eye``: class method to create identity matrix
-        # * ``transpose``: method to create the transpose of a matrix
-        # * ``conjugate``: method to compute the conjugate (entry-wise) of a matrix
-        # * ``_add_matrix_``: receives another matrix and computes the addition
-        # * ``_add_matrix_inplace_``: same as before, but do computations inplace
-        # * ``_matmul_``: performs matrix multiplication.
-        # * ``scalar``: scales a matrix using a scalar number
+    def transpose(self) -> DensityOperator:
+        if self.is_ensembled():
+            circuits, probabilities = list(zip(*self.data()))
+            return DensityOperator(circuits=tuple(M.transpose() for M in circuits), probabilities=probabilities)
+        else:
+            return DensityOperator(operators=tuple(op.transpose() for op in self.operators()[::-1]))
+        
+    def conjugate(self) -> DensityOperator:
+        if self.is_ensembled():
+            circuits, probabilities = list(zip(*self.data()))
+            return DensityOperator(circuits=tuple(M.conjugate() for M in circuits), probabilities=probabilities)
+        else:
+            return DensityOperator(operators=tuple(op.conjugate() for op in self.operators()[::-1]))
+        
+    def _add_matrix_(self, other):
+        if not self.is_ensembled():
+            raise TypeError(f"Adding Density Operators not valid for not ensembled case")
+        elif not isinstance(other, DensityOperator) or not other.is_ensembled():
+            raise TypeError(f"Adding Density Operators not valid for not ensembled case")
+        
+        ## Both are ensembled
+        self_circ, self_prob = list(zip(*self.data()))
+        other_circ, other_prob = list(zip(*other.data()))
+
+        return DensityOperator(circuits=self_circ + other_circ, probabilities=self_prob+other_prob)
+    
+    def _add_matrix_inplace_(self, other):
+        if not self.is_ensembled():
+            raise TypeError(f"Adding Density Operators not valid for not ensembled case")
+        elif not isinstance(other, DensityOperator) or not other.is_ensembled():
+            raise TypeError(f"Adding Density Operators not valid for not ensembled case")
+
+        self.__data += other.data()
+
+    def _matmul_(self, other: DensityOperator):
+        # This is how actually we multiply two operators
+        if not isinstance(other, DensityOperator):
+            raise TypeError(f"The composition of Density operators are only valid for other density operators")
+        if self.is_identity():
+            return other
+        elif other.is_identity():
+            return self
+        else:
+            return DensityOperator(operators=self.operators()+other.operators())
+        
+    def scalar(self, other) -> DensityOperator:
+        if self.is_ensembled():
+            circuits, probabilities = list(zip(*self.data()))
+            return DensityOperator(circuits=tuple(M.scale(other) for M in circuits), probabilities=probabilities)
+        else:
+            return DensityOperator(operators=tuple(op.scale(other) for op in self.operators()))

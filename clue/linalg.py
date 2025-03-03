@@ -944,7 +944,7 @@ class Matrix():
         '''
         raise NotImplementedError(f"Method not implemented")
 
-    def matmul(self, other : SparseRowMatrix) -> SparseRowMatrix:
+    def matmul(self, other : Matrix) -> Matrix:
         r'''
             Computes the product of two sparse matrices (``self``*``other``)
 
@@ -978,7 +978,7 @@ class Matrix():
             raise TypeError(f"Matrix-vector multiplication required appropriate dimensions")
         return other.apply_matrix(self)
 
-    def scalar(self, other) -> SparseRowMatrix:
+    def scalar(self, other) -> Matrix:
         raise NotImplementedError("Method not implemented")
 
 class SparseRowMatrix(Matrix):
