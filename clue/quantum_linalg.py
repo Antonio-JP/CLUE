@@ -11,8 +11,69 @@ r"""
     * Forward and Backward Constrained Bisimulations for Quantum Circuits (https://doi.org/10.1007/978-3-031-57249-4_17)
     * Forward and Backward Constrained Bisimulations for Quantum Circuits Using Decision Diagrams (https://doi.org/10.1145/3712711)
 """
-from .linalg import Vector, Matrix, SparseRowMatrix
+from .linalg import Vector, Matrix, SparseRowMatrix, SparseVector
+
+from sympy.polys.domains.domain import Domain
 from .numerical_domains import CC
+
+class DensityVector(Vector):
+    def __init__(self, dim: int, field: Domain = CC):
+        super().__init__(dim, field)
+        self.__data: list[SparseVector] = [SparseVector(self.dim, self.field) for _ in range(self.dim)]
+
+    def reduce(self, coef, vector):
+        for i in range(self.dim):
+            self[i].reduce(coef, vector[i])
+
+    def scale(self, coef):
+        for i in range(self.dim):
+            self[i].scale(coef)
+
+    def conjugate(self, *, _inplace=False):
+        result = self if _inplace else [self[i].copy() for i in range(self.dim)]
+        for i in range(self.dim):
+            result[i] = result[i].conjugate()
+
+        return result
+
+    def inner_product(self, rhs, *, _conjugate = True):
+        lhs = self.conjugate() if _conjugate else self # we conjugate the vector (in case the field is CC) if indicated by argument
+        result = self.field.zero
+        for i in range(self.dim):
+            result += lhs.__data[i] * rhs.__data[i]
+
+        return result
+    
+    def apply_matrix(self, matr):
+        if isinstance(matr, DensityOperator):
+            return NotImplemented
+        elif isinstance(matr, SparseRowMatrix):
+            return NotImplemented
+        else:
+            return NotImplemented
+        #if we get densityoperator we do the inner loop (should go down to sparserowmatrix)
+        #if the matric that we get is a sparserowmatrix (the same as in sparserowmatrix)
+
+    def __add__(self, other):
+        if self.dim != other.dim:
+            return NotImplemented
+        if self.field != other.field:
+            return NotImplemented
+        if not isinstance(other, DensityVector):
+            return NotImplemented
+        
+        result = DensityVector(self.dim, self.field)
+        for i in range(self.dim):
+            result.__data[i] = self[i] + other[i]
+
+        return result
+     
+    def __getitem__(self, i: int):
+        if(i < 0 or i >= self.dim):
+            raise IndexError(f"Element {i} out of dimension")
+        return self.__data[i]
+        
+
 
 class DensityOperator(Matrix):
     r'''
