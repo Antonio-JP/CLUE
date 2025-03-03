@@ -85,8 +85,113 @@ def rational_reconstruction_sage(a, m):
 
 # ------------------------------------------------------------------------------
 
+class Vector():
+    def __init__(self, dim: int, field: Domain = QQ):
+        self.dim: int = dim
+        self.nonzero: set[int] = set()
+        self.field: Domain = field
 
-class SparseVector():
+    def reduce(self, coef, vector: Vector):
+        r'''
+            Inplace operation of ``self + coef*vect``.
+
+            This method computes the new :class:`SparseVector` equal to ``self + coef*vect`` but
+            storing the output inplace (i.e., changing the value of ``self``).
+        '''
+        raise NotImplementedError(f"Method not implemented")
+    
+    def scale(self, coef):
+        r"""
+        Method to scale in-place a vector
+
+        This method computes the scaled vector ``coef*self`` and stores the result in ``self``.
+        """
+        raise NotImplementedError(f"Method not implemented")
+    
+    def conjugate(self, *, _inplace=False):
+        r'''
+            Returns self where all elements have been conjugated.
+
+            If the :func:`field` is inside the reals, (i.e., the conjugation leaves everything fixed)
+            this method simply returns a copy of ``self``.
+        '''
+        raise NotImplementedError(f"Method not implemented")
+    
+    def inner_product(self, rhs : Vector, *, _conjugate:bool = True):
+        r'''
+            Scalar product of two vectors
+        '''
+        raise NotImplementedError(f"Method not implemented")
+    
+    def norm_squared(self):
+        result = self.inner_product(self)
+        if hasattr(result, "real"): 
+            result = result.real
+        
+        return result
+
+    def norm(self):
+        return math.sqrt(self.norm_squared())
+
+    def apply_matrix(self, matr: SparseRowMatrix):
+        r"""
+        Method to compute the application of a matrix to self to the left (`M\cdot v`)
+
+        This method applies to a :class:`SparseRowMatrix` `M` given by ``matr`` the :class:`SparseVector`.
+        """
+        raise NotImplementedError(f"Method not implemented")
+
+    def __add__(self, other: Vector) -> Vector:
+        raise NotImplementedError(f"Method not implemented")
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+    
+    def __neg__(self):
+        result = self.copy(); result.scale(-1)
+        return result
+    
+    def __mul__(self, other):
+        if isinstance(other, Vector):
+            ## < self, other >
+            if other.dim != self.dim:
+                return NotImplemented
+            elif self.field != other.field:
+                return NotImplemented
+            
+            return self.inner_product(other)
+        elif isinstance(other, SparseRowMatrix):
+            ## self * M == (M^T * self^T)^T
+            return self.apply_matrix(other.transpose())
+        elif other in self.field:
+            ## self * c
+            result = self.copy()
+            result.scale(other)
+            return result
+        else:
+            return NotImplemented
+        
+    def __rmul__(self, other):
+        if isinstance(other, SparseVector):
+            ## < other , self >
+            if other.dim != self.dim:
+                return NotImplemented
+            elif self.field != other.field:
+                return NotImplemented
+            
+            return other.inner_product(self)
+        elif isinstance(other, SparseRowMatrix):
+            ## M * self
+            return self.apply_matrix(other)
+        elif other in self.field:
+            ## c * self
+            result = self.copy()
+            result.scale(other)
+            return result
+        else:
+            return NotImplemented
+        
+class SparseVector(Vector):
     r"""
     Class for representing Sparse Vectors.
 
@@ -117,10 +222,8 @@ class SparseVector():
     TODO: add examples of vectors, how they are created and some operations with them
     """
     def __init__(self, dim: int, field: Domain = QQ):
-        self.dim: int = dim
+        super().__init__(dim, field)
         self.__data: dict[int, Any] = dict()
-        self.nonzero: set[int] = set()
-        self.field: Domain = field
 
     @classmethod
     def from_list(cls, entries_list : list | tuple, field : Domain = QQ):
@@ -553,16 +656,6 @@ class SparseVector():
 
         return result
 
-    def norm_squared(self):
-        result = self.inner_product(self)
-        if hasattr(result, "real"): 
-            result = result.real
-        
-        return result
-
-    def norm(self):
-        return math.sqrt(self.norm_squared())
-
     def apply_matrix(self, matr: SparseRowMatrix):
         r"""
         Method to compute the application of a matrix to self to the left (`M\cdot v`)
@@ -693,53 +786,7 @@ class SparseVector():
         for i in other_only: result[i] = other[i]
 
         return result
-    
-    def __sub__(self, other):
-        return self.__add__(-other)
-
-    def __neg__(self):
-        result = self.copy(); result.scale(-1)
-        return result
-
-    def __mul__(self, other):
-        if isinstance(other, SparseVector):
-            ## < self, other >
-            if other.dim != self.dim:
-                return NotImplemented
-            elif self.field != other.field:
-                return NotImplemented
-            
-            return self.inner_product(other)
-        elif isinstance(other, SparseRowMatrix):
-            ## self * M == (M^T * self^T)^T
-            return self.apply_matrix(other.transpose())
-        elif other in self.field:
-            ## self * c
-            result = self.copy()
-            result.scale(other)
-            return result
-        else:
-            return NotImplemented
-            
-    def __rmul__(self, other):
-        if isinstance(other, SparseVector):
-            ## < other , self >
-            if other.dim != self.dim:
-                return NotImplemented
-            elif self.field != other.field:
-                return NotImplemented
-            
-            return other.inner_product(self)
-        elif isinstance(other, SparseRowMatrix):
-            ## M * self
-            return self.apply_matrix(other)
-        elif other in self.field:
-            ## c * self
-            result = self.copy()
-            result.scale(other)
-            return result
-        else:
-            return NotImplemented
+          
     #--------------------------------------------------------------------------
     # Equality methods
     def __hash__(self) -> int:
