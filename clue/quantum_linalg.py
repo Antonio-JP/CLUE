@@ -44,6 +44,9 @@ class DensityVector(Vector):
             raise ValueError(f"The probabilities must provide a valid finite distribution (i.e., add up to 1)")
         return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilities))
 
+    def as_matrix(self) -> SparseRowMatrix:
+        return SparseRowMatrix.from_vectors(self.__data)
+
     def reduce(self, coef, vector):
         for i in range(self.dim):
             self[i].reduce(coef, vector[i])
