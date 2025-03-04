@@ -37,12 +37,12 @@ class DensityVector(Vector):
         return DensityVector.from_matrix(vector.tensor(vector))
     
     @staticmethod
-    def from_ensemble(vectors: tuple[SparseVector], probabilites: tuple[float]) -> DensityOperator:
-        if len(vectors) <= 0 or len(vectors) != len(probabilites):
+    def from_ensemble(vectors: tuple[SparseVector], probabilities: tuple[float]) -> DensityOperator:
+        if len(vectors) <= 0 or len(vectors) != len(probabilities):
             raise TypeError(f"The input must be non-empty lists of same lengths")
-        if sum(probabilites) != 1:
+        if sum(probabilities) != 1:
             raise ValueError(f"The probabilities must provide a valid finite distribution (i.e., add up to 1)")
-        return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilites))
+        return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilities))
 
     def reduce(self, coef, vector):
         for i in range(self.dim):
@@ -104,13 +104,13 @@ class DensityVector(Vector):
         
 class DensityOperator(Matrix):
     r'''
-        Class for representing superoperators in noisy quantum circuits.
+        Class for representing super-operators in noisy quantum circuits.
 
-        A superoperator `A` is the combination of several quantum noisy gates that can be described as follows:
+        A super-operator `A` is the combination of several quantum noisy gates that can be described as follows:
         the noisy gate `((p_i, U_i))` applies to a quantum state the gate `U_i` with probability `p_i`.
 
         These quantum noisy gates can be represented with a matrix `A_i` that works over the space of density matrices
-        (for `n` qbits, there are `N=2^n` quantum states and `2^{2n} = N^2` density matrices). Hence, these superoperator
+        (for `n` qbits, there are `N=2^n` quantum states and `2^{2n} = N^2` density matrices). Hence, these super-operator
         are matrices of dimension `N^2`.
 
         At the end of the day, when we combine several gates, we still get a set `((\pi_i, C_i))` where we get to apply

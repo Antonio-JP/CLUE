@@ -86,11 +86,29 @@ def rational_reconstruction_sage(a, m):
 # ------------------------------------------------------------------------------
 
 class Vector():
+    r'''
+        List of abstract methods for a Vector
+
+        * ``reduce``: computes in-place the vector ``self + c*coeff``
+        * ``scale``: computes in-place the scaled vector ``c*self``
+        * ``conjugate``: conjugates all the coefficients in the vector
+        * ``inner_product``: computes the scalar product between two vectors. It allow to conjugate (or not) one of the factors.
+        * ``apply_matrix``: implements how to compute the result of ``M*self`` where `M` is a Matrix.
+        * ``__add__``: necessary method for arithmetic operations with the vectors.
+        * ``is_zero``: method to check whether a vector is the zero vector or not.
+    '''
     def __init__(self, dim: int, field: Domain = QQ):
         self.dim: int = dim
         self.nonzero: set[int] = set()
         self.field: Domain = field
 
+    ##############################################################################
+    ## Abstract methods, necessary for the class to work
+    ### Attribute methods
+    def is_zero(self) -> bool:
+        raise NotImplementedError(f"Method not implemented")
+    
+    ### Manipulation methods
     def reduce(self, coef, vector: Vector):
         r'''
             Inplace operation of ``self + coef*vect``.
@@ -117,12 +135,19 @@ class Vector():
         '''
         raise NotImplementedError(f"Method not implemented")
     
+    ### Operational methods
+    def __add__(self, other: Vector) -> Vector:
+        raise NotImplementedError(f"Method not implemented")
+
     def inner_product(self, rhs : Vector, *, _conjugate:bool = True):
         r'''
             Scalar product of two vectors
         '''
         raise NotImplementedError(f"Method not implemented")
     
+    ##############################################################################
+    ## Methods for a Vector
+    ### Attribute methods
     def norm_squared(self):
         result = self.inner_product(self)
         if hasattr(result, "real"): 
@@ -133,7 +158,8 @@ class Vector():
     def norm(self):
         return math.sqrt(self.norm_squared())
 
-    def apply_matrix(self, matr: SparseRowMatrix):
+    ### Operational methods
+    def apply_matrix(self, matr: Matrix) -> Vector:
         r"""
         Method to compute the application of a matrix to self to the left (`M\cdot v`)
 
@@ -141,9 +167,7 @@ class Vector():
         """
         raise NotImplementedError(f"Method not implemented")
 
-    def __add__(self, other: Vector) -> Vector:
-        raise NotImplementedError(f"Method not implemented")
-
+    ### Arithmetic methods
     def __sub__(self, other):
         return self.__add__(-other)
     
@@ -1384,9 +1408,9 @@ class SparseRowMatrix(Matrix):
             else:
                 raise TypeError(f"[sub] Only valid for SparseRowMatrix")
         elif self.dim != other.dim:
-            raise TypeError(f"[sub] Substraction must be defined for matrices with same dimension")
+            raise TypeError(f"[sub] Subtraction must be defined for matrices with same dimension")
         elif self.field != other.field:
-            raise TypeError(f"[sub] Substraction must be defined for matrices over the same field")
+            raise TypeError(f"[sub] Subtraction must be defined for matrices over the same field")
 
         M = SparseRowMatrix(self.dim, self.field)
         for i in self.nonzero.union(other.nonzero):
@@ -1398,9 +1422,9 @@ class SparseRowMatrix(Matrix):
         if not isinstance(other, SparseRowMatrix):
             raise TypeError(f"[sub] Only valid for SparseRowMatrix")
         elif self.dim != other.dim:
-            raise TypeError(f"[sub] Substraction must be defined for matrices with same dimension")
+            raise TypeError(f"[sub] Subtraction must be defined for matrices with same dimension")
         elif self.field != other.field:
-            raise TypeError(f"[sub] Substraction must be defined for matrices over the same field")
+            raise TypeError(f"[sub] Subtraction must be defined for matrices over the same field")
         
         for i in other.nonzero:
             for j in other[i].nonzero:
