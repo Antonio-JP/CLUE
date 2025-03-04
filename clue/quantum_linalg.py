@@ -13,14 +13,16 @@ r"""
     * Forward and Backward Constrained Bisimulations for Quantum Circuits Using Decision Diagrams (https://doi.org/10.1145/3712711)
 """
 from .linalg import Vector, Matrix, SparseRowMatrix, SparseVector
-
-from sympy.polys.domains.domain import Domain
 from .numerical_domains import CC
+
+from math import sqrt
+from sympy.polys.domains.domain import Domain
 
 class DensityVector(Vector):
     def __init__(self, dim: int, field: Domain = CC):
-        super().__init__(dim, field)
-        self.__data: list[SparseVector] = [SparseVector(self.dim, self.field) for _ in range(self.dim)]
+        super().__init__(dim**2, field)
+        self.__data: list[SparseVector] = [SparseVector(dim, self.field) for _ in range(dim)]
+        self.__base_dim = dim
 
     @staticmethod
     def from_matrix(matrix: SparseRowMatrix) -> DensityVector:
@@ -33,8 +35,21 @@ class DensityVector(Vector):
         return output
 
     @staticmethod
-    def from_vector(vector: SparseVector) -> DensityVector:
+    def from_tensor(vector: SparseVector) -> DensityVector:
         return DensityVector.from_matrix(vector.tensor(vector))
+    
+    @staticmethod
+    def from_vector(vector: SparseVector) -> DensityVector:
+        d = sqrt(vector.dim)
+        if d != int(d):
+            raise ValueError(f"The dimension of the vector do not allow to get a square matrix")
+        
+        dim = int(d)
+        output = DensityVector(dim, vector.field)
+        for i in range(dim):
+            output.__data[i] = SparseVector.from_list([vector[i*dim + j] for j in range(dim)], output.field)
+        
+        return output
     
     @staticmethod
     def from_ensemble(vectors: tuple[SparseVector], probabilities: tuple[float]) -> DensityOperator:
@@ -42,34 +57,50 @@ class DensityVector(Vector):
             raise TypeError(f"The input must be non-empty lists of same lengths")
         if sum(probabilities) != 1:
             raise ValueError(f"The probabilities must provide a valid finite distribution (i.e., add up to 1)")
-        return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilities))
+        return sum(p*DensityVector.from_tensor(v) for (p,v) in zip(vectors, probabilities))
     
+    def copy(self) -> DensityVector:
+        return DensityVector.from_matrix(self.as_matrix())
+
     def as_matrix(self) -> SparseRowMatrix:
         return SparseRowMatrix.from_vectors(self.__data)
+    
+    def as_vector(self) -> SparseVector:
+        return SparseVector.from_list(sum((v.to_list() for v in self.__data), start=[]), self.field)
 
     def is_zero(self) -> bool:
         return all(vec.is_zero() for vec in self.__data)
+    
+    def nonzero_coordinates(self):
+        return set(e + i*self.__base_dim for i in range(self.__base_dim) for e in self.__data[i].nonzero)
+    
+    def coordinate(self, i):
+        row, column = i // self.__base_dim, i % self.__base_dim
+        return self[row][column]
         
-
     def reduce(self, coef, vector):
-        for i in range(self.dim):
+        for i in range(self.__base_dim):
             self[i].reduce(coef, vector[i])
 
     def scale(self, coef):
-        for i in range(self.dim):
+        for i in range(self.__base_dim):
             self[i].scale(coef)
 
+    def transpose(self):
+        return DensityVector.from_matrix(self.as_matrix().transpose())
+
     def conjugate(self, *, _inplace=False):
-        result = self if _inplace else [self[i].copy() for i in range(self.dim)]
-        for i in range(self.dim):
-            result[i] = result[i].conjugate()
+        result = self if _inplace else DensityVector(self.__base_dim, self.field)
+        
+        for i in range(self.__base_dim):
+            result.__data[i] = self[i].conjugate()
 
         return result
 
     def inner_product(self, rhs, *, _conjugate = True):
         lhs = self.conjugate() if _conjugate else self # we conjugate the vector (in case the field is CC) if indicated by argument
         result = self.field.zero
-        for i in range(self.dim):
+        for i in range(self.__base_dim):
             result += lhs.__data[i] * rhs.__data[i]
 
         return result
@@ -77,7 +108,7 @@ class DensityVector(Vector):
     def apply_matrix(self, matr):
         if isinstance(matr, DensityOperator):
             if matr.is_ensembled(): # base case -> sum of probabilities * apply circuits
-                v = DensityVector(self.dim, self.field)
+                v = DensityVector(self.__base_dim, self.field)
                 for U,p in matr.data():
                     v = v + p * U * self * U.dagger()
                 return v # TODO: by Thomas
@@ -87,11 +118,14 @@ class DensityVector(Vector):
                     v = v.apply_matrix(operator)
                 return v
         elif isinstance(matr, SparseRowMatrix):
-            M = self.as_matrix()
-            result = matr * M
-            return DensityVector.from_matrix(result)# TODO: by Thomas
-        else:
-            return NotImplemented
+            if matr.dim[0]*matr.dim[1] == self.dim:
+                M = self.as_matrix()
+                result = matr * M
+                return DensityVector.from_matrix(result)# TODO: by Thomas
+            elif matr.dim[0]*matr.dim[1] == self.dim**2:
+                return DensityVector.from_vector(matr * self.as_vector())
+
+        return NotImplemented
 
     def __add__(self, other):
         if self.dim != other.dim:
@@ -101,16 +135,19 @@ class DensityVector(Vector):
         if not isinstance(other, DensityVector):
             return NotImplemented
         
-        result = DensityVector(self.dim, self.field)
-        for i in range(self.dim):
+        result = DensityVector(self.__base_dim, self.field)
+        for i in range(self.__base_dim):
             result.__data[i] = self[i] + other[i]
 
         return result
      
     def __getitem__(self, i: int):
-        if(i < 0 or i >= self.dim):
+        if(i < 0 or i >= self.__base_dim):
             raise IndexError(f"Element {i} out of dimension")
         return self.__data[i]
+    
+    def __repr__(self) -> str:
+        return repr(self.as_matrix().to_numpy())
         
 class DensityOperator(Matrix):
     r'''

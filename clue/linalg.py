@@ -90,6 +90,10 @@ class Vector():
         List of abstract methods for a Vector
 
         * ``reduce``: computes in-place the vector ``self + c*coeff``
+        * ``nonzero_coordinates``: returns a collection of the non-zero entries of the vector. It assumes a bijection into 
+          the usual vector space of current dimension.
+        * ``coordinate``: return the coordinate at the corresponding index as if this was a vector in the usual vector space
+          of current dimension.
         * ``scale``: computes in-place the scaled vector ``c*self``
         * ``conjugate``: conjugates all the coefficients in the vector
         * ``inner_product``: computes the scalar product between two vectors. It allow to conjugate (or not) one of the factors.
@@ -106,6 +110,12 @@ class Vector():
     ## Abstract methods, necessary for the class to work
     ### Attribute methods
     def is_zero(self) -> bool:
+        raise NotImplementedError(f"Method not implemented")
+    
+    def nonzero_coordinates(self):
+        raise NotImplementedError(f"Method not implemented")
+    
+    def coordinate(self, i: int):
         raise NotImplementedError(f"Method not implemented")
     
     ### Manipulation methods
@@ -126,6 +136,9 @@ class Vector():
         """
         raise NotImplementedError(f"Method not implemented")
     
+    def transpose(self) -> Vector:
+        return self
+
     def conjugate(self, *, _inplace=False):
         r'''
             Returns self where all elements have been conjugated.
@@ -186,7 +199,7 @@ class Vector():
             return self.inner_product(other)
         elif isinstance(other, SparseRowMatrix):
             ## self * M == (M^T * self^T)^T
-            return self.apply_matrix(other.transpose())
+            return (self.transpose().apply_matrix(other.transpose())).transpose()
         elif other in self.field:
             ## self * c
             result = self.copy()
@@ -749,6 +762,11 @@ class SparseVector(Vector):
         r"""Method to compute the number of non-zero entries of a vector"""
         return len(self.nonzero)
 
+    def nonzero_coordinates(self):
+        return self.nonzero
+    
+    def coordinate(self, i):
+        return self[i]
     # --------------------------------------------------------------------------
 
     def rational_reconstruction(self):
@@ -2017,7 +2035,7 @@ class OrthogonalSubspace(Subspace):
             self.__projector = SparseRowMatrix(self.ambient_dimension(), self.field)
         return self.__projector
 
-    def reduce_vector(self, vector: SparseVector):
+    def reduce_vector(self, vector: Vector) -> Vector:
         r"""
         Method to reduce a vector with respect to a subspace
 
@@ -2071,7 +2089,7 @@ class OrthogonalSubspace(Subspace):
         
         return vector
 
-    def find_in(self, vector: SparseVector) -> SparseVector:
+    def find_in(self, vector: Vector) -> Vector:
         r'''
             Method that computed the expression of a vector in terms of the subspace.
 
@@ -2082,16 +2100,16 @@ class OrthogonalSubspace(Subspace):
             raise ValueError("The given vector is not in the current subspace")
         return vector.apply_matrix(self.pinv(True))
 
-    def absorb_new_vector(self, new_vector: SparseVector, force: bool = False):
+    def absorb_new_vector(self, new_vector: Vector, force: bool = False) -> int:
         new_vector = self.reduce_vector(new_vector)
 
         # We check if ``new_vector`` was in ``self``
-        if not ((force and new_vector.nonzero) or self._should_absorb(new_vector)):
+        if not ((force and new_vector.nonzero_coordinates()) or self._should_absorb(new_vector)):
             return -1
 
         # we scale the new vector depending on the ground field
         if self.field == QQ:
-            new_vector.scale(self.field.one / math.gcd(*[new_vector[i].numerator for i in new_vector.nonzero]))
+            new_vector.scale(self.field.one / math.gcd(*[new_vector[i].numerator for i in new_vector.nonzero_coordinates()]))
         if self.field == RR or self.field == CC:
             new_vector.scale(self.field.one / new_vector.norm())
 
@@ -2103,26 +2121,26 @@ class OrthogonalSubspace(Subspace):
         # updating the projector outside the diagonal
         ## new[i][j] = old[i][j] + u_conj[i]*u[j]/norm(u)
         ## new[j][i] = old[i][j] + conj(u_conj[i]*u[j]/norm(u))
-        for i, j in combinations(new_vector.nonzero, 2):
+        for i, j in combinations(new_vector.nonzero_coordinates(), 2):
             to_add_ij = (
-                new_vector_conj._SparseVector__data[i] * new_vector._SparseVector__data[j]
+                new_vector_conj.coordinate(i) * new_vector.coordinate(j)
             ) / norm2
             to_add_ji = (
-                new_vector_conj._SparseVector__data[j] * new_vector._SparseVector__data[i]
+                new_vector_conj.coordinate(j) * new_vector.coordinate(i)
             ) / norm2
             self.projector.increment(i, j, to_add_ij)
             self.projector.increment(j, i, to_add_ji)
         # updating the diagonal
-        for i in new_vector.nonzero:
+        for i in new_vector.nonzero_coordinates():
             to_add = (
-                new_vector._SparseVector__data[i] * new_vector_conj._SparseVector__data[i]
+                new_vector.coordinate(i) * new_vector_conj.coordinate(i)
             ) / norm2
             self.projector.increment(i, i, to_add)
 
         return self.dim() - 1
 
     def apply_matrices_inplace(
-        self, matrices: list[SparseRowMatrix], monitor_length: bool = False
+        self, matrices: list[Matrix], monitor_length: bool = False
     ):
         return super().apply_matrices_inplace(matrices, False)
 
@@ -2238,12 +2256,12 @@ class NumericalSubspace(OrthogonalSubspace):
         self.__delta = max(abs(delta), 1e-10)  # minimal threshold to be like zero
         self.__delta2 = self.__delta**2
 
-    def contains(self, vector: SparseVector):
+    def contains(self, vector: Vector) -> bool:
         r"""Checks whether a vector is in ``self`` or not."""
         self_proj = self.reduce_vector(vector.copy())
         return self_proj.norm_squared() < 1e-15
 
-    def _should_absorb(self, vector: SparseVector):
+    def _should_absorb(self, vector: Vector) -> bool:
         norm_squared = vector.norm_squared()
         logger.log(
             5, f"[_should_absorb - Numerical] {norm_squared}) >? {self.__delta2}"
