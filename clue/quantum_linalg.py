@@ -43,9 +43,13 @@ class DensityVector(Vector):
         if sum(probabilities) != 1:
             raise ValueError(f"The probabilities must provide a valid finite distribution (i.e., add up to 1)")
         return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilities))
-
+    
     def as_matrix(self) -> SparseRowMatrix:
         return SparseRowMatrix.from_vectors(self.__data)
+
+    def is_zero(self) -> bool:
+        return all(vec.is_zero() for vec in self.__data)
+        
 
     def reduce(self, coef, vector):
         for i in range(self.dim):
@@ -73,18 +77,21 @@ class DensityVector(Vector):
     def apply_matrix(self, matr):
         if isinstance(matr, DensityOperator):
             if matr.is_ensembled(): # base case -> sum of probabilities * apply circuits
-                return NotImplemented # TODO: by Thomas
+                v = DensityVector(self.dim, self.field)
+                for U,p in matr.data():
+                    v = v + p * U * self * U.dagger()
+                return v # TODO: by Thomas
             else: # composed case -> we apply one by one
                 v = self
                 for operator in matr.operators():
                     v = v.apply_matrix(operator)
                 return v
         elif isinstance(matr, SparseRowMatrix):
-            return NotImplemented # TODO: by Thomas
+            M = self.as_matrix()
+            result = matr * M
+            return DensityVector.from_matrix(result)# TODO: by Thomas
         else:
             return NotImplemented
-        #if we get densityoperator we do the inner loop (should go down to sparserowmatrix)
-        #if the matric that we get is a sparserowmatrix (the same as in sparserowmatrix)
 
     def __add__(self, other):
         if self.dim != other.dim:
