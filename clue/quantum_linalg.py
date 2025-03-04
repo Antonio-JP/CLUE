@@ -22,6 +22,28 @@ class DensityVector(Vector):
         super().__init__(dim, field)
         self.__data: list[SparseVector] = [SparseVector(self.dim, self.field) for _ in range(self.dim)]
 
+    @staticmethod
+    def from_matrix(matrix: SparseRowMatrix) -> DensityVector:
+        if not matrix.is_square():
+            raise TypeError(f"DensityVectors are always square matrices")
+        
+        output = DensityVector(matrix.dim[0], matrix.field)
+        output.__data = [matrix[i].copy() for i in range(matrix.nrows)] # we override the rows of the matrix
+
+        return output
+
+    @staticmethod
+    def from_vector(vector: SparseVector) -> DensityVector:
+        return DensityVector.from_matrix(vector.tensor(vector))
+    
+    @staticmethod
+    def from_ensemble(vectors: tuple[SparseVector], probabilites: tuple[float]) -> DensityOperator:
+        if len(vectors) <= 0 or len(vectors) != len(probabilites):
+            raise TypeError(f"The input must be non-empty lists of same lengths")
+        if sum(probabilites) != 1:
+            raise ValueError(f"The probabilities must provide a valid finite distribution (i.e., add up to 1)")
+        return sum(p*DensityVector.from_vector(v) for (p,v) in zip(vectors, probabilites))
+
     def reduce(self, coef, vector):
         for i in range(self.dim):
             self[i].reduce(coef, vector[i])
@@ -96,7 +118,7 @@ class DensityOperator(Matrix):
     '''
     def __init__(self, *,
                 circuits: tuple[SparseRowMatrix] = None, probabilities: tuple = None, 
-                operators : tuple[DensityOperator],
+                operators : tuple[DensityOperator] = None,
                 dim:int = None):
         self.__data = None
         self.__operators = None

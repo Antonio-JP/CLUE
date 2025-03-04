@@ -656,6 +656,13 @@ class SparseVector(Vector):
 
         return result
 
+    def tensor(self, rhs: SparseVector) -> SparseRowMatrix:
+        output = SparseRowMatrix((self.dim, rhs.dim), self.field)
+        for i in self.nonzero:
+            for j in rhs.nonzero:
+                output.increment(i,j,self[i]*rhs[j])
+        return output
+
     def apply_matrix(self, matr: SparseRowMatrix):
         r"""
         Method to compute the application of a matrix to self to the left (`M\cdot v`)
