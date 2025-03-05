@@ -147,7 +147,7 @@ class DensityVector(Vector):
         return self.__data[i]
     
     def __repr__(self) -> str:
-        return repr(self.as_matrix().to_numpy())
+        return repr(self.as_matrix())
         
 class DensityOperator(Matrix):
     r'''
@@ -181,6 +181,8 @@ class DensityOperator(Matrix):
                 super().__init__(dim, CC)
                 self.__data = tuple()
             else:
+                ## We remove circuits with zero probability
+                circuits, probabilities = list(zip(*((c,p) for (c,p) in zip(circuits,probabilities) if p != 0.0)))
                 ## The circuits must have all the same dimension
                 if not all(c.dim == circuits[0].dim for c in circuits[1:]):
                     raise TypeError("We have different circuits in each probability")

@@ -1450,6 +1450,11 @@ class SparseRowMatrix(Matrix):
         return self
     
     #--------------------------------------------------------------------------
+    # Python magic methods
+    def __repr__(self) -> str:
+        return self.pretty_print()
+
+    #--------------------------------------------------------------------------
     # Abstract methods from Matrix
     def transpose(self) -> SparseRowMatrix:
         r"""
