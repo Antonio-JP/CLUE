@@ -1,6 +1,12 @@
 import sys
+import platform
 
-sys.path.insert(0, "../..") # clue is here
+# clue is here
+if platform.system() == 'Linux':
+    sys.path.insert(0, "../..")
+elif platform.system() == "Windows":
+    sys.path.insert(0, "..\..")
+
 
 from clue.linalg import SparseRowMatrix as Circuit, SparseVector as State, NumericalSubspace, find_smallest_common_subspace
 from clue.numerical_domains import CC
