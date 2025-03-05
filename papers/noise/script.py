@@ -25,7 +25,7 @@ plus[0], plus[1] = 1/sqrt(2), 1/sqrt(2)
 minus = State(2, CC)
 minus[0], minus[1] = 1/sqrt(2), -1/sqrt(2)
 
-zero = State(2,CC)
+zero = State(8,CC)
 zero[0] = 1
 
 def kronecker(A: Circuit, B: Circuit):
