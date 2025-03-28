@@ -5,10 +5,9 @@ NoisyQuantumComputation::NoisyQuantumComputation(luint _nQubits)
     this->nQubits = _nQubits;
 }
 
-/*  When we build the noisy qc, we simply add the operation with probability 1-epsilon or else we do nothing.
+/*  When we build the noisy qc, we simply add the operation with probability 1-epsilon or else we add the identity gate to the intended target.
     With this implementation, we are also requiring the qc to have only one operation in the layer.
-    This is a bit more cumbersome of an implementation, but it allows us to build it in similar fashion to the python implementation.
-    I thought about instead of doing nothing, we apply the identify gate to all the targets in the operation. Thoughts?*/
+    This is a bit more cumbersome of an implementation, but it allows us to build it in similar fashion to the python implementation.?*/
 qc::QuantumComputation *NoisyQuantumComputation::build_noisy_qc()
 {
     auto qc = new qc::QuantumComputation(this->nQubits);
