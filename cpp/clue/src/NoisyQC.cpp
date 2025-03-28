@@ -1,0 +1,44 @@
+#include "NoisyQC.hpp"
+
+NoisyQuantumComputation::NoisyQuantumComputation(luint _nQubits)
+{
+    this->nQubits = _nQubits;
+}
+
+/*  When we build the noisy qc, we simply add the operation with probability 1-epsilon or else we add the identity gate to the intended target.
+    With this implementation, we are also requiring the qc to have only one operation in the layer.
+    This is a bit more cumbersome of an implementation, but it allows us to build it in similar fashion to the python implementation.?*/
+qc::QuantumComputation *NoisyQuantumComputation::build_noisy_qc()
+{
+    auto qc = new qc::QuantumComputation(this->nQubits);
+
+    // Generate random number between [0,1)
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    for (const auto &[layer, epsilon] : this->layers)
+    {
+        if (std::generate_canonical<double, 10>(gen) > epsilon) // add the layer with probability 1-epsilon. Else do nothing.
+        {
+            qc->emplace_back(layer.front()->clone());
+        }
+        else
+        {
+            qc->i(layer.front()->getTargets()[0]); // Apply identity gate to the first target of the operation
+        }
+    }
+
+    return qc;
+}
+
+qc::QuantumComputation NoisyQuantumComputation::build_non_noisy_qc()
+{
+    auto qc = qc::QuantumComputation(this->size());
+
+    for (const auto &[layer, _] : this->layers)
+    {
+        qc.emplace_back(layer.front()->clone());
+    }
+
+    return qc;
+}

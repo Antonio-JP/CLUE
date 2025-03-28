@@ -14,7 +14,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/RationalFunctions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_Vector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_Subspace.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_DD.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Linalg_DD.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/NoisyQC.cpp)
 
 # set include directories
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include
