@@ -107,6 +107,30 @@ void build_non_noisy_circuit(luint qubits)
     }
 }
 
+void build_noisy_circuit(luint qubits)
+{
+    double epsilon = 0.01;
+
+    auto nqc = NoisyQuantumComputation(qubits);
+
+    // Add layers to the Noisy QuantumComputation
+    for (int i = 0; i < qubits; i++)
+    {
+        auto qc = qc::QuantumComputation(qubits);
+        qc.h(i);
+        nqc.push_back(qc, epsilon);
+    }
+
+    // Build the noisy circuit
+    auto noisy_qc = nqc.build_noisy_qc();
+
+    // Check if the size of the noisy circuit is equal to the number of layers
+    if (noisy_qc->size() != nqc.size())
+    {
+        throw std::runtime_error("The size of the noisy circuit does not match the number of layers.");
+    }
+}
+
 int main()
 {
     add_layer_succes(3, 3);
@@ -114,6 +138,7 @@ int main()
     add_layer_failure_invalid_epsilon();
     add_layer_failure_empty_qc();
     build_non_noisy_circuit(3);
+    build_noisy_circuit(3);
 
     return 0;
 }

@@ -11,7 +11,7 @@ NoisyQuantumComputation::NoisyQuantumComputation(luint _nQubits)
     I thought about instead of doing nothing, we apply the identify gate to all the targets in the operation. Thoughts?*/
 qc::QuantumComputation *NoisyQuantumComputation::build_noisy_qc()
 {
-    auto noisy_qc = new qc::QuantumComputation(this->nQubits);
+    auto qc = new qc::QuantumComputation(this->nQubits);
 
     // Generate random number between [0,1)
     std::random_device rd;
@@ -21,11 +21,15 @@ qc::QuantumComputation *NoisyQuantumComputation::build_noisy_qc()
     {
         if (std::generate_canonical<double, 10>(gen) > epsilon) // add the layer with probability 1-epsilon. Else do nothing.
         {
-            noisy_qc->emplace_back(layer.front()->clone());
+            qc->emplace_back(layer.front()->clone());
+        }
+        else
+        {
+            qc->i(layer.front()->getTargets()[0]); // Apply identity gate to the first target of the operation
         }
     }
 
-    return noisy_qc;
+    return qc;
 }
 
 qc::QuantumComputation NoisyQuantumComputation::build_non_noisy_qc()
