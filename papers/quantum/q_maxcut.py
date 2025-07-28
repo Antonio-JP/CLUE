@@ -202,7 +202,7 @@ class UndirectedGraph(defaultdict, Experiment):
     @staticmethod
     def store_circuit(graph: UndirectedGraph, parameter, name="graph"):
         circuit, par = graph.quantum_cut()
-        circuit = circuit.bind_parameters({par: parameter})
+        circuit = circuit.assign_parameters({par: parameter})
 
         name = f"{name}_{len(graph)}_{len(graph.edges)}"
         final_name = name; i = 0

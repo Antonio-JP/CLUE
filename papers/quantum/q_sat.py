@@ -327,7 +327,7 @@ class SATFormula(set[Clause], Experiment):
     @staticmethod
     def store_circuit(formula: SATFormula, parameter, name: str="formula"):
         circuit, par = formula.eval_quantum()
-        circuit = circuit.bind_parameters({par: parameter})
+        circuit = circuit.assign_parameters({par: parameter})
 
         n = formula.total_size; m = len(formula)
         name = f"{name}_{n}_{m}"
@@ -376,6 +376,8 @@ class SATFormula(set[Clause], Experiment):
             csv_writer.writerow(["size", "clauses", "time_lumping", "kappa", "time_iteration", "memory (MB)", "formula"])
         elif ttype == "full_ddsim":
             csv_writer.writerow(["size", "clauses", "kappa", "time_iteration", "memory (MB)", "formula"])
+        elif ttype == "full_quokka#":
+            csv_writer.writerow(["size", "clauses", "kappa", "time_encoding", "time_iteration", "memory (MB)", "formula"])
         else:
             raise NotImplementedError(f"Type of file {ttype} not recognized")
 
