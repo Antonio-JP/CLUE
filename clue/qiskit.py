@@ -16,7 +16,8 @@ from math import ceil, log2
 from numpy import array, matmul, block, cdouble, asarray, sqrt, kron, eye, outer, ones, zeros, exp, pi, arange
 from numpy.linalg import inv, matrix_power
 from numpy.random import rand
-from qiskit import execute, QuantumCircuit, Aer
+from qiskit import transpile, QuantumCircuit
+from qiskit_aer import Aer
 from sympy import CC
 
 from .clue import FODESystem
@@ -49,7 +50,8 @@ class DS_QuantumCircuit(FODESystem):
     def from_qasm_file(path: str, **kwds) -> DS_QuantumCircuit:
         circuit = QuantumCircuit.from_qasm_file(path)
         circuit.remove_final_measurements(True) # we remove the final measeurements (hence, we do not need to remove them from the .qasm file)
-        job = execute(circuit, DS_QuantumCircuit.BACKEND, shots=kwds.pop("shots", 8192))
+        tr_circuit = transpile(circuit, DS_QuantumCircuit.BACKEND)
+        job = DS_QuantumCircuit.BACKEND.run(tr_circuit, shots=kwds.pop("shots", 8192))
         unitary = job.result().get_unitary(circuit)
         
         return DS_QuantumCircuit(unitary, name=circuit.name, **kwds)

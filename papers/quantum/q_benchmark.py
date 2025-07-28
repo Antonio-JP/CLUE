@@ -14,7 +14,8 @@ from clue.linalg import CC, SparseRowMatrix, SparseVector
 from mqt.bench.benchmarks import (ae, dj, ghz, graphstate, pricingput, pricingcall, portfolioqaoa, portfoliovqe, qft, 
                                   qpeexact, qpeinexact, qwalk, tsp, qnn, vqe, wstate)
 from numpy import asarray, ndarray
-from qiskit import Aer, QuantumCircuit, execute
+from qiskit import QuantumCircuit, transpile
+from qiskit_aer import Aer
 
 ## Imports from the local folder
 from misc import *
@@ -60,7 +61,8 @@ class QuantumBenchmark(Experiment):
     def unitary(self) -> ndarray:
         if self.__unitary is None:
             no_measured = self.circuit.remove_final_measurements(False)
-            job = execute(no_measured, QuantumBenchmark.BACKEND, shots=8192)
+            no_measured_tr = transpile(no_measured, QuantumBenchmark.BACKEND)
+            job = QuantumBenchmark.BACKEND.run(no_measured_tr, shots=8192)
             unitary = job.result().get_unitary(no_measured)
             self.__unitary = asarray(unitary)
         return self.__unitary
