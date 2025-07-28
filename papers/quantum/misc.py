@@ -9,7 +9,7 @@ from math import ceil,inf,sqrt
 from mqt import ddsim
 from numpy import cdouble, eye, matmul, ndarray
 from numpy.linalg import matrix_power
-from qiskit import execute
+from qiskit import transpile
 from qiskit.circuit import Parameter, QuantumCircuit
 from time import process_time
 from typing import Any, Callable
@@ -208,7 +208,7 @@ def ddsim_reduction(name: str,
 
     print(f"%%% [ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush=True)
     U, par = experiment.quantum()
-    if par != None: U = U.bind_parameters({par: 1/(1000*true_size)})
+    if par != None: U = U.assign_parameters({par: 1/(1000*true_size)})
 
     circuit = loop(U, true_size, generate_observable(experiment, *args, **kwds), True)
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
@@ -219,7 +219,8 @@ def ddsim_reduction(name: str,
         with(Timeout(timeout)):
             ctime = process_time()
             ## Executing the circuit one time
-            job = execute(circuit, backend, shots=1)
+            circuit_tr = transpile(circuit, backend)
+            job = backend.run(circuit_tr, shots=1)
             job.result()
             ctime = process_time()-ctime
     except TimeoutError:
@@ -381,10 +382,10 @@ def ddsim_iteration(name: str,
 
     print(f"%%% [full-ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
     U_P, par = experiment.quantum()
-    if par != None: U_P = U_P.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
+    if par != None: U_P = U_P.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
     try:
         U_B, par = experiment.quantum_B()
-        if par != None: U_B = U_B.bind_parameters({par: 1/(2**experiment.size()*10*iterations)})
+        if par != None: U_B = U_B.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
         U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
     except NotImplementedError: # U_B do not exist
         U_B = U_P
@@ -397,7 +398,8 @@ def ddsim_iteration(name: str,
         with(Timeout(timeout)):
             ctime = process_time()
             ## Executing the circuit one time
-            job = execute(circuit, backend, shots=1)
+            circuit_tr = transpile(circuit, backend)
+            job = backend.run(circuit_tr, shots=1)
             job.result()
             ctime = process_time()-ctime
     except TimeoutError:
@@ -408,6 +410,83 @@ def ddsim_iteration(name: str,
 
     print(f"%%% [full-ddsim @ {name}] Storing the data...", flush = True)
     result_file.writerow(generate_data(experiment, iterations, ctime, memory))
+
+    return ctime
+
+def quokka_iteration(name: str, 
+                   generate_example: Callable[[Any],Experiment], 
+                   generate_observable: Callable[[Experiment, Any], bool|QuantumCircuit], 
+                   generate_data: Callable[[Experiment,Any], tuple],
+                   result_file, iterations: int, *args, timeout:float=0, **kwds) -> float: 
+    r'''
+        This method computes the Quokka# iteration.
+
+        This method compute the Quokka# iteration of an example. The arguments are as follows:
+
+        * ``generate_example``: from [name, *args, **kwds] generates a valid example.
+        * ``generate_observable``: from [system, *args, **kwds] generates whether the input is H or not.
+        * ``generate_data``: from [size, iters, time, memory, experiment] generates the output row for CSV
+        * ``iterations``: number of iterations to compute.
+        * ``result_fle``: CSV writer to put the result
+        * ``args``: arguments for the generate functions.
+        * ``timeout``: timeout used during the lumping.
+        * ``kwds``: named arguments for the generate functions.
+
+        This method generates an instance of a problem, create the associated quantum circuits and execute it ``iteration`` times using Quokka#
+
+        It stores the result on ``result_file``. It uses method ``generate_data`` to format the CSV output.
+    '''
+    import quokka_sharp as qk
+    import tempfile
+    from qiskit import qasm2
+
+    print(f"%%% [quokka# @ {name}] Computing DDSIM iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
+    experiment = generate_example(name, *args, **kwds)
+
+    print(f"%%% [quokka# @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
+    U_P, par = experiment.quantum()
+    if par != None: U_P = U_P.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
+    try:
+        U_B, par = experiment.quantum_B()
+        if par != None: U_B = U_B.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
+        U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
+    except NotImplementedError: # U_B do not exist
+        U_B = U_P
+    print(U_B)
+    circuit = loop(U_B, iterations, generate_observable(experiment, *args, **kwds), True)
+
+    from contextlib import nullcontext
+    with nullcontext() as f: #tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) as f:
+        file_name = "tmp_circuit.qasm"# f.name
+        # f.close()  # Close the file so that it can be used by qasm2
+        print(f"%%% [quokka# @ {name}] Writing the circuit to a temporary QASM file...", flush = True)
+        qasm2.dump(circuit, file_name)
+        print(circuit)
+
+        print(f"%%% [quokka# @ {name}] Computing the simulation of the circuit...", flush = True)
+        tracemalloc.start()
+        try:
+            with(Timeout(timeout)):
+                ## Encoding into CNF
+                print(f"%%% [quokka# @ {name}] Encoding the circuit into CNF...", flush = True)
+                enc_time = process_time()
+                circuit_cnf = qk.encoding.QASMparser(file_name, translate_ccx = True)
+                cnf = qk.encoding.QASM2CNF(circuit_cnf, computational_basis = False)
+                cnf.leftProjectAllZero()
+                cnf.add_measurement({0:0})
+                enc_time = process_time() - enc_time
+                ## Executing the circuit one time
+                ctime = process_time()
+                qk.Simulate(cnf)
+                ctime = process_time()-ctime
+        except TimeoutError:
+            print(f"%%% [quokka# @ {name}] Timeout reached for execution", flush = True)
+            ctime = inf
+        memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
+        tracemalloc.stop()
+
+    print(f"%%% [quokka# @ {name}] Storing the data...", flush = True)
+    result_file.writerow(generate_data(experiment, iterations, enc_time, ctime, memory))
 
     return ctime
 
@@ -509,8 +588,9 @@ def get_method(*argv) -> tuple[str,Callable]:
             if argv[ind] == "full_clue": return "full_clue", clue_iteration
             if argv[ind] == "full_ddsim": return "full_ddsim", ddsim_iteration
             if argv[ind] == "full_direct": return "full_direct", direct_iteration
+            if argv[ind] == "full_quokka#": return "full_quokka#", quokka_iteration
 
-        raise TypeError("Script argument [-t] not well used: we required a follow-up name in ('clue','ddsim','direct','full_clue','full_ddsim','full_clue')")
+        raise TypeError("Script argument [-t] not well used: we required a follow-up name in ('clue','ddsim','direct','full_clue','full_ddsim','full_direct','full_quokka#')")
     else:
         return "clue", clue_reduction
             
@@ -548,7 +628,7 @@ def get_rem_timeout(rem_timeout, used_time):
     return None
 
 def main_script(dir: str, filename: str, name: str,         # directory and filename of the script; name of the experiment
-                methods: list[Callable] | tuple[Callable],  # list of methods with 5 methods to generate the appropriate script
+                methods: list[Callable] | tuple[Callable],  # list of methods with 4 methods to generate the appropriate script
                 ttype: str, script: Callable,               # the type and the script to be run from misc.py
                 m: int, M: int,                             # validated bounds for size to be executed
                 timeout: int | None, repeats: int,          # validated timeout and number of repetitions
