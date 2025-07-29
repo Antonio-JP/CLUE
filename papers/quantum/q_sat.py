@@ -46,85 +46,117 @@ class Clause:
     
     ### STATIC METHODS
     @staticmethod
-    @lru_cache(maxsize=16)
-    def F(dt) -> QuantumCircuit:
-        C = QuantumCircuit(1, name=f"F")
-        C.p(-dt,0)
-        return C
+    def cp(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate Controlled Phase over `circuit` with parameter `dt` over the qubits in `b`'''
+        c, t = b[0], b[1]
+        par = dt/2
+
+        ## Apply phase shift to both qubits
+        circuit.rz(par, c)
+        circuit.rz(par, t)
+        ## We do a CNOT
+        circuit.cx(c,t)
+        ## Undo phase shift in case of need
+        circuit.rz(-par, t)
+        ## Undo the CNOT
+        circuit.cx(c,t)
+
+        return circuit
+    
     @staticmethod
-    @lru_cache(maxsize=16)
-    def T(dt) -> QuantumCircuit:
-        C = QuantumCircuit(1, name=f"T")
-        C.x(0)
-        C.p(-dt,0)
-        C.x(0)
-        return C
-    @staticmethod
-    @lru_cache(maxsize=16)
-    def TT(dt) -> QuantumCircuit:
-        C = QuantumCircuit(2, name=f"TT")
-        ## Negating qubit 0
-        C.x(0)
-        ## Apply conditioned T to qubit 2
-        C.cx(0, 1)
-        C.cp(-dt, 0, 1)
-        C.cx(0, 1)
-        ## Restoring qubit 0
-        C.x(0)
-        return C
-    @staticmethod
-    @lru_cache(maxsize=16)
-    def FT(dt) -> QuantumCircuit:
-        C = QuantumCircuit(2, name=f"FT")
-        ## Apply conditioned T to qubit 2
-        C.cx(0, 1)
-        C.cp(-dt, 0, 1)
-        C.cx(0, 1)
-        return C
-    @staticmethod
-    @lru_cache(maxsize=16)
-    def FF(dt) -> QuantumCircuit:
-        C = QuantumCircuit(2, name=f"FF")
-        ## Apply conditioned F to qubit 2
-        C.cp(-dt, 0, 1)
-        return C
-    @staticmethod
-    @lru_cache(maxsize=16)
-    def FFF(dt) -> QuantumCircuit:
-        C = QuantumCircuit(3, name=f"FFF")
-        C.append(PhaseGate(-dt).control(2), [0,1,2])
+    def ccp(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate Controlled-Controlled Phase over `circuit` with parameter `dt` over the qubits in `b`'''
+        s1,s2,t = b
+        par = dt/4
         
-        return C
+        ## Apply some phase shift to all qubits
+        circuit.rz(par, s1)
+        circuit.rz(par, s2)
+        circuit.rz(2*par, t)
+
+        ## Apply CNOT and CCNOT
+        circuit.ccx(s1, s2, t)
+        circuit.cx(s1, s2)
+        ## Undo phase shift in case of need
+        circuit.rz(-par, s2)
+        circuit.rz(-2*par, t)
+        ## Undo the CNOT and CCNOT
+        circuit.cx(s1, s2)
+        circuit.ccx(s1, s2, t)
+
+        return circuit
+
     @staticmethod
-    @lru_cache(maxsize=16)
-    def FTT(dt) -> QuantumCircuit:
-        C = QuantumCircuit(3, name=f"FTT")
-        C.cx(0,1)
-        C.ccx(0,1,2)
-        C.append(PhaseGate(-dt).control(2), [0,1,2])
-        C.ccx(0,1,2)
-        C.cx(0,1)
-        return C
+    def F(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate F over `circuit` with parameter `dt` over the qubits in `b`'''
+        circuit.rz(-dt, b[0])
+
+        return circuit
     @staticmethod
-    @lru_cache(maxsize=16)
-    def FFT(dt) -> QuantumCircuit:
-        C = QuantumCircuit(3, name=f"FFT")
-        C.ccx(0,1,2)
-        C.append(PhaseGate(-dt).control(2), [0,1,2])
-        C.ccx(0,1,2)
-        return C
+    def T(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate T over `circuit` with parameter `dt` over the qubits in `b`'''
+        circuit.x(b[0])
+        circuit.rz(-dt, b[0])
+        circuit.x(b[0])
+
+        return circuit
     @staticmethod
-    @lru_cache(maxsize=16)
-    def TTT(dt) -> QuantumCircuit:
-        C = QuantumCircuit(3, name=f"TTT")
-        C.x(0)
-        C.cx(0,1)
-        C.ccx(0,1,2)
-        C.append(PhaseGate(-dt).control(2), [0,1,2])
-        C.ccx(0,1,2)
-        C.cx(0,1)
-        C.x(0)
-        return C
+    def TT(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate TT over `circuit` with parameter `dt` over the qubits in `b`'''
+        ## Negating qubit 0
+        circuit.x(b[0])
+        ## Apply conditioned T to qubit 2
+        circuit.cx(b[0], b[1])
+        Clause.cp(circuit, -dt, b)
+        circuit.cx(b[0], b[1])
+        ## Restoring qubit 0
+        circuit.x(b[0])
+        return circuit
+    @staticmethod
+    def FT(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate FT over `circuit` with parameter `dt` over the qubits in `b`'''
+        ## Apply conditioned T to qubit 2
+        circuit.cx(b[0], b[1])
+        Clause.cp(circuit, -dt, b)
+        circuit.cx(b[0], b[1])
+        return circuit
+    @staticmethod
+    def FF(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate FF over `circuit` with parameter `dt` over the qubits in `b`'''
+        ## Apply conditioned F to qubit 2
+        Clause.cp(circuit, -dt, b)
+        return circuit
+    @staticmethod
+    def FFF(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate FFF over `circuit` with parameter `dt` over the qubits in `b`'''
+        return Clause.ccp(circuit, -dt, b)
+    @staticmethod
+    def FTT(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate FTT over `circuit` with parameter `dt` over the qubits in `b`'''
+        circuit.cx(b[0], b[1])
+        circuit.ccx(b[0], b[1], b[2])
+        Clause.ccp(circuit, -dt, b)
+        circuit.ccx(b[0], b[1], b[2])
+        circuit.cx(b[0], b[1])
+        return circuit
+    @staticmethod
+    def FFT(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate FFT over `circuit` with parameter `dt` over the qubits in `b`'''
+        circuit.ccx(b[0],b[1],b[2])
+        Clause.ccp(circuit, -dt, b)
+        circuit.ccx(b[0],b[1],b[2])
+        return circuit
+    @staticmethod
+    def TTT(circuit: QuantumCircuit, dt: float | Parameter, b: list[int]) -> QuantumCircuit:
+        r'''Build the quantum gate TTT over `circuit` with parameter `dt` over the qubits in `b`'''
+        circuit.x(b[0])
+        circuit.cx(b[0], b[1])
+        circuit.ccx(b[0], b[1], b[2])
+        Clause.ccp(circuit, -dt, b)
+        circuit.ccx(b[0], b[1], b[2])
+        circuit.cx(b[0], b[1])
+        circuit.x(b[0])
+        return circuit
 
     ### PROPERTIES OF A CLAUSE
     @property
@@ -138,19 +170,20 @@ class Clause:
     def eval(self, *values):
         return any(self.__pos[i] == values[v] for i,v in enumerate(self.__values))
 
-    def quantum_gate(self, dt) -> tuple[QuantumCircuit, tuple[int]]:
+    def quantum_gate(self, circuit: QuantumCircuit, dt: Parameter) -> QuantumCircuit:
+        r'''Build over `circuit` the quantum gate corresponding to the clause'''
         m = len(self) # number of variables in the clause
         f = len([v for (v,p) in self.terms if p == 0]) # false variables
         b = [v for (v,p) in self.terms if p == 0] + [v for (v,p) in self.terms if p == 1]
-        
+
         gate_gen = [
             None, 
             [Clause.T, Clause.F], 
             [Clause.TT,Clause.FT, Clause.FF], 
             [Clause.TTT,Clause.FTT,Clause.FFT,Clause.FFF]
         ]
-        return (gate_gen[m][f](dt), b)
-        
+        return gate_gen[m][f](circuit, dt, b)
+    
     ### MAGIC METHODS
     def __len__(self) -> int:
         return len(self.variables)
@@ -260,15 +293,17 @@ class SATFormula(set[Clause], Experiment):
 
         return L,U
 
-    def eval_quantum(self) -> tuple[QuantumCircuit, Parameter]:
-        par = Parameter("t")
-        circuit = QuantumCircuit(len(self.total_variables))
-        gates = [clause.quantum_gate(par) for clause in self]
-        trotter(circuit, gates, 2)
+    def eval_quantum(self, circuit: QuantumCircuit = None, par: Parameter = None) -> tuple[QuantumCircuit, Parameter]:
+        if circuit is None:
+            par = Parameter("t")
+            circuit = QuantumCircuit(len(self.total_variables))
+
+        for clause in self:
+            circuit = clause.quantum_gate(circuit, par)
 
         return circuit, par
-    
-    def eval_quantumB(self) -> tuple[QuantumCircuit, Parameter]:
+
+    def eval_quantumB(self, circuit: QuantumCircuit = None, par: Parameter = None) -> tuple[QuantumCircuit, Parameter]:
         r'''
             From :arxiv:`0001106v1`, the begin Hamiltonian is the exponential matrix 
 
@@ -286,13 +321,15 @@ class SATFormula(set[Clause], Experiment):
 
                 e^{-id_j t B_j} = H_j\begin{pmatrix}e^{-id_j t} & 0\\0 & 1\ned{pmatrix}H_j = H_j \sigma_j^x P_j(-d_j t) \sigma_j^x H_j.
         '''
-        par = Parameter("t")
+        if circuit is None:
+            par = Parameter("t")
+            circuit = QuantumCircuit(len(self.total_variables))
+
         count = [sum(n in clause.variables for clause in self) for n in self.total_variables]
-        circuit = QuantumCircuit(len(self.total_variables))
         for i in range(len(self.total_variables)):
             circuit.h(i)
             circuit.x(i)
-            circuit.p(-par*count[i], i)
+            circuit.rz(-par*count[i], i)
             circuit.x(i)
             circuit.h(i)
         
@@ -356,8 +393,8 @@ class SATFormula(set[Clause], Experiment):
             return diag([len(self)] + (red_U.shape[0]-1)*[1/len(self)])
         else:
             raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
-    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.eval_quantum()
-    def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.eval_quantumB()
+    def quantum(self, circuit: QuantumCircuit, par: Parameter) -> tuple[QuantumCircuit, Parameter]: return self.eval_quantum(circuit, par)
+    def quantum_B(self, circuit: QuantumCircuit, par: Parameter) -> tuple[QuantumCircuit, Parameter]: return self.eval_quantumB(circuit, par)
     def data(self): return [len(self)]
 
     @staticmethod

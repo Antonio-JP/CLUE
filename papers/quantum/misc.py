@@ -100,8 +100,42 @@ class Experiment:
     def direct(self) -> tuple[SparseRowMatrix, SparseRowMatrix]: raise NotImplementedError(f"Method for getting 'direct lumping' not implemented")
     def matrix(self) -> SparseRowMatrix: raise NotImplementedError(f"Method for getting 'matrix' not implemented")
     def matrix_B(self, red_U: ndarray) -> ndarray: raise NotImplementedError(f"Method for getting 'matrix begin' not implemented")
-    def quantum(self) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum circuit' not implemented")
-    def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum begin' not implemented")
+    def build_quantum(self, *, iterations: int = 1, state_preparation: bool | QuantumCircuit = True, measure: bool = False, append_B: bool = False, par_value: float = None) -> QuantumCircuit:
+        r'''
+            Builds the quantum circuit for the experiment.
+
+            INPUT:
+
+            * ``iterations``: number of iterations to apply the circuit.
+            * ``state_preparation``: if ``True``, applies H to all qubits before the circuit.
+              If a circuit, it is used as a state preparation circuit.
+            * ``measure``: if ``True``, measures all qubits at the end of the circuit.
+            * ``append_B``: if ``True``, appends the begin Hamiltonian at the end of the circuit.
+        '''
+        circuit = QuantumCircuit(self.size())
+        par = Parameter("t")
+        if state_preparation is True:
+            circuit.h(range(circuit.num_qubits))
+        elif isinstance(state_preparation, QuantumCircuit):
+            circuit.append(state_preparation, range(circuit.num_qubits))
+
+        for _ in range(iterations):
+            circuit, par = self.quantum(circuit, par)
+            if append_B:
+                try:
+                    circuit, par = self.quantum_B(circuit, par)
+                except NotImplementedError:
+                    print(f"WARNING: quantum_B not implemented for {self.__class__.__name__}, skipping append_B")
+                    pass
+
+        if measure:
+            circuit.measure_all()
+
+        if par != None: circuit = circuit.assign_parameters({par: 1/(2**self.size()*10*iterations)})      
+
+        return circuit
+    def quantum(self, circuit: QuantumCircuit, dt: float | Parameter) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum circuit' not implemented")
+    def quantum_B(self, circuit: QuantumCircuit, dt: float | Parameter) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum begin' not implemented")
     def data(self): pass
 
     @staticmethod
@@ -207,10 +241,12 @@ def ddsim_reduction(name: str,
         true_size = 2**experiment.size()
 
     print(f"%%% [ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush=True)
-    U, par = experiment.quantum()
-    if par != None: U = U.assign_parameters({par: 1/(1000*true_size)})
-
-    circuit = loop(U, true_size, generate_observable(experiment, *args, **kwds), True)
+    circuit = experiment.build_quantum(
+        iterations=true_size, 
+        state_preparation=generate_observable(experiment, *args, **kwds),
+        measure=True,
+        par_value=1/(1000*true_size))
+    
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
     
     print(f"%%% [ddsim @ {name}] Computing the simulation of the circuit...", flush=True)
@@ -381,15 +417,13 @@ def ddsim_iteration(name: str,
     experiment = generate_example(name, *args, **kwds)
 
     print(f"%%% [full-ddsim @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
-    U_P, par = experiment.quantum()
-    if par != None: U_P = U_P.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
-    try:
-        U_B, par = experiment.quantum_B()
-        if par != None: U_B = U_B.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
-        U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
-    except NotImplementedError: # U_B do not exist
-        U_B = U_P
-    circuit = loop(U_B, iterations, generate_observable(experiment, *args, **kwds), True)
+    circuit = experiment.build_quantum(
+        iterations=iterations,
+        state_preparation=generate_observable(experiment, *args, **kwds),
+        measure=True,
+        par_value=1/(2**experiment.size()*10*iterations)
+    )
+
     backend = ddsim.DDSIMProvider().get_backend("qasm_simulator")
     
     print(f"%%% [full-ddsim @ {name}] Computing the simulation of the circuit...", flush = True)
@@ -444,16 +478,12 @@ def quokka_iteration(name: str,
     experiment = generate_example(name, *args, **kwds)
 
     print(f"%%% [quokka# @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
-    U_P, par = experiment.quantum()
-    if par != None: U_P = U_P.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
-    try:
-        U_B, par = experiment.quantum_B()
-        if par != None: U_B = U_B.assign_parameters({par: 1/(2**experiment.size()*10*iterations)})
-        U_B.append(U_P, U_P.qregs[0]) # Now U_B is the alternate circuit U_B * U_P
-    except NotImplementedError: # U_B do not exist
-        U_B = U_P
-    print(U_B)
-    circuit = loop(U_B, iterations, generate_observable(experiment, *args, **kwds), True)
+    circuit = experiment.build_quantum(
+        iterations=iterations,
+        state_preparation=generate_observable(experiment, *args, **kwds),
+        measure=False,
+        par_value=1/(2**experiment.size()*10*iterations)
+    )
 
     from contextlib import nullcontext
     with nullcontext() as f: #tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) as f:
