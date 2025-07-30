@@ -76,7 +76,9 @@ class QuantumBenchmark(Experiment):
     def size(self) -> int: return self.circuit.num_qubits
     def correct_size(self) -> int: return None
     def matrix(self) -> SparseRowMatrix: return self.unitary_matrix()
-    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.circuit, None
+    def quantum(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]: 
+        circuit.append(self.circuit, list(range(self.circuit.num_qubits)))
+        return circuit, dt
     def data(self): return [self.full_name, self.observable]
 
     ## Static methods
@@ -92,6 +94,8 @@ class QuantumBenchmark(Experiment):
             csv_writer.writerow(["size", "name", "obs", "time_lumping", "kappa", "time_iteration", "memory (MB)", "problem"])
         elif ttype == "full_ddsim":
             csv_writer.writerow(["size", "name", "obs", "kappa", "time_iteration", "memory (MB)", "problem"])
+        elif ttype == "full_quokka#":
+            csv_writer.writerow(["size", "name", "obs", "kappa", "time_encoding", "time_iteration", "tot_time", "memory (MB)", "problem"])
         else:
             raise NotImplementedError(f"Type of file {ttype} not recognized")
 
