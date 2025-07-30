@@ -96,6 +96,7 @@ def trotter(circuit: QuantumCircuit, gates: list[tuple[QuantumCircuit, list[int]
 class Experiment:
     r'''Interface for experiments to run other methods of this module'''
     def size(self) -> int: raise NotImplementedError(f"Method for getting 'qbits size' not implemented")
+    def circuit_size(self) -> int: return self.size()
     def correct_size(self) -> int: raise NotImplementedError(f"Method for getting 'correct_size' not implemented")
     def direct(self) -> tuple[SparseRowMatrix, SparseRowMatrix]: raise NotImplementedError(f"Method for getting 'direct lumping' not implemented")
     def matrix(self) -> SparseRowMatrix: raise NotImplementedError(f"Method for getting 'matrix' not implemented")
@@ -112,7 +113,7 @@ class Experiment:
             * ``measure``: if ``True``, measures all qubits at the end of the circuit.
             * ``append_B``: if ``True``, appends the begin Hamiltonian at the end of the circuit.
         '''
-        circuit = QuantumCircuit(self.size())
+        circuit = QuantumCircuit(self.circuit_size())
         par = Parameter("t")
         if state_preparation is True:
             circuit.h(range(circuit.num_qubits))

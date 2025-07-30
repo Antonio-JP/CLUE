@@ -48,15 +48,17 @@ class QuantumSearch(Experiment):
     def grover_preparation(self) -> QuantumCircuit:
         raise NotImplementedError
 
-    def grover_quantum(self):
+    def grover_quantum(self, circuit: QuantumCircuit, dt: float | Parameter) -> tuple[QuantumCircuit, Parameter]:
         raise NotImplementedError
     
     def __repr__(self) -> str: return f"Grover for a search with {self.qbits} q-bits" + (f" {self.__success}" if self.__success != None else "")
 
     def size(self) -> int: return self.qbits
+    def circuit_size(self) -> int: return self.size() + 1
     def correct_size(self) -> int: return 2
     def matrix(self) -> SparseRowMatrix: return self.grover_matrix()
-    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.grover_quantum(), None
+    def quantum(self, circuit: QuantumCircuit, dt: float | Parameter) -> tuple[QuantumCircuit, Parameter]: 
+        return self.grover_quantum(circuit, dt)
     def data(self): return []
 
 class ToffoliSearch(QuantumSearch):
@@ -76,16 +78,15 @@ class ToffoliSearch(QuantumSearch):
 
         return state_preparation
 
-    def grover_quantum(self):
-        q = QuantumRegister(self.size(), "q")
-        flag = AncillaRegister(1, "flag")
-
-        oracle = QuantumCircuit(q, flag)
-        oracle.mcp(pi, q, flag)
+    def grover_quantum(self, circuit: QuantumCircuit, _: float | Parameter):
+        oracle = QuantumCircuit(self.circuit_size())
+        oracle.mcp(pi, list(range(self.size())), self.size())
 
         grover = GroverOperator(oracle, mcx_mode="noancilla")
 
-        return grover
+        circuit.append(grover, circuit.qubits[:self.circuit_size()])
+
+        return circuit, None
     
     def __repr__(self) -> str: return f"Grover over Toffoli with {self.size()} q-bits"
 
@@ -99,6 +100,8 @@ def generate_header(csv_writer, ttype):
         csv_writer.writerow(["size", "time_lumping", "kappa", "time_iteration", "memory (MB)", "gate"])
     elif ttype == "full_ddsim":
         csv_writer.writerow(["size", "kappa", "time_iteration", "memory (MB)", "gate"])
+    elif ttype == "full_quokka#":
+        csv_writer.writerow(["size", "kappa", "time_encoding", "time_iteration", "tot_time", "memory (MB)", "gate"])
     else:
         raise NotImplementedError(f"Type of file {ttype} not recognized")
 
