@@ -507,14 +507,22 @@ def quokka_iteration(name: str,
                 print(f"%%% [quokka# @ {name}] Adding measurement to circuit...", flush = True)
                 cnf.add_measurement({0:0})
                 enc_time = process_time() - enc_time
-                ## Executing the circuit one time
-                print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
-                ctime = process_time()
-                qk.Simulate(cnf)
-                ctime = process_time()-ctime
+                timeout_ = timeout - enc_time
+        except TimeoutError:
+            print(f"%%% [quokka# @ {name}] Timeout reached for encoding", flush = True)
+            enc_time, ctime = inf, inf
+            timeout_ = -1.0
+        try:
+            if timeout_ > 0:
+                with(Timeout(timeout_)):
+                    ## Executing the circuit one time
+                    print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
+                    ctime = process_time()
+                    qk.Simulate(cnf)
+                    ctime = process_time()-ctime
         except TimeoutError:
             print(f"%%% [quokka# @ {name}] Timeout reached for execution", flush = True)
-            enc_time, ctime = inf, inf
+            ctime = inf
         memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
         tracemalloc.stop()
 
