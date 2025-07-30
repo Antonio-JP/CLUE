@@ -84,7 +84,7 @@ class ToffoliSearch(QuantumSearch):
 
         grover = GroverOperator(oracle, mcx_mode="noancilla")
 
-        circuit.append(grover, circuit.qubits[:self.circuit_size()])
+        circuit.compose(grover, circuit.qubits[:self.circuit_size()], inplace=True)
 
         return circuit, None
     

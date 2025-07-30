@@ -147,22 +147,20 @@ class UndirectedGraph(defaultdict, Experiment):
             plt.show()
         plt.close()
 
-    def quantum_cut(self) -> tuple[QuantumCircuit, Parameter]:
-        circuit = QuantumCircuit(len(self))
-        t = Parameter("t")
+    def quantum_cut(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]:
         edge_gate = QuantumCircuit(2, name="E")
         edge_gate.x(0)
-        edge_gate.cp(t, 0, 1)
+        edge_gate.cp(dt, 0, 1)
         edge_gate.x(0); edge_gate.x(1)
-        edge_gate.cp(t, 1, 0)
+        edge_gate.cp(dt, 1, 0)
         edge_gate.x(1)
 
         for edge in self.edges:
-            circuit.append(edge_gate, edge)
+            circuit.compose(edge_gate, edge, inplace=True, wrap=True)
 
-        return circuit, t
-    
-    def quantum_cutB(self) -> tuple[QuantumCircuit, Parameter]:
+        return circuit, dt
+
+    def quantum_cutB(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]:
         r'''
             From :arxiv:`1411.4028v1` the begin Hamiltonian is the exponential matrix
 
@@ -187,18 +185,19 @@ class UndirectedGraph(defaultdict, Experiment):
 
             ``c.h(j).p(-t,j).x(j).p(t,j).x(j).h(j)``
         '''
-        circuit = QuantumCircuit(len(self))
-        t = Parameter("t")
+        U_B = QuantumCircuit(self.size(), name="U_B")
         for i in range(len(self)):
-            circuit.h(i)
-            circuit.p(-t,i)
-            circuit.x(i)
-            circuit.p(t,i)
-            circuit.x(i)
-            circuit.h(i)
+            U_B.h(i)
+            U_B.p(-dt,i)
+            U_B.x(i)
+            U_B.p(dt,i)
+            U_B.x(i)
+            U_B.h(i)
 
-        return circuit, t
-            
+        circuit.compose(U_B, circuit.qubits[:self.size()], inplace=True, wrap=True)
+
+        return circuit, dt
+
     @staticmethod
     def store_circuit(graph: UndirectedGraph, parameter, name="graph"):
         circuit, par = graph.quantum_cut()
@@ -235,8 +234,8 @@ class UndirectedGraph(defaultdict, Experiment):
         else:
             ## We assume is because it comes from the direct algorithm
             raise NotImplementedError(f"[full-clue] Base hamiltonian not defined when U_P is diagonal")
-    def quantum(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cut()
-    def quantum_B(self) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cutB()
+    def quantum(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cut(circuit, dt)
+    def quantum_B(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]: return self.quantum_cutB(circuit, dt)
     def data(self): return [len(self.edges)]
 
     ## METHODS TO GENERATE THE EXAMPLES OR DATA HEADER
@@ -255,6 +254,8 @@ class UndirectedGraph(defaultdict, Experiment):
             csv_writer.writerow(["size", "edges", "time_lumping", "kappa", "time_iteration", "memory (MB)", "graph"])
         elif ttype == "full_ddsim":
             csv_writer.writerow(["size", "edges", "kappa", "time_iteration", "memory (MB)", "graph"])
+        elif ttype == "full_quokka#":
+            csv_writer.writerow(["size", "edges", "kappa", "time_encoding", "time_iteration", "tot. time", "memory (MB)", "graph"])
         else:
             raise NotImplementedError(f"Type of file {ttype} not recognized")
 
