@@ -495,7 +495,7 @@ def quokka_iteration(name: str,
         print(f"%%% [quokka# @ {name}] Computing the simulation of the circuit...", flush = True)
         tracemalloc.start()
         try:
-            with(Timeout(timeout)):
+            with(Timeout(int(timeout))):
                 ## Encoding into CNF
                 enc_time = process_time()
                 print(f"%%% [quokka# @ {name}] Reading QASM file...", flush = True)
@@ -514,7 +514,7 @@ def quokka_iteration(name: str,
             timeout_ = -1.0
         try:
             if timeout_ > 0:
-                with(Timeout(timeout_)):
+                with(Timeout(int(timeout_))):
                     ## Executing the circuit one time
                     print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
                     ctime = process_time()
@@ -525,9 +525,11 @@ def quokka_iteration(name: str,
             ctime = inf
         memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
         tracemalloc.stop()
+    
+    tot_time = enc_time + ctime
 
     print(f"%%% [quokka# @ {name}] Storing the data...", flush = True)
-    result_file.writerow(generate_data(experiment, iterations, enc_time, ctime, memory))
+    result_file.writerow(generate_data(experiment, iterations, enc_time, ctime, tot_time, memory))
 
     return ctime
 

@@ -414,7 +414,7 @@ class SATFormula(set[Clause], Experiment):
         elif ttype == "full_ddsim":
             csv_writer.writerow(["size", "clauses", "kappa", "time_iteration", "memory (MB)", "formula"])
         elif ttype == "full_quokka#":
-            csv_writer.writerow(["size", "clauses", "kappa", "time_encoding", "time_iteration", "memory (MB)", "formula"])
+            csv_writer.writerow(["size", "clauses", "kappa", "time_encoding", "time_iteration", "tot_time", "memory (MB)", "formula"])
         else:
             raise NotImplementedError(f"Type of file {ttype} not recognized")
 
