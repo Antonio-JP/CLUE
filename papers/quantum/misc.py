@@ -3,6 +3,7 @@ r'''
 '''
 from __future__ import annotations
 
+from contextlib import nullcontext
 from clue import FODESystem, NumericalSubspace, SparseRowMatrix, SparseVector
 from csv import writer
 from math import ceil,inf,sqrt
@@ -452,7 +453,7 @@ def quokka_iteration(name: str,
                    generate_example: Callable[[Any],Experiment], 
                    generate_observable: Callable[[Experiment, Any], bool|QuantumCircuit], 
                    generate_data: Callable[[Experiment,Any], tuple],
-                   result_file, iterations: int, *args, timeout:float=0, **kwds) -> float: 
+                   result_file, iterations: int, *args, timeout:float=0, tmpfile:bool=True,**kwds) -> float: 
     r'''
         This method computes the Quokka# iteration.
 
@@ -486,10 +487,14 @@ def quokka_iteration(name: str,
         measure=False,
         par_value=1/(2**experiment.size()*10*iterations)
     )
+    ## We transpile to something accepted by Quokka#
+    circuit = transpile(circuit, 
+              basis_gates=['cx', 'cz', 'cy', 'cs', 'csdg', 'id', 'z', 'y', 'x', 'h', 'rz', 'ry', 'rx', 's', 't', 'sdg', 'tdg', 'ccx'],
+              optimization_level=3,)
 
-    with tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) as f:
-        file_name = f.name
-        f.close()  # Close the file so that it can be used by qasm2
+    with (tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) if tmpfile else nullcontext()) as f:
+        file_name = f.name if tmpfile else "tmp_circuit.qasm"
+        if tmpfile: f.close()  # Close the file so that it can be used by qasm2
         print(f"%%% [quokka# @ {name}] Writing the circuit to a temporary QASM file...", flush = True)
         qasm2.dump(circuit, file_name)
         
