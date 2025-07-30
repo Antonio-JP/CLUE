@@ -476,6 +476,7 @@ def quokka_iteration(name: str,
 
     print(f"%%% [quokka# @ {name}] Computing DDSIM iterations ({iterations}) for {name} and arguments {args} and {kwds}...", flush=True)
     experiment = generate_example(name, *args, **kwds)
+    print(f"%%% [quokka# @ {name}] {experiment.size()} - {experiment.data()}\n\t{experiment}", flush = True)
 
     print(f"%%% [quokka# @ {name}] Creating the full circuit and job to simulate with DDSIM", flush = True)
     circuit = experiment.build_quantum(
@@ -485,33 +486,35 @@ def quokka_iteration(name: str,
         par_value=1/(2**experiment.size()*10*iterations)
     )
 
-    from contextlib import nullcontext
-    with nullcontext() as f: #tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) as f:
-        file_name = "tmp_circuit.qasm"# f.name
-        # f.close()  # Close the file so that it can be used by qasm2
+    with tempfile.NamedTemporaryFile(suffix=".qasm", delete=False) as f:
+        file_name = f.name
+        f.close()  # Close the file so that it can be used by qasm2
         print(f"%%% [quokka# @ {name}] Writing the circuit to a temporary QASM file...", flush = True)
         qasm2.dump(circuit, file_name)
-        print(circuit)
-
+        
         print(f"%%% [quokka# @ {name}] Computing the simulation of the circuit...", flush = True)
         tracemalloc.start()
         try:
             with(Timeout(timeout)):
                 ## Encoding into CNF
-                print(f"%%% [quokka# @ {name}] Encoding the circuit into CNF...", flush = True)
                 enc_time = process_time()
+                print(f"%%% [quokka# @ {name}] Reading QASM file...", flush = True)
                 circuit_cnf = qk.encoding.QASMparser(file_name, translate_ccx = True)
+                print(f"%%% [quokka# @ {name}] Encoding the circuit into CNF...", flush = True)
                 cnf = qk.encoding.QASM2CNF(circuit_cnf, computational_basis = False)
+                print(f"%%% [quokka# @ {name}] Setting initial value to |0...0>...", flush = True)
                 cnf.leftProjectAllZero()
+                print(f"%%% [quokka# @ {name}] Adding measurement to circuit...", flush = True)
                 cnf.add_measurement({0:0})
                 enc_time = process_time() - enc_time
                 ## Executing the circuit one time
+                print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
                 ctime = process_time()
                 qk.Simulate(cnf)
                 ctime = process_time()-ctime
         except TimeoutError:
             print(f"%%% [quokka# @ {name}] Timeout reached for execution", flush = True)
-            ctime = inf
+            enc_time, ctime = inf, inf
         memory = tracemalloc.get_traced_memory()[1] / (2**20) # maximum memory usage in MB
         tracemalloc.stop()
 
