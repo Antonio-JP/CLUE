@@ -12,7 +12,7 @@ from numpy import cdouble, eye, matmul, ndarray
 from numpy.linalg import matrix_power
 from qiskit import transpile
 from qiskit.circuit import Parameter, QuantumCircuit
-from time import process_time
+from time import time
 from typing import Any, Callable
 import os, signal, tracemalloc
 
@@ -197,9 +197,9 @@ def clue_reduction(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = process_time()
+            ctime = time()
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            ctime = process_time()-ctime
+            ctime = time()-ctime
     except TimeoutError:
         print(f"%%% [clue @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
@@ -255,12 +255,12 @@ def ddsim_reduction(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = process_time()
+            ctime = time()
             ## Executing the circuit one time
             circuit_tr = transpile(circuit, backend)
             job = backend.run(circuit_tr, shots=1)
             job.result()
-            ctime = process_time()-ctime
+            ctime = time()-ctime
     except TimeoutError:
         print(f"%%% [ddsim @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
@@ -303,9 +303,9 @@ def direct_reduction(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = process_time()
+            ctime = time()
             L, _ = experiment.direct()
-            ctime = process_time()-ctime
+            ctime = time()-ctime
     except TimeoutError:
         print(f"%%% [direct @ {name}] Timeout reached for execution", flush=True)
         ctime = inf
@@ -357,10 +357,10 @@ def clue_iteration(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            lump_time = process_time()
+            lump_time = time()
             ## Executing the circuit one time
             lumped = system.lumping(obs, print_reduction=False, print_system=False)
-            lump_time = process_time()-lump_time
+            lump_time = time()-lump_time
 
             print(f"%%% [full-clue @ {name}] Checking correct size (if possible)", flush=True)
             if true_size != None:
@@ -378,9 +378,9 @@ def clue_iteration(name: str,
             
             print(f"%%% [full-clue @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
             U = matmul(U_P, U_B)
-            it_time = process_time()
+            it_time = time()
             _ = matrix_power(U, iterations)
-            it_time = process_time() - it_time
+            it_time = time() - it_time
     except TimeoutError:
         print(f"%%% [full-clue @ {name}] Timeout reached for execution", flush=True)
         lump_time = inf
@@ -432,12 +432,12 @@ def ddsim_iteration(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            ctime = process_time()
+            ctime = time()
             ## Executing the circuit one time
             circuit_tr = transpile(circuit, backend)
             job = backend.run(circuit_tr, shots=1)
             job.result()
-            ctime = process_time()-ctime
+            ctime = time()-ctime
     except TimeoutError:
         print(f"%%% [full-ddsim @ {name}] Timeout reached for execution", flush = True)
         ctime = inf
@@ -499,11 +499,12 @@ def quokka_iteration(name: str,
         qasm2.dump(circuit, file_name)
         
         print(f"%%% [quokka# @ {name}] Computing the simulation of the circuit...", flush = True)
+        timeout = int(timeout) if timeout is not None else None
         tracemalloc.start()
         try:
-            with(Timeout(int(timeout))):
+            with(Timeout(timeout)):
                 ## Encoding into CNF
-                enc_time = process_time()
+                enc_time = time()
                 print(f"%%% [quokka# @ {name}] Reading QASM file...", flush = True)
                 circuit_cnf = qk.encoding.QASMparser(file_name, translate_ccx = True)
                 print(f"%%% [quokka# @ {name}] Encoding the circuit into CNF...", flush = True)
@@ -512,20 +513,20 @@ def quokka_iteration(name: str,
                 cnf.leftProjectAllZero()
                 print(f"%%% [quokka# @ {name}] Adding measurement to circuit...", flush = True)
                 cnf.add_measurement({0:0})
-                enc_time = process_time() - enc_time
-                timeout_ = timeout - enc_time
+                enc_time = time() - enc_time
+                timeout_ = int(timeout - enc_time) if timeout != None else None
         except TimeoutError:
             print(f"%%% [quokka# @ {name}] Timeout reached for encoding", flush = True)
             enc_time, ctime = inf, inf
-            timeout_ = -1.0
+            timeout_ = -1
         try:
-            if timeout_ > 0:
-                with(Timeout(int(timeout_))):
+            if timeout_ is None or timeout_ > 0:
+                with(Timeout(timeout_)):
                     ## Executing the circuit one time
                     print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
-                    ctime = process_time()
+                    ctime = time()
                     qk.Simulate(cnf)
-                    ctime = process_time()-ctime
+                    ctime = time()-ctime
         except TimeoutError:
             print(f"%%% [quokka# @ {name}] Timeout reached for execution", flush = True)
             ctime = inf
@@ -570,9 +571,9 @@ def direct_iteration(name: str,
     tracemalloc.start()
     try:
         with(Timeout(timeout)):
-            lump_time = process_time()
+            lump_time = time()
             _, U = experiment.direct()
-            lump_time = process_time()-lump_time
+            lump_time = time()-lump_time
 
             print(f"%%% [full-direct @ {name}] Getting the reduced U_P", flush=True)
             U_P = U.to_numpy(dtype=cdouble)
@@ -585,9 +586,9 @@ def direct_iteration(name: str,
             
             print(f"%%% [full-direct @ {name}] Computing the iteration (U_P*U_B)^iterations", flush=True)
             U = matmul(U_P, U_B)
-            it_time = process_time()
+            it_time = time()
             _ = matrix_power(U, iterations)
-            it_time = process_time() - it_time
+            it_time = time() - it_time
     except TimeoutError:
         print(f"%%% [full-direct @ {name}] Timeout reached for execution", flush=True)
         lump_time = inf 
