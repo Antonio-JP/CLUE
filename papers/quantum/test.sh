@@ -4,6 +4,7 @@ python3 q_sat.py -m 5 -M 5 -r 1 -t ddsim;
 python3 q_sat.py -m 5 -M 5 -r 1 -t direct;
 python3 q_sat.py -m 5 -M 5 -r 1 -t full_clue;
 python3 q_sat.py -m 5 -M 5 -r 1 -t full_ddsim;
+python3 q_sat.py -m 5 -M 5 -r 1 -t full_quokka#;
 python3 q_sat.py -m 5 -M 5 -r 1 -t full_direct;
 ## Tests with several types for MAXCUT
 python3 q_maxcut.py -m 5 -M 5 -r 1 -t clue;
@@ -11,6 +12,7 @@ python3 q_maxcut.py -m 5 -M 5 -r 1 -t ddsim;
 python3 q_maxcut.py -m 5 -M 5 -r 1 -t direct;
 python3 q_maxcut.py -m 5 -M 5 -r 1 -t full_clue;
 python3 q_maxcut.py -m 5 -M 5 -r 1 -t full_ddsim;
+python3 q_maxcut.py -m 5 -M 5 -r 1 -t full_quokka#;
 python3 q_maxcut.py -m 5 -M 5 -r 1 -t full_direct;
 ## Tests with several types for SEARCH
 python3 q_search.py -m 5 -M 5 -r 1 -t clue;
@@ -18,6 +20,7 @@ python3 q_search.py -m 5 -M 5 -r 1 -t ddsim;
 # ---- no direct case because it is not implemented for Grover
 python3 q_search.py -m 5 -M 5 -r 1 -t full_clue;
 python3 q_search.py -m 5 -M 5 -r 1 -t full_ddsim;
+python3 q_search.py -m 5 -M 5 -r 1 -t full_quokka#;
 # ---- no direct case because it is not implemented for Grover
 ## Tests with several types for ORDER
 python3 q_order.py -m 5 -M 5 -r 1 -t clue;
@@ -58,3 +61,21 @@ python3 q_benchmark.py -t full_ddsim -n tsp -m 2 -M 2 -r 1 -obs 0;
 python3 q_benchmark.py -t full_ddsim -n qnn -m 3 -M 3 -r 1 -obs 0;
 python3 q_benchmark.py -t full_ddsim -n vqe -m 3 -M 3 -r 1 -obs 0;
 python3 q_benchmark.py -t full_ddsim -n wstate -m 3 -M 3 -r 1 -obs 0;
+
+python3 q_benchmark.py -t full_quokka# -n ae -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n dj -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n ghz -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n graphstate -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n hhl -m 2 -M 2 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n pricingput -m 2 -M 2 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n pricingcall -m 2 -M 2 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n portfolioqaoa -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n portfoliovqe -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n qft -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n qpeexact -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n qpeinexact -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n qwalk -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n tsp -m 2 -M 2 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n qnn -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n vqe -m 3 -M 3 -r 1 -obs 0;
+python3 q_benchmark.py -t full_quokka# -n wstate -m 3 -M 3 -r 1 -obs 0;

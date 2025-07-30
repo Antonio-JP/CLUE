@@ -11,6 +11,14 @@ python3 q_sat.py -to 500 -t full_ddsim -m 5 -M 6 -r 5;
 ## MaxCut
 python3 q_maxcut.py -to 500 -t full_ddsim -m 5 -M 6 -r 5;
 
+# Executing tests for Quokka# column
+## Grover
+python3 q_search.py -to 500 -t full_quokka# -m 5 -M 6 -r 5; # this test is not random -> only 5 repetitions
+## SAT
+python3 q_sat.py -to 500 -t full_quokka# -m 5 -M 6 -r 5;
+## MaxCut
+python3 q_maxcut.py -to 500 -t full_quokka# -m 5 -M 6 -r 5;
+
 # Executing tests for CLUE column
 ## Grover
 python3 q_search.py -to 500 -t full_clue -m 5 -M 6 -r 5; # this test is not random -> only 5 repetitions
@@ -67,3 +75,23 @@ python3 q_benchmark.py -to 500 -t full_ddsim -obs 0 -obs H -n qpeexact -m 3 -M 4
 python3 q_benchmark.py -to 500 -t full_ddsim -obs 0 -obs H -n qpeinexact -m 3 -M 4 -r 5;
 python3 q_benchmark.py -to 500 -t full_ddsim -obs 0 -obs H -n vqe -m 3 -M 4 -r 5;
 python3 q_benchmark.py -to 500 -t full_ddsim -obs 0 -obs H -n wstate -m 3 -M 4 -r 5;
+
+
+## Test for the column "Quokka# time"
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n ae -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n dj -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n ghz -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n graphstate -m 3 -M 4 -r 5;
+# python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n hhl -m 2 -M 5 -r 5;
+# python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n pricingcall -m 2 -M 4 -r 5;
+# python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n pricingput -m 2 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n qft -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n qwalk -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n tsp -m 2 -M 2 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n portfolioqaoa -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n portfoliovqe -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n qnn -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n qpeexact -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n qpeinexact -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n vqe -m 3 -M 4 -r 5;
+python3 q_benchmark.py -to 500 -t full_quokka# -obs 0 -obs H -n wstate -m 3 -M 4 -r 5;
