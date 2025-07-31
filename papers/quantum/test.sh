@@ -26,56 +26,10 @@ python3 q_search.py -m 5 -M 5 -r 1 -t full_quokka#;
 python3 q_order.py -m 5 -M 5 -r 1 -t clue;
 python3 q_order.py -m 5 -M 5 -r 1 -t full_clue;
 ## Tests for ech benchmark family in the smallest case with observable 0 (so it is fast)
-python3 q_benchmark.py -t clue -n ae -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n dj -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n ghz -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n graphstate -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n hhl -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n pricingput -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n pricingcall -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n portfolioqaoa -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n portfoliovqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n qft -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n qpeexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n qpeinexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n qwalk -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n tsp -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n qnn -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n vqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t clue -n wstate -m 3 -M 3 -r 1 -obs 0;
 
-python3 q_benchmark.py -t full_ddsim -n ae -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n dj -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n ghz -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n graphstate -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n hhl -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n pricingput -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n pricingcall -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n portfolioqaoa -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n portfoliovqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n qft -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n qpeexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n qpeinexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n qwalk -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n tsp -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n qnn -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n vqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_ddsim -n wstate -m 3 -M 3 -r 1 -obs 0;
-
-python3 q_benchmark.py -t full_quokka# -n ae -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n dj -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n ghz -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n graphstate -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n hhl -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n pricingput -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n pricingcall -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n portfolioqaoa -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n portfoliovqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n qft -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n qpeexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n qpeinexact -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n qwalk -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n tsp -m 2 -M 2 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n qnn -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n vqe -m 3 -M 3 -r 1 -obs 0;
-python3 q_benchmark.py -t full_quokka# -n wstate -m 3 -M 3 -r 1 -obs 0;
+MQT_BENCH_NAMES=$(python -c "from mqt.bench.benchmarks import *; print(str(get_available_benchmark_names()).replace('\'','').replace('[','').replace(',','').replace(']',''))")
+for bench in $MQT_BENCH_NAMES; do
+    python3 q_benchmark.py -t clue -n $bench -m 3 -M 3 -r 1 -obs 0;
+    python3 q_benchmark.py -t full_ddsim -n $bench -m 3 -M 3 -r 1 -obs 0;
+    python3 q_benchmark.py -t full_quokka# -n $bench -m 3 -M 3 -r 1 -obs 0;
+done
