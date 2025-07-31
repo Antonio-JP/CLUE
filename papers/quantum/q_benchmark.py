@@ -11,8 +11,7 @@ sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..")) # clue is here
 SCRIPT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 from clue.linalg import CC, SparseRowMatrix, SparseVector
-from mqt.bench.benchmarks import (ae, dj, ghz, graphstate, pricingput, pricingcall, portfolioqaoa, portfoliovqe, qft, 
-                                  qpeexact, qpeinexact, qwalk, tsp, qnn, vqe, wstate)
+from mqt.bench.benchmarks import (get_benchmark_catalog, get_available_benchmark_names, create_circuit)
 from numpy import asarray, ndarray
 from qiskit import QuantumCircuit, transpile
 from qiskit_aer import Aer
@@ -20,26 +19,22 @@ from qiskit_aer import Aer
 ## Imports from the local folder
 from misc import *
 
-VALID_BENCHMARKS = {"ae": ae, "dj" : dj, "ghz": ghz, "graphstate": graphstate, "hhl": None, "pricingput": pricingput, "pricingcall": pricingcall, 
-                    "portfolioqaoa": portfolioqaoa, "portfoliovqe": portfoliovqe, "qft":qft, "qpeexact": qpeexact, "qpeinexact": qpeinexact,
-                    "qwalk": qwalk, "tsp": tsp, "qnn": qnn, "vqe": vqe, "wstate": wstate}
-FULL_NAMES = {"ae": "Amplitude Estimation", "dj" : "Deutsch-Jozsa", "ghz": "Greenberger-Horne-Zeilinger", "graphstate": "Graph State", "hhl": "HHL Algorithm",
-              "pricingput": "Pricing Put Option", "pricingcall": "Princing Call Option", "portfolioqaoa": "Portfolio Optimization", "portfoliovqe": "VQE Portfolio Optimizaiton", 
-              "qft":"Quantum Fourier Transform", "qpeexact": "Exact Quantum Phase Estimation", "qpeinexact": "Inexact Quantum Phase Estimation", "qwalk": "Quantum Walk", 
-              "tsp": "Travelling Salesman", "qnn": "Quantum Neural Network", "vqe": "Variational Quantum Eigensolver ", "wstate": "W State"}
+VALID_BENCHMARKS = get_available_benchmark_names()
+
+FULL_NAMES = get_benchmark_catalog()
 
 class QuantumBenchmark(Experiment):
     BACKEND = Aer.get_backend("unitary_simulator")
 
     def __init__(self, name, size):
         if not name in VALID_BENCHMARKS:
-            raise TypeError(f"The given benchmark ({name}) not recognized.")
+            raise TypeError(f"The given benchmark ({name}) not recognized in MQT.BENCH==2.0.1. Valid benchmarks are: {VALID_BENCHMARKS}")
         self.__name = name; self.__size = size
         ## We try to build the circuit
-        if name == "hhl": # special case for HHL
-            self.__circuit = QuantumCircuit.from_qasm_file(f"./circuits/hhl_indep_qiskit_{3*size-1}.qasm")
-        else:
-            self.__circuit = VALID_BENCHMARKS[name].create_circuit(size)
+        # if name == "hhl": # special case for HHL
+        #     self.__circuit = create_circuit(name, 3*size - 1)
+        # else:
+        self.__circuit = create_circuit(name, size).remove_final_measurements(False)
         ## Cache for other derived attributes
         self.__unitary = None
         self.observable = None
@@ -76,7 +71,7 @@ class QuantumBenchmark(Experiment):
     def size(self) -> int: return self.circuit.num_qubits
     def correct_size(self) -> int: return None
     def matrix(self) -> SparseRowMatrix: return self.unitary_matrix()
-    def quantum(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]: 
+    def quantum(self, circuit: QuantumCircuit, dt: Parameter) -> tuple[QuantumCircuit, Parameter]:
         circuit.append(self.circuit, list(range(self.circuit.num_qubits)))
         return circuit, dt
     def data(self): return [self.full_name, self.observable]

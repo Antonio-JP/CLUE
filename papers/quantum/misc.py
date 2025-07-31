@@ -133,7 +133,7 @@ class Experiment:
         if measure:
             circuit.measure_all()
 
-        if par != None: circuit = circuit.assign_parameters({par: 1/(2**self.size()*10*iterations)})      
+        if par in circuit.parameters: circuit = circuit.assign_parameters({par: 1/(2**self.size()*10*iterations)})      
 
         return circuit
     def quantum(self, circuit: QuantumCircuit, dt: float | Parameter) -> tuple[QuantumCircuit, Parameter]: raise NotImplementedError(f"Method for getting 'quantum circuit' not implemented")
@@ -190,7 +190,12 @@ def clue_reduction(name: str,
         true_size = None
 
     print(f"%%% [clue @ {name}] Creating the full system to apply CLUE", flush=True)
-    system = FODESystem.LinearSystem(experiment.matrix(), lumping_subspace=NumericalSubspace)
+    from qiskit_aer.aererror import AerError
+    try:
+        system = FODESystem.LinearSystem(experiment.matrix(), lumping_subspace=NumericalSubspace)
+    except AerError as e:
+        print(f"%%% [clue @ {name}] Error creating system: {e}", flush=True)
+        raise ValueError(f"%%% [clue @ {name}] Error creating system: {e}")
     obs = generate_observable(experiment, *args, **kwds)
     
     print(f"%%% [clue @ {name}] Computing the lumped system...", flush=True)
@@ -496,7 +501,12 @@ def quokka_iteration(name: str,
         file_name = f.name if tmpfile else "tmp_circuit.qasm"
         if tmpfile: f.close()  # Close the file so that it can be used by qasm2
         print(f"%%% [quokka# @ {name}] Writing the circuit to a temporary QASM file...", flush = True)
-        qasm2.dump(circuit, file_name)
+        from qiskit.qasm2.exceptions import QASM2ExportError
+        try:
+            qasm2.dump(circuit, file_name)
+        except QASM2ExportError as e:
+            print(f"%%% [quokka# @ {name}] Error exporting circuit to QASM: {e}", flush = True)
+            raise ValueError(f"%%% [quokka# @ {name}] Error exporting circuit to QASM: {e}")
         
         print(f"%%% [quokka# @ {name}] Computing the simulation of the circuit...", flush = True)
         timeout = int(timeout) if timeout is not None else None
@@ -697,7 +707,7 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
         print(f"### EXECUTION ON {name.upper()} [{m=}, {M=}, {repeats=}, method={ttype}]")
         print(f"##################################################################################")
         for size in range(m, M+1):
-            obs_to_use = ([0] + ["H"] + list(range(1, 2**(generate_example(name, size, 0).quantum()[0].num_qubits)))) if (observables != None and len(observables) == 0) else ["def"] if observables == None else observables
+            obs_to_use = ([0] + ["H"] + list(range(1, 2**(generate_example(name, size, 0).circuit_size())))) if (observables != None and len(observables) == 0) else ["def"] if observables == None else observables
             script_args = [name, generate_example, generate_observable_clue if not ("ddsim" in ttype) else generate_observable_ddsim, generate_data, csv_writer]
             for execution in range(1,repeats+1):
                 rem_timeout = timeout
@@ -725,3 +735,7 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
                                 rem_timeout = ceil(rem_timeout)
                 except TimeoutError:
                     print(f"### -- Finished execution {execution}/{repeats} ({size=}): reached Timeout.")
+                except ValueError:
+                    print(f"### -- Finished execution {execution}/{repeats} ({size=}): Error in circuit (parameters unbound).")
+                except AssertionError:
+                    print(f"### -- Finished execution {execution}/{repeats} ({size=}): Error in circuit: invalid input.")
