@@ -1,7 +1,0 @@
-{
-  "DEBUG": false,
-  "TIMEOUT": 300,
-  "ToolInvocation": "/home/jimenezp/clue+quantum+quokka#/GPMC/bin/gpmc -mode=1",
-  "GetResult": "exact.double.prec-sci.(.+?)\\\\nc s",
-  "FPE": 1e-12
-}

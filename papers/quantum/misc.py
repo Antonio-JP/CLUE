@@ -531,12 +531,14 @@ def quokka_iteration(name: str,
             timeout_ = -1
         try:
             if timeout_ is None or timeout_ > 0:
-                with(Timeout(timeout_)):
-                    ## Executing the circuit one time
-                    print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
-                    ctime = time()
-                    qk.Simulate(cnf)
-                    ctime = time()-ctime
+                ## We trust in the timeout of Quokka# (~500 seconds)
+                ## Executing the circuit one time
+                print(f"%%% [quokka# @ {name}] Simulating the circuit...", flush = True)
+                ctime = time()
+                output = qk.Simulate(cnf)
+                if output == "TIMEOUT":
+                    raise TimeoutError("Timeout reached in Quokka#")
+                ctime = time()-ctime
         except TimeoutError:
             print(f"%%% [quokka# @ {name}] Timeout reached for execution", flush = True)
             ctime = inf
@@ -716,16 +718,16 @@ def main_script(dir: str, filename: str, name: str,         # directory and file
                         print(f"### ++ Starting execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)})")
                         if not ("full" in ttype): # No iterations are required
                             used_time = script(*(script_args + [size] + ([observable] if observables != None else [])), timeout=rem_timeout, **kwds)
-                            rem_timeout = get_rem_timeout(rem_timeout, used_time)
                             result_file.flush()
+                            rem_timeout = get_rem_timeout(rem_timeout, used_time)
                         else:
                             used_time = 0
                             for it in (1,ceil(sqrt(2**size))):#,1000):#,10000)
                                 print(f"    ++++ Case with {it} iterations.")
                                 it_used_time = script(*(script_args + [it, size] + ([observable] if observables != None else [])), timeout=rem_timeout, **kwds)
+                                result_file.flush()
                                 rem_timeout = get_rem_timeout(rem_timeout, it_used_time)
                                 used_time += it_used_time
-                            result_file.flush()
                         print(f"### -- Finished execution {execution}/{repeats} ({size=}, observable={i+1}/{len(obs_to_use)}): took {used_time} s.")
                         if rem_timeout != None:
                             rem_timeout -= used_time

@@ -360,7 +360,7 @@ def forward_error(E: Experiment, size: int, _: int = None, num_samples: int = 10
     true_values = [real * v for v in Z]
     error = [(true_values[i] - approx * v).norm() for (i,v) in enumerate(Z)]
     true_norms = [true_value.norm() for true_value in true_values]
-    relative_error = [e/n for (e,n) in zip(error, true_norms)]
+    relative_error = [e/n if n > 0 else 1.0 if e != 0 else 0.0 for (e,n) in zip(error, true_norms)]
 
     print(f"[forward @ {size} Computing the different statistics".ljust(get_terminal_size()[0]), end="\r")
     result = {
@@ -419,6 +419,7 @@ def generate_error_graph(E: Experiment, method=backward_error, name="\hat{U}",
             csv_writer = writer(data_file)
 
             d = [(s,method(E, s, num_samples=num_samples, density=density, threshold=threshold)) for s in A if s < M_bound and s > m_bound]
+            d += [(2**E.circuit_size(), {stat : 0.0 for stat in ("avg. error", "max. error", "min. error","avg. rel. error", "max. rel. error", "min. rel. error")})] # adding the full size with 0 error
             x = [e[0] for e in d] # the X coordinate will always be the lumping sizes
 
             ## Writing the header in the CSV file
