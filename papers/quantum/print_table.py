@@ -2,6 +2,7 @@ import pandas as pd
 import os, sys
 from functools import reduce
 from math import inf
+import numpy as np
 
 SCRIPT_DIR = os.path.dirname(__file__) if __name__ != "__main__" else "./"
 
@@ -26,12 +27,6 @@ def process_averages(table: str, observable = "all", kappa = "all", skip_kappa =
                     row["memory (MB)"] < get_filter(M_high, row) and 
                     row["memory (MB)"] > get_filter(M_low, row)
                 )], columns=data.columns)
-
-    inf_data = None
-    if without_infinity and any(col in data.columns for col in ["time_lumping", "time_iteration"]):
-        col = "time_lumping" if "time_lumping" in data.columns else "time_iteration"
-        inf_data = pd.DataFrame([row for (_,row) in data.iterrows() if row[col] == inf], columns=data.columns)
-        data = pd.DataFrame([row for (_,row) in data.iterrows() if row[col] != inf], columns=data.columns)
             
     if "red. ratio" in data.columns:
         data.insert(list(data.columns).index("red. ratio") + 1, "red. size", pd.Series([2**row["size"] * (float(row["red. ratio"]) if row["red. ratio"] != "unknown" else inf) for (_,row) in data.iterrows()]))
@@ -56,15 +51,22 @@ def process_averages(table: str, observable = "all", kappa = "all", skip_kappa =
             data = data[(data["kappa"] == kappa) & (data["kappa"] != skip_kappa)]
         else:
             data = data[data["kappa"] != skip_kappa]
+    
+    inf_data = None
+    if without_infinity and any(col in data.columns for col in ["time_lumping", "time_iteration"]):
+        col = "time_lumping" if "time_lumping" in data.columns else "time_iteration"
+        inf_data = pd.DataFrame([row for (_,row) in data.iterrows() if row[col] == inf], columns=data.columns)
+        data = pd.DataFrame([row for (_,row) in data.iterrows() if row[col] != inf], columns=data.columns)
 
     result = data.groupby(by=grouping).mean(numeric_only=True)
+    
     if inf_data is not None:
         inf_data = inf_data.groupby(by=grouping).count()[col].to_frame().rename(columns={col: "inf. count"})
         result = result.join(inf_data, how="outer")
     return result
 
 def table1():
-    grover_clue = process_averages("q_search_full_clue", skip_kappa=1, remove_outliers=False, add_times=True, without_infinity=True)
+    grover_clue = process_averages("q_search_full_clue", kappa=1, remove_outliers=False, add_times=True, without_infinity=True)
     time_grover_clue = grover_clue["total time"].droplevel(-1).to_frame().rename(columns={"total time" : ("Grover", "CLUE")})
     inf_time_grover_clue = grover_clue["inf. count"].droplevel(-1).to_frame().rename(columns={"inf. count" : ("Grover", "CL-∞")})
     
@@ -73,6 +75,8 @@ def table1():
     inf_time_grover_ddsim = grover_ddsim["inf. count"].droplevel(-1).to_frame().rename(columns={"inf. count" : ("Grover", "DD-∞")})
     
     grover_quokka = process_averages("q_search_full_quokka#", skip_kappa=1, without_infinity=True)
+    if not "time_iteration" in grover_quokka.columns:
+        grover_quokka["time_iteration"] = np.nan
     time_grover_quokka = grover_quokka["time_iteration"].droplevel(-1).to_frame().rename(columns={"time_iteration" : ("Grover", "QUOKKA")})
     inf_time_grover_quokka = grover_quokka["inf. count"].droplevel(-1).to_frame().rename(columns={"inf. count" : ("Grover", "QK-∞")})
     
