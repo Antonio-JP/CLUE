@@ -10,6 +10,7 @@ if(NOT TARGET ${PROJECT_NAME}-experiments)
     ${CMAKE_CURRENT_SOURCE_DIR}/CUTExperiment.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/GroverExperiment.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/BenchmarkExperiment.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/QASMExperiment.cpp
   )
   target_link_libraries(${PROJECT_NAME}-experiments PUBLIC ${PROJECT_NAME})
   target_link_libraries(${PROJECT_NAME}-experiments PUBLIC ${PROJECT_NAME}-experiments-benchmark)
