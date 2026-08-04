@@ -98,11 +98,6 @@ vector<luint> Clause::neg_variables() {
     return elements;
 }
 
-/* Check equality over clauses */
-bool Clause::operator==(const Clause& other) {
-    return this->elements_in == other.elements_in;
-}
-
 /* Transforms a clause into a string */
 string Clause::to_string() {
     if (this->is_trivial()) { return "()"; }

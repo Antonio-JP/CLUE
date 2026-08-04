@@ -36,11 +36,13 @@ class Clause {
         /* Return a list of variables negated */
         vector<luint> neg_variables();
 
-        /* Check equality over clauses */
-        bool operator==(const Clause&);
-
         /* Transforms a clause into a string */
         string to_string();
+
+        /* Check equality over clauses */
+        friend bool operator==(const Clause& self, const Clause& other) {
+            return self.elements_in == other.elements_in;
+        }
 };
 
 /**
